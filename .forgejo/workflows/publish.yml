@@ -38,30 +38,25 @@ jobs:
       - name: Build book
         run: uv run build.py
 
-      - name: Configure SSH for Codeberg
+      - name: Write Codeberg SSH key
         env:
           CODEBERG_SSH_KEY: ${{ secrets.CODEBERG_SSH_KEY }}
         run: |
-          mkdir -p ~/.ssh
-          echo "$CODEBERG_SSH_KEY" > ~/.ssh/id_codeberg
-          chmod 600 ~/.ssh/id_codeberg
-          ssh-keyscan codeberg.org >> ~/.ssh/known_hosts 2>/dev/null
-          cat > ~/.ssh/config <<EOF
-          Host codeberg.org
-            User git
-            IdentityFile ~/.ssh/id_codeberg
-            IdentitiesOnly yes
-          EOF
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$CODEBERG_SSH_KEY" > "$HOME/.ssh/id_codeberg"
+          chmod 600 "$HOME/.ssh/id_codeberg"
 
       - name: Push dist to Codeberg pages branch
         env:
           CODEBERG_USER: ${{ secrets.CODEBERG_USER }}
         run: |
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_codeberg -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
           cd dist
           git init -q -b pages
           git config user.name "Forgejo CI"
           git config user.email "ci@pi.local"
           git add -A
           git commit -q -m "Publish — ${GITHUB_SHA::7} $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          git remote add origin git@codeberg.org:$CODEBERG_USER/intro-book.git
+          git remote add origin "git@codeberg.org:$CODEBERG_USER/intro-book.git"
           git push -fq origin pages
