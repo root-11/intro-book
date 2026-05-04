@@ -1,6 +1,6 @@
-# An Introduction to Programming
+# An Introduction to Programming *using entity-component-systems & existence-based processing in `rust`*
 
-*using ECS & EBP in `rust`*
+_written by [Bjorn Madsen](mailto:drbjornmadsen@gmail.com)_
 
 <p align="center"><img src="illustrations/classroom.jpg" alt="A classroom: Understand, Model, Solve, Validate, Improve" style="max-height: 360px; max-width: 100%;"></p>
 

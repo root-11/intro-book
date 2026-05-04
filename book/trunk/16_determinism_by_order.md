@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 16](../../concepts/glossary.md#16--determinism-by-order).*
 
+<p align="center"><img src="../illustrations/monte_carlo.jpg" alt="Monte Carlo estimate of π — same seed, same answer, every run" style="max-height: 300px; max-width: 100%;"></p>
+
 A program is *deterministic* if the same inputs and the same execution produce the same outputs, every time. Sounds obvious. It is not — most modern programs are *not* deterministic by default. Threads run in OS-scheduled order. Hash maps may iterate in randomised order. The system clock differs by run. `rand::thread_rng()` differs by process.
 
 In an ECS architecture, determinism is structural. Same world state at tick start + same system order + same inputs (events, RNG seed) = same world state at tick end. Bit-identical. Every time.

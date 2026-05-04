@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 37](../../concepts/glossary.md#37--the-log-is-the-world).*
 
+<p align="center"><img src="../illustrations/model_real_world.jpg" alt="Model the real world — the log is the world reconstructed step by step" style="max-height: 300px; max-width: 100%;"></p>
+
 [§36](36_persistence_is_serialization.md) said persistence is transposition: the in-memory tables are written as their bytes, read back as their bytes. This section makes the deeper structural claim. *The log is the world*, and the world is the log decoded.
 
 In an event-sourced simulator, every state change is an event:

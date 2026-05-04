@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 25](../../concepts/glossary.md#25--ownership-of-tables).*
 
+<p align="center"><img src="../illustrations/dag_planning_checklist.jpg" alt="One plan, one writer — PLAN, ANALYZE, DESIGN, BUILD, TEST, IMPROVE" style="max-height: 300px; max-width: 100%;"></p>
+
 Every table has exactly one writer.
 
 The rule is small. Its consequences are everything.

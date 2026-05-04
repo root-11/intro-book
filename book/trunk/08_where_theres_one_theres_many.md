@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 8](../../concepts/glossary.md#8--where-theres-one-theres-many).*
 
+<p align="center"><img src="../illustrations/tip_simplify_full.jpg" alt="Break complex problems into smaller parts — the singleton special-cased away" style="max-height: 300px; max-width: 100%;"></p>
+
 Code is written for the array. A function that operates on one entity is just the special case of N = 1; it does not need its own abstraction. A card game with 52 cards is three arrays — suit, rank, location — not 52 objects. A simulation with 100 creatures is six arrays of length 100, not 100 instances of `Creature`. The plural is the primary unit; the singular is the trivial case.
 
 The pattern is simple. Write the array version first. The singleton drops out as a one-element slice. To shuffle one card you swap two indices in the `order` vector — same as shuffling the whole deck. To find the highest-rank card in player 1's hand you scan the (small) hand vector — same shape as scanning all 52. To deal one card you write one cell in `locations` — same shape as dealing many cells.

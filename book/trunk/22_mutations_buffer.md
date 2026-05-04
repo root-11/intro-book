@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 22](../../concepts/glossary.md#22--mutations-buffer-cleanup-is-batched).*
 
+<p align="center"><img src="../illustrations/engineer_fuel.jpg" alt="Engineer-fuel coffee, mouse soldering — work buffered on the bench, applied in a batch" style="max-height: 300px; max-width: 100%;"></p>
+
 This rule has been forward-referenced through ten chapters. Time to make it concrete.
 
 Mutations during a tick do not apply immediately; they queue, and a single cleanup pass applies them all at the tick boundary. The shape:

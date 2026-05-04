@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 7](../../concepts/glossary.md#7--structure-of-arrays-soa).*
 
+<p align="center"><img src="../illustrations/ecs_banner.jpg" alt="Three mice: ENTITY, COMPONENT, SYSTEMS — naming the layout that splits an entity into component columns" style="max-height: 300px; max-width: 100%;"></p>
+
 Your deck has three `Vec`s: `suits`, `ranks`, `locations`. Each field lives in its own array, indexed by entity. This layout is called *Structure of Arrays* — SoA. The opposite layout — a single `Vec<Card>` where each element is a struct holding all three fields — is called *Array of Structs* — AoS. They are different choices about *where the same data lives*.
 
 ```rust,no_run
@@ -32,6 +34,10 @@ You will need a stopwatch (`std::time::Instant`) for some of these.
 3. **Time the count at 10,000 entries.** Make `Vec<u8>` and `Vec<Card>` of length 10,000 (replicate the deck 192-fold, or fill arbitrarily). Time each `count_held_*` function. Note the ratio.
 4. **Scale to 1,000,000 entries.** Repeat at length 1,000,000. The SoA version reads 1 MB; the AoS version reads 3 MB (assuming `size_of::<Card>() == 3` plus padding). On most chips L2 fits one but not the other. Note where the cliff appears.
 5. **The hot/cold case.** Extend the row with a 16-byte `nickname: [u8; 16]`. Rebuild both. Now AoS reads 19+ bytes per element while SoA still reads 1. Time the count again. The gap should widen sharply.
+
+> [!NOTE]
+> How sharp depends on your memory hierarchy. Measured ratios at N=10M: ~2× on machines with generous L3 (modern desktops, mid-2010s Intel laptops), ~6× on a Raspberry Pi 4 (no L3, narrow LPDDR4 channel). The principle is the same; the slope of the cliff scales with how badly the AoS row blows the cache budget.
+
 6. **A case where AoS wins.** Write a function that updates *every* field of one specific card. SoA writes to three different lines; AoS writes to one. For the case "update every field of every card" (rare in practice), AoS may even tie or win. Time it and discuss.
 7. *(stretch)* **A from-scratch `SoaDeck` struct.** Wrap the three (or four) columns in one struct that owns them all. Provide `fn reorder(&mut self, order: &[usize])` as the only public mutator. What do you gain in correctness? What do you lose in flexibility?
 

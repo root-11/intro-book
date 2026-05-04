@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 10](../../concepts/glossary.md#10--stable-ids-and-generations).*
 
+<p align="center"><img src="../illustrations/hard_hat_repeat.jpg" alt="MEASURE / CALCULATE / DESIGN / BUILD / REPEAT — generations cycle on a stable handle" style="max-height: 300px; max-width: 100%;"></p>
+
 In [§9](09_sort_breaks_indices.md) you watched a player's reference go stale because they were holding *slots*, not *names*. The fix is to give each row a name — a stable identifier — that travels with the row when it moves.
 
 A stable id is one extra column. For the deck:

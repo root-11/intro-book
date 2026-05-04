@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 42](../../concepts/glossary.md#42--you-can-only-fix-what-you-wrote).*
 
+<p align="center"><img src="../illustrations/cad_bearing.jpg" alt="The bearing you drew is the bearing you fix" style="max-height: 300px; max-width: 100%;"></p>
+
 Foreign libraries are allowed in this book. They are not banned. They are *priced*.
 
 Every dependency is a bet. The bet is that someone else will keep the library working — fix bugs, ship versions, respond to security issues, support future Rust releases, not abandon the project. The bet has a cost: if the library breaks, you cannot fix it. You can only replace it, fork it, or live with the breakage.

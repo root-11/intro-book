@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 9](../../concepts/glossary.md#9--the-sort-breaks-indices).*
 
+<p align="center"><img src="../illustrations/bridge_clipboard.jpg" alt="Engineer mouse with clipboard and F = ma — alignment is a structural property" style="max-height: 300px; max-width: 100%;"></p>
+
 In [§5 — Identity is an integer](05_identity_is_an_integer.md), exercise 10 left you with a bug. Player 1 was holding the index list `[3, 17, 21, 28, 41]`. The dealer sorted the deck columns by suit. Player 1's hand was now wrong — the same indices, the same slots, but different cards.
 
 That bug is the structural fact this section names. Sorting did not damage anything; the player's reference was never robust to begin with. An index points at a *slot*, not at a *thing*. When the slot's contents change, the index quietly changes meaning.

@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 19](../../concepts/glossary.md#19--ebp-dispatch).*
 
+<p align="center"><img src="../illustrations/tip_simplify_full.jpg" alt="Break complex problems into smaller parts — dispatch by decomposition" style="max-height: 300px; max-width: 100%;"></p>
+
 A system that needs to act on hungry creatures has two ways to find them.
 
 **Filtered iteration.** Walk all creatures; for each, ask "is it hungry?"; do work if yes:

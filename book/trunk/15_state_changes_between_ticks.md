@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 15](../../concepts/glossary.md#15--state-changes-between-ticks).*
 
+<p align="center"><img src="../illustrations/microcontroller_loop.jpg" alt="Init / while { read; process; update } — the visible tick loop" style="max-height: 300px; max-width: 100%;"></p>
+
 Inside a tick, the world is *frozen*. Systems read consistent snapshots of their inputs; mutations are *queued*, not applied; only at the tick boundary does the world step forward in one atomic transition.
 
 This is the rule that makes the DAG from [§14](14_systems_compose_into_a_dag.md) actually work. If `motion` could mutate `pos` while `next_event` is reading `pos`, the data is inconsistent: half the creatures have moved, half have not. Even if the schedule is "correct" by topological order, what each system reads is no longer well-defined. By forbidding mutations to apply in-tick, the world becomes a clean function `world_t+1 = step(world_t, inputs_t)`. Every system reads `world_t`; every system writes into a buffer that becomes `world_t+1` only at the tick boundary.

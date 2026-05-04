@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 43](../../concepts/glossary.md#43--tests-are-systems-tdd-from-day-one).*
 
+<p align="center"><img src="../illustrations/dag_planning_checklist.jpg" alt="PLAN, ANALYZE, DESIGN, BUILD, TEST, IMPROVE — tests are part of the same loop, written first" style="max-height: 300px; max-width: 100%;"></p>
+
 A test reads the world's state and asserts that some property holds. A system reads the world's state and writes a derived result. The two are structurally the same.
 
 This is not a slogan. It is the structural fact that lets every other discipline in the book apply to tests without translation.
@@ -66,14 +68,5 @@ Reference notes in [43_tests_are_systems_solutions.md](43_tests_are_systems_solu
 
 ## What's next
 
-You have closed the trunk.
-
-The book's forty-three concepts are now in your hands. You have built the through-line simulator from one hundred wandering creatures to a world that scales, persists, replays, and runs on multiple cores while staying deterministic. Every chapter's discipline composes with every other.
-
-The next move is yours. Build the simulator end-to-end as a real Rust project. Pick up the monograph (referenced via `MONOGRAPH_PATH`) for the distributed extensions that lie above the streaming wall. Re-read the chapters whose disciplines feel most distant from your previous habits — those are the chapters where the book has the most to give you.
-
-<p align="center"><img src="../illustrations/mathematics_describes.jpg" alt="Mathematics describes, models, implements, and improves the world." style="max-height: 300px; max-width: 100%;"></p>
-
-If this book changed how you think about programs, the book has done its work.
-<p align="center"><img src="../illustrations/model_real_world.jpg" alt="Model the real world." style="max-height: 300px; max-width: 100%;"></p>
+You have closed the trunk. [§44 — What you have built](44_closure.md) looks back at the shape of what you built and opens the questions the book deliberately did not settle.
 

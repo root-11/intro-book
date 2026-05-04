@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 28](../../concepts/glossary.md#28--sort-for-locality).*
 
+<p align="center"><img src="../illustrations/optimization.jpg" alt="Optimization: minimize f(x) — sorting for locality is reordering for cost" style="max-height: 300px; max-width: 100%;"></p>
+
 In §9 you learned the sort-breaks-indices bug. In §10 you fixed it with stable ids. In §23 you made id-to-slot lookup O(1). With those three pieces in place, the simulator can now do something it could not before: rearrange its rows for locality.
 
 The principle is simple. Rows accessed near each other in time should sit near each other in memory. Two creatures that interact (collide, query a neighbour, broadphase against each other) should land on adjacent cache lines.

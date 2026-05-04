@@ -1,6 +1,7 @@
 # Summary
 
 [Introduction](front_matter.md)
+[Nomenclature](nomenclature.md)
 
 ---
 
@@ -120,9 +121,14 @@
 - [Tests are systems; TDD from day one](trunk/43_tests_are_systems.md)
   - [Solutions](trunk/43_tests_are_systems_solutions.md)
 
+# Closure
+
+- [What you have built](trunk/44_closure.md)
+
 ---
 
-# Reference
+# For lecturers
 
 - [Concept DAG](../concepts/dag.md)
 - [Glossary](../concepts/glossary.md)
+- [Simulator specification](../code/sim/SPEC.md)

@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 13](../../concepts/glossary.md#13--a-system-is-a-function-over-tables).*
 
+<p align="center"><img src="../illustrations/differential_equations.jpg" alt="A mouse at the chalkboard — systems are functions of state" style="max-height: 300px; max-width: 100%;"></p>
+
 A *system* is a function that reads from one or more tables and writes to one or more tables. It declares its inputs (the *read-set*) and its outputs (the *write-set*). It has no hidden state, no global side effects, no interaction with the outside world during a tick. The signature is the contract.
 
 ```rust,no_run

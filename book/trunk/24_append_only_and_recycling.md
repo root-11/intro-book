@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 24](../../concepts/glossary.md#24--append-only-and-recycling).*
 
+<p align="center"><img src="../illustrations/hard_hat_repeat.jpg" alt="MEASURE / CALCULATE / DESIGN / BUILD / REPEAT — recycling is the construction cycle" style="max-height: 300px; max-width: 100%;"></p>
+
 When a row is removed from a table, its slot is freed. There are two strategies for what happens to that slot.
 
 **Append-only.** Old slots stay valid forever. The table grows monotonically. New rows always go to the end.

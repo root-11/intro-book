@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 23](../../concepts/glossary.md#23--index-maps).*
 
+<p align="center"><img src="../illustrations/linear_algebra.jpg" alt="Linear algebra: Ax = b — a lookup is a matrix-vector product" style="max-height: 300px; max-width: 100%;"></p>
+
 The presence-replaces-flags substitution from [§17](17_presence_replaces_flags.md) had a sting in its tail. A presence query — "is creature 42 hungry?" — costs O(N) when implemented naively as `hungry.iter().any(|&x| x == 42)`. At 1 000 000 creatures, that is too slow for any system that needs to ask the question many times per tick.
 
 The fix is a parallel data structure: an *index map* `id_to_slot: Vec<u32>` that maps every id to its current slot in the table. Lookup is now O(1):

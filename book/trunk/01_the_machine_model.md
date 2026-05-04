@@ -26,7 +26,15 @@ These exercises are calibrations. Run them on your machine and write the numbers
 2. **Time a sequential sum.** Build a `Vec<u64>` of 100,000,000 elements (use `vec![1u64; 100_000_000]`), then time `vec.iter().sum::<u64>()`. Use `std::time::Instant`. Note the time per element in nanoseconds.
 3. **Time a random-access sum.** Build the same `Vec<u64>`, plus a `Vec<usize>` of 100,000,000 random indices. Time the loop `let mut s = 0u64; for &i in &indices { s += vec[i]; }`. Compare with exercise 2.
 4. **Find the cache cliffs.** Repeat exercise 2 at sizes 1K, 10K, 100K, 1M, 10M, 100M. Plot `time/element` (or just print it). Note the size at which it jumps — that's where you spilled out of L1, then L2, then L3.
+
+> [!NOTE]
+> What you see depends on your CPU. On older or smaller chips (Raspberry Pi 4 Cortex-A72, 2012 i7-3610QM, 2015 i3-5010U), the L1, L2, and L3 transitions appear as a graded staircase in ns/element. On modern desktop chips, a stronger prefetcher and wider SIMD often merge L1/L2/L3 into a single visible cliff at the L3→RAM boundary. Both are correct — both teach the same point. If you see one cliff on your machine, repeat the exercise with random indices (the §1.3 pattern) to surface the others.
+
 5. **Pointer chasing.** Build a linked list of 1,000,000 `Box<Node>` where `Node { value: u64, next: Option<Box<Node>> }`. Time a sum that walks the list. Compare with the same sum on a `Vec<u64>` of the same length. The ratio is roughly the L1-to-RAM ratio.
+
+> [!NOTE]
+> The ratio depends on your CPU. Measured: ~63× on a Raspberry Pi 4, ~100-120× on mid-2010s Intel laptops, ~300× on a modern Ryzen-class chip. The wider gap on newer hardware reflects faster cores running ahead of an unchanged DRAM latency. The order of magnitude (60-300×) is robust; the exact factor is not. Note also: a list built by `for i in (0..N).rev() { Box::new(...) }` allocates the boxes at *sequential* heap addresses — the chase looks free. Shuffle the order in which you thread them to surface the real cost.
+
 6. *(stretch)* **Read your `lscpu` output to your benchmarks.** With your cache sizes from exercise 1 and your timings from exercise 4, identify which level of cache each size step is leaving. The transitions are not always clean — annotate where they are noisy.
 
 Reference notes for these exercises in [01_the_machine_model_solutions.md](01_the_machine_model_solutions.md).

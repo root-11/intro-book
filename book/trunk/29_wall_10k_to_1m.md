@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 29](../../concepts/glossary.md#29--the-wall-at-10k--1m).*
 
+<p align="center"><img src="../illustrations/hard_hat_repeat.jpg" alt="Construction mouse — scale up the build, MEASURE / CALCULATE / DESIGN / BUILD / REPEAT" style="max-height: 300px; max-width: 100%;"></p>
+
 A simulator that runs cleanly at 10 000 creatures often grinds to a halt at 1 000 000. Not because the algorithm changed — because constant factors that were invisible at the smaller scale now bind.
 
 This chapter is about *finding the wall*. The fixes are techniques you already have: hot/cold splits (§26), working-set discipline (§27), sort for locality (§28), pre-sized buffers, batched cleanup. The chapter's job is to teach the reader to *measure* — to find which constant factors blew up.

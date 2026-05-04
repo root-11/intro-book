@@ -195,13 +195,222 @@ def render() -> None:
     subprocess.run([str(mdbook), "build"], cwd=ROOT, env=env, check=True)
 
 
+# --- README generation ---------------------------------------------------
+#
+# README.md at repo root is regenerated from the same sources as the website.
+# It is the entire book in one file: front matter + 43 chapter files
+# concatenated, with cross-paths rewritten so everything resolves from the
+# repo root.
+#
+# The reader who lands on the source repo gets the full book inline, GitHub-
+# /Forgejo-rendered. The reader who wants the polished experience follows
+# the live URL in the README header.
+
+README_BEGIN = "<!-- BOOK_BEGIN -->"
+README_END   = "<!-- BOOK_END -->"
+LIVE_URL     = "https://root-11.codeberg.page/intro-book/"
+
+
+def _slugify(heading: str) -> str:
+    """GitHub-style heading anchor (lowercase, drop punctuation, spaces → hyphen)."""
+    s = heading.lower().strip()
+    s = re.sub(r"[*`]", "", s)        # markdown emphasis (keep underscores — they're word chars)
+    s = re.sub(r"[^\w\s\-]", "", s)   # drop everything else except word chars / whitespace / hyphen
+    s = re.sub(r"\s", "-", s)         # each whitespace char → one hyphen (preserves doubles around em-dash)
+    return s
+
+
+def _parse_summary() -> list[dict]:
+    """Return ordered SUMMARY.md entries.
+
+    "intro"   — top-level book pages (front_matter.md, nomenclature.md, ...)
+    "chapter" — trunk/NN_*.md (excludes solutions files)
+
+    Anything reached via `../` (concepts/, code/) is skipped — those are
+    rendered by mdbook but not concatenated into the README."""
+    text = (ROOT / "book" / "SUMMARY.md").read_text(encoding="utf-8")
+    out: list[dict] = []
+    for line in text.splitlines():
+        m = re.match(r"\s*-?\s*\[([^\]]+)\]\(([^)]+)\)", line)
+        if not m:
+            continue
+        title, path = m.group(1), m.group(2)
+        if path.startswith("../") or "_solutions" in path:
+            continue
+        if path.startswith("trunk/"):
+            out.append({"kind": "chapter", "title": title, "path": path})
+        else:
+            out.append({"kind": "intro", "title": title, "path": path})
+    return out
+
+
+def _build_anchor_map(chapters: list[dict]) -> dict[str, str]:
+    """Map chapter filename stem → GitHub anchor for that chapter's first h1."""
+    out: dict[str, str] = {}
+    for entry in chapters:
+        if entry["kind"] != "chapter":
+            continue
+        path = ROOT / "book" / entry["path"]
+        text = path.read_text(encoding="utf-8")
+        m = re.search(r"^# (.+)$", text, flags=re.MULTILINE)
+        if m:
+            out[path.stem] = _slugify(m.group(1))
+    return out
+
+
+def _resolve_url(url: str, source: Path) -> str:
+    """Resolve a relative URL against the source file, return path-from-repo-root."""
+    if not url or url.startswith(("http://", "https://", "#", "/", "mailto:")):
+        return url
+    base, sep, frag = url.partition("#")
+    if not base:
+        return url
+    try:
+        full = (source.parent / base).resolve()
+        rel = full.relative_to(ROOT)
+        return f"{rel}{sep}{frag}"
+    except (ValueError, OSError):
+        return url
+
+
+_HTML_IMG_SRC_RE = re.compile(r'(<img\s+[^>]*?src=")([^"]+)(")', re.DOTALL)
+_MD_LINK_RE      = re.compile(r'(!?\[(?:[^\[\]]|\[[^\]]*\])*\]\()([^()\s]+)(\))')
+_CHAPTER_LINK_RE = re.compile(r"\[([^\]]+)\]\(([0-9]+_[a-z0-9_]+)\.md(#[\w-]+)?\)")
+
+
+def _rewrite_chapter_links(text: str, anchor_map: dict[str, str]) -> str:
+    """Sibling links between chapter files → anchor links inside README.
+    Solutions files don't have anchors here, so they point to the live site instead."""
+    def repl(m: re.Match[str]) -> str:
+        label, stem, frag = m.group(1), m.group(2), m.group(3) or ""
+        if stem.endswith("_solutions"):
+            return f"[{label}]({LIVE_URL}trunk/{stem}.html{frag})"
+        anchor = anchor_map.get(stem)
+        if not anchor:
+            return m.group(0)
+        return f"[{label}](#{anchor}{frag})"
+    return _CHAPTER_LINK_RE.sub(repl, text)
+
+
+def _rewrite_paths(text: str, source: Path) -> str:
+    text = _HTML_IMG_SRC_RE.sub(
+        lambda m: m.group(1) + _resolve_url(m.group(2), source) + m.group(3),
+        text,
+    )
+    text = _MD_LINK_RE.sub(
+        lambda m: m.group(1) + _resolve_url(m.group(2), source) + m.group(3),
+        text,
+    )
+    return text
+
+
+_SKIP_RE             = re.compile(r"<!-- START_SKIP_FOR_README -->.*?<!-- STOP_SKIP_FOR_README -->\s*\n?", re.DOTALL)
+_CONCEPT_NODE_RE     = re.compile(r"^> \*Concept node:[^\n]*\n", re.MULTILINE)
+_REFERENCE_NOTES_RE  = re.compile(r"^Reference notes in \[[^\]]+\]\([^)]+\)\.[^\n]*\n", re.MULTILINE)
+
+
+def _render_for_readme(path: Path, anchor_map: dict[str, str], strip_h1: bool) -> str:
+    text = path.read_text(encoding="utf-8")
+    text = _SKIP_RE.sub("", text)
+    text = _CONCEPT_NODE_RE.sub("", text)
+    text = _REFERENCE_NOTES_RE.sub("", text)
+    text = _rewrite_chapter_links(text, anchor_map)
+    text = _rewrite_paths(text, path)
+    if strip_h1:
+        text = re.sub(r"^# [^\n]*\n+", "", text, count=1)
+    text = re.sub(r"\n{3,}", "\n\n", text)  # collapse runs of blank lines from stripped content
+    return text.rstrip() + "\n"
+
+
+def generate_readme() -> None:
+    readme = ROOT / "README.md"
+    text = readme.read_text(encoding="utf-8")
+    if README_BEGIN not in text or README_END not in text:
+        print(f"README.md missing {README_BEGIN}/{README_END} markers — skipping README generation")
+        return
+
+    entries = _parse_summary()
+    chapters = [e for e in entries if e["kind"] == "chapter"]
+    intros   = [e for e in entries if e["kind"] == "intro"]
+    anchor_map = _build_anchor_map(chapters)
+
+    parts = []
+    # First intro is the title page (front_matter.md): strip its h1 because
+    # the README's own h1 already serves as the title. Subsequent intros
+    # (nomenclature, future appendices) keep their h1 as a section header.
+    for i, entry in enumerate(intros):
+        parts.append(_render_for_readme(
+            ROOT / "book" / entry["path"], anchor_map, strip_h1=(i == 0)
+        ))
+    for entry in chapters:
+        parts.append(_render_for_readme(ROOT / "book" / entry["path"], anchor_map, strip_h1=False))
+
+    body = "\n\n".join(parts).rstrip() + "\n"
+
+    pre, _, rest = text.partition(README_BEGIN)
+    _, _, post = rest.partition(README_END)
+    new_text = (
+        f"{pre}{README_BEGIN}\n\n"
+        f"<!-- This block is generated by build.py — do not edit by hand. -->\n\n"
+        f"{body}\n"
+        f"{README_END}{post}"
+    )
+    readme.write_text(new_text, encoding="utf-8")
+    print(f"Regenerated README.md ({len(chapters)} chapter(s) inserted)")
+
+
+# --- Dist-side README (for Codeberg repo view + SEO) ---------------------
+#
+# After mdbook renders, copy the source README.md into dist/ with paths
+# rewritten for the static-site context:
+#   - mdbook flattens the staging tree, so `book/illustrations/...` collapses
+#     to `illustrations/...` in dist.
+#   - Cross-document .md links (concepts/, code/) become absolute URLs into
+#     the live mdbook site, so they resolve when the README is rendered by
+#     Codeberg's repo viewer.
+#
+# The result: visiting `codeberg.org/root-11/intro-book` shows the full book
+# inline as a normal markdown page (which search engines crawl), while the
+# Codeberg Pages site at `root-11.codeberg.page/intro-book/` continues to
+# serve the polished mdbook output.
+
+DIST = ROOT / "dist"
+
+_DIST_README_LIVE_LINK_RE = re.compile(
+    r"(\]\()((?:concepts|code)/[^)\s]+\.md(?:#[^)\s]*)?)(\))"
+)
+
+
+def stage_readme_in_dist() -> None:
+    src = ROOT / "README.md"
+    if not src.exists() or not DIST.exists():
+        return
+    text = src.read_text(encoding="utf-8")
+    # mdbook-flattened image roots
+    text = text.replace('"book/illustrations/', '"illustrations/')
+    text = text.replace('"book/covers/',        '"covers/')
+    text = text.replace('](book/illustrations/', '](illustrations/')
+    text = text.replace('](book/covers/',        '](covers/')
+    # Cross-doc .md links → live-URL .html so they resolve on the static site
+    def to_live(m: re.Match[str]) -> str:
+        path = m.group(2).replace(".md", ".html")
+        return f"{m.group(1)}{LIVE_URL}{path}{m.group(3)}"
+    text = _DIST_README_LIVE_LINK_RE.sub(to_live, text)
+    (DIST / "README.md").write_text(text, encoding="utf-8")
+    print(f"Wrote dist/README.md")
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--stage-only", action="store_true", help="skip the mdbook render step")
+    p.add_argument("--no-readme",  action="store_true", help="skip README.md regeneration")
     args = p.parse_args()
     stage()
+    if not args.no_readme:
+        generate_readme()
     if not args.stage_only:
         render()
+        stage_readme_in_dist()
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 18](../../concepts/glossary.md#18--addremove--insertdelete).*
 
+<p align="center"><img src="../illustrations/ebp_banner.jpg" alt="Three mice: EXISTENCE, BASED, PROCESSING" style="max-height: 300px; max-width: 100%;"></p>
+
 In the flag world, a state transition is a write. To make a creature hungry, set `is_hungry = true`. To stop it being hungry, set `is_hungry = false`. The flag was always there; only its value changed.
 
 In the presence world, a state transition is *a move between tables*. To make a creature hungry, *insert* a row into `hungry`. To stop it being hungry, *remove* the row. The state has no field to flip; it has only the question of which table the creature is currently a row of.

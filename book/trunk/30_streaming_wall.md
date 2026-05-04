@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 30](../../concepts/glossary.md#30--the-wall-at-1m--streaming).*
 
+<p align="center"><img src="../illustrations/microcontroller_loop.jpg" alt="Read / process / update under tight resource budget" style="max-height: 300px; max-width: 100%;"></p>
+
 At 100 million creatures with 24 bytes of hot data each, the working set is 2.4 GB. At a billion, 24 GB. Most desktops have 16–64 GB of RAM. The simulator can no longer hold its world *and* its history *and* the OS *and* whatever else *and* operate at speed.
 
 The fix is *streaming*: only the relevant slice of the world is in memory at any one time; the rest lives on disk and is read on demand.

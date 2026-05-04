@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 33](../../concepts/glossary.md#33--false-sharing).*
 
+<p align="center"><img src="../illustrations/multimeter.jpg" alt="A mouse with a multimeter — false sharing is a precision-of-cost-measurement problem" style="max-height: 300px; max-width: 100%;"></p>
+
 You partitioned the table. Each thread writes its own disjoint slice. The work is balanced. The speedup is... 1.2× on 8 cores. Where did the parallelism go?
 
 Probably to *false sharing*.

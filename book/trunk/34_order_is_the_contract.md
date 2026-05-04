@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 34](../../concepts/glossary.md#34--order-is-the-contract).*
 
+<p align="center"><img src="../illustrations/monte_carlo.jpg" alt="Monte Carlo simulation — reproducibility is the contract under concurrency" style="max-height: 300px; max-width: 100%;"></p>
+
 §31, §32, and §33 unlocked parallelism. The natural temptation is to run *everything* in parallel — let the OS scheduler decide which system runs when, fan systems out across all available cores, push throughput up. This is wrong.
 
 The system DAG ([§14](14_systems_compose_into_a_dag.md)) is the *contract* for the simulator's behaviour. Two systems with overlapping write-sets must run in a defined order. Two systems on the same DAG level may run in parallel — but they must both *complete* before any system that reads their outputs begins. Parallelism is allowed inside a step; it is never allowed across steps.

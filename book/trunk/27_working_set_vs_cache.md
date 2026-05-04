@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 27](../../concepts/glossary.md#27--working-set-vs-cache).*
 
+<p align="center"><img src="../illustrations/bridge_clipboard.jpg" alt="Engineer mouse with clipboard — load capacity is what fits in the working set" style="max-height: 300px; max-width: 100%;"></p>
+
 The *working set* of a loop is the data it touches per pass. The *cache hierarchy* (§1) is what holds that data. The two together decide the loop's speed.
 
 If the working set fits in L1 — typically 32 KB per core — the loop runs at near-arithmetic speed: ~0.1–0.5 ns per element. If it fits in L2 — typically 1–2 MB per core — it is ~0.5–2 ns. If it fits in L3 — typically 16–32 MB shared — it is ~1–5 ns. If it spills to RAM, sequential access drops to ~3–10 ns (prefetcher helping); random access drops to 50–200 ns (no prefetcher help).

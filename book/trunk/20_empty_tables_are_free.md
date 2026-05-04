@@ -2,6 +2,8 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 20](../../concepts/glossary.md#20--empty-tables-are-free).*
 
+<p align="center"><img src="../illustrations/tip_visualize_full.jpg" alt="Visualize the problem — the diagram of an empty table is free" style="max-height: 300px; max-width: 100%;"></p>
+
 If a presence table is empty, the system that iterates it does nothing. No rows, no work. This is the consequence of [§19](19_ebp_dispatch.md) at the limit, and it is the property that lets the simulator scale gracefully under shifting state.
 
 Concretely: a 1 000 000-creature simulation that has zero hungry creatures right now spends *zero* cycles in `drive_hunger`. The system is wired into the DAG, runs every tick, takes a `&[u32]` slice of `hungry` of length 0, iterates zero times, returns. The overhead is one function call and one slice creation — measured in nanoseconds, not milliseconds.
