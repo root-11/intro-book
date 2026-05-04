@@ -35,9 +35,6 @@ jobs:
             CARGO_INSTALL_ROOT=$(pwd)/.cargo cargo install mdbook mdbook-mermaid --locked
           fi
 
-      - name: Install uv
-        run: pip install uv --quiet
-
       - name: Build book
         run: uv run build.py
 
