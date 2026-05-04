@@ -1,0 +1,494 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Glossary - An Introduction to Programming, using ECS &amp; EBP in Rust</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-2459343d.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-465a6b84.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-c67fc7d2.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">An Introduction to Programming, using ECS &amp; EBP in Rust</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
+<p>Canonical wording for the 42 nodes in <code>concepts/dag.md</code>. Each entry gives the teaching definition (the words the book will use), one concrete example drawn from the through-line simulator, the card-game milestone, or one of the track openings, the anti-pattern the concept exists to displace, and cross-references to related nodes.</p>
+<p>This file is the second half of M1 and is paired with the DAG: change a definition here, change the node there.</p>
+<h2 id="format"><a class="header" href="#format">Format</a></h2>
+<p>Each entry has four parts:</p>
+<ul>
+<li><strong>Definition</strong> — what we say.</li>
+<li><strong>Example</strong> — how it shows up in an exercise. Drawn from the through-line simulator, the card-game milestone, or one of the five track openings.</li>
+<li><strong>Anti-pattern</strong> — what students reach for instead, and why this concept rejects it.</li>
+<li><strong>See also</strong> — cross-references by node number.</li>
+</ul>
+<hr>
+<h2 id="1--the-machine-model"><a class="header" href="#1--the-machine-model">1 — The machine model</a></h2>
+<p><strong>Definition.</strong> A computer is a long array of bytes with a CPU that reads and writes them. Reading from cache (L1/L2/L3) is fast; reading from main memory is roughly 100× slower; chasing a pointer is reading from memory at an unknown address. The cost of an operation is dominated by <em>where</em> the data is, not by how clever the algorithm is.</p>
+<p><strong>Example.</strong> In the §0 toy simulator, 100 creatures × four <code>f32</code> fields × 4 bytes is around 1.6 KB — comfortably in L1 cache. The motion loop runs without ever leaving the cache. At §1 with 10,000 creatures, the same fields total 160 KB — out of L1, still in L2. At §2 with a million, you are in main memory and the loop costs change by an order of magnitude. None of this is hypothetical; it is what the working program will do.</p>
+<p><strong>Anti-pattern.</strong> Programming as if memory access were free. The cost asymmetry shows up the moment the simulator gets non-trivial; treating it as a footnote leads to programs that are unfixably slow at the scales the rest of the book targets.</p>
+<p><strong>See also.</strong> 2 (numbers), 4 (cost &amp; budget), 27 (working set), 29 (10K-to-1M wall).</p>
+<hr>
+<h2 id="2--numbers-and-how-they-fit"><a class="header" href="#2--numbers-and-how-they-fit">2 — Numbers and how they fit</a></h2>
+<p><strong>Definition.</strong> Integers and floats come in widths: <code>u8</code> (0..256), <code>u16</code>, <code>u32</code>, <code>u64</code>, <code>i32</code>, <code>i64</code>, <code>f32</code>, <code>f64</code>. Width is a budget choice — narrower types fit more values per cache line. Floats are not real numbers; they have a finite set of representable values and edges where arithmetic stops behaving (denormals, infinities, NaN).</p>
+<p><strong>Example.</strong> A 52-card deck stores <code>suits: u8</code> and <code>ranks: u8</code> because four suits and thirteen ranks fit easily; <code>u32</code> would waste 75% of every cache line. The simulator’s <code>creature.energy</code> is <code>f32</code> — fast, fits twice as many entries per line as <code>f64</code>, and the precision is more than enough for fuel accounting.</p>
+<p><strong>Anti-pattern.</strong> Reaching for <code>i64</code> and <code>f64</code> reflexively because they are “safe defaults”. They are safe; they are also half the throughput on cache-bound loops. Pick the narrowest type that holds your range and document the choice.</p>
+<p><strong>See also.</strong> 1 (machine model), 3 (Vec is a table), 27 (working set vs cache).</p>
+<hr>
+<h2 id="3--the-vec-is-a-table"><a class="header" href="#3--the-vec-is-a-table">3 — The <code>Vec</code> is a table</a></h2>
+<p><strong>Definition.</strong> <code>Vec&lt;T&gt;</code> is a contiguous run of <code>T</code> values in memory, addressed by index. It is the primitive out of which every component table in this book is built. A <code>Vec&lt;u32&gt;</code> of length N is N × 4 bytes laid out in order; <code>vec[i]</code> is one pointer addition and one memory load.</p>
+<p><strong>Example.</strong> The card-game <code>suits</code>, <code>ranks</code>, and <code>locations</code> are three <code>Vec&lt;u8&gt;</code> of length 52. The §0 simulator’s <code>creature.pos</code> is a <code>Vec&lt;[f32; 2]&gt;</code> of length 100. Every concept in the book lands on one or more <code>Vec&lt;T&gt;</code>. There are no other primitive containers in the trunk.</p>
+<p><strong>Anti-pattern.</strong> Reaching for <code>HashMap</code>, <code>BTreeMap</code>, <code>LinkedList</code>, or any allocator-per-element structure when a <code>Vec</code> and an integer index will do. These all break sequential access, which is what nodes 1 and 4 are about. Use them only when the access pattern genuinely demands it — and demonstrate that in a benchmark first.</p>
+<p><strong>See also.</strong> 1 (machine model), 5 (id is an integer), 7 (SoA), 27 (working set).</p>
+<hr>
+<h2 id="4--cost-is-layout--and-you-have-a-budget"><a class="header" href="#4--cost-is-layout--and-you-have-a-budget">4 — Cost is layout — and you have a budget</a></h2>
+<p><strong>Definition.</strong> The same algorithm runs at different speeds depending on where its data lives in memory. Asymptotic complexity tells you whether the algorithm scales; <em>layout</em> decides the constant factor that dominates at the scales we care about. Every program has a frequency target — a game runs at 30 Hz, a control loop at 1 kHz, a market data system at 1 MHz — which sets a per-tick <em>budget</em> in milliseconds. Operations are counted against that budget in parts per million of a second.</p>
+<p><strong>Example.</strong> The simulator’s main loop targets 30 Hz, giving 33 ms per tick. A <code>next_event</code> system that touches 1,000,000 creatures has roughly 33 nanoseconds per creature; a single L3-resident memory load is around 10 ns. Three random pointer chases per creature blows the budget. The same algorithm with sequential SoA access fits comfortably.</p>
+<p><strong>Anti-pattern.</strong> Treating performance as something to “optimise later”. The layout decisions made early decide whether the program ever has a chance of meeting its budget; refactoring an OOP graph to SoA is a project, not a tweak.</p>
+<p><strong>See also.</strong> 1 (machine model), 7 (SoA), 11 (the tick), 27 (working set), 29-30 (scale walls).</p>
+<hr>
+<h2 id="5--identity-is-an-integer"><a class="header" href="#5--identity-is-an-integer">5 — Identity is an integer</a></h2>
+<p><strong>Definition.</strong> An entity is a small integer — usually a <code>usize</code> or a <code>u32</code>. It names a slot in the world’s tables, not a thing in itself. There is no entity <em>object</em> and no “where the entity lives”. An entity is one number, and that number is an index into every table that has something to say about it.</p>
+<p><em>The strong form: sometimes you don’t even need that number.</em> If the row’s own fields uniquely identify it — <code>(suit, rank)</code> for a playing card, <code>(date, ticker)</code> for a market quote — the identity is already in the data. A separate <code>entity_id</code> is then a <em>surrogate key</em>; before adding one, ask whether the data carries a <em>natural key</em> you can use directly. The card game can be played using <code>(suit, rank)</code> and no entity id at all. Variable-quantity tables (creatures, packets, sessions) usually have no natural key — two creatures can be identical — so a surrogate id is necessary, and nodes 9-10 follow.</p>
+<p><strong>Example.</strong> In the card-game milestone (after node 10), an entity is one of the indices <code>0..52</code>. The card at index 17 has its suit at <code>suits[17]</code>, its rank at <code>ranks[17]</code>, and its current location — deck, hand, or discard — at <code>locations[17]</code>. Dealing a card means writing one cell in <code>locations</code>. There is no <code>Card</code> struct.</p>
+<p><strong>Anti-pattern.</strong> Treating the entity as a class instance with methods. The moment an entity has methods, the data is scattered across allocations, mutation is hidden behind setters, and the rest of the book’s economies — SoA, parallelism, persistence, replay — become impossible. Most students arriving in this book have written exactly this code before; the card game is where they first feel the alternative.</p>
+<p><strong>See also.</strong> 3 (Vec is a table), 6 (row is a tuple), 9 (sort breaks indices), 10 (stable IDs and generations).</p>
+<hr>
+<h2 id="6--a-row-is-a-tuple"><a class="header" href="#6--a-row-is-a-tuple">6 — A row is a tuple</a></h2>
+<p><strong>Definition.</strong> A coherent set of values that describe one entity travels together — but only if you keep them together. In ECS, “together” means <em>at the same index in every component table that has something to say about that entity</em>. Split a row across tables and you must keep the indices aligned; rearrange one without rearranging the others and you have corrupted the world.</p>
+<p><strong>Example.</strong> A creature at index 17 has its position at <code>pos[17]</code>, its velocity at <code>vel[17]</code>, its energy at <code>energy[17]</code>, and its birth time at <code>birth_t[17]</code>. Together they are the row. There is no <code>Creature</code> struct holding all four; the row is implicit in the alignment.</p>
+<p><strong>Anti-pattern.</strong> Keeping a <code>Vec&lt;Creature&gt;</code> (AoS — Array of Structs). It works, but it sacrifices the layout reasoning of nodes 4 and 7: the inner loop reads all six fields whether it needs them or not, doubling cache pressure for systems that only touch position.</p>
+<p><strong>See also.</strong> 5 (id is integer), 7 (SoA), 23 (index maps), 25 (ownership of tables).</p>
+<hr>
+<h2 id="7--structure-of-arrays-soa"><a class="header" href="#7--structure-of-arrays-soa">7 — Structure of arrays (SoA)</a></h2>
+<p><strong>Definition.</strong> Each field of a row gets its own <code>Vec</code>, indexed by entity. The row is reconstructed at access time by reading position <code>i</code> from each field’s vector. The opposite layout — <code>Vec&lt;Struct&gt;</code>, AoS — bundles the row’s fields into one contiguous record; SoA splits them. SoA is the default in this book because most systems read only a few fields, and SoA gives them sequential access to exactly those fields.</p>
+<p><strong>Example.</strong> The <code>creature</code> table is six <code>Vec</code>s — <code>pos</code>, <code>vel</code>, <code>energy</code>, <code>birth_t</code>, plus <code>id</code> and <code>gen</code>. The <code>motion</code> system reads only <code>pos</code>, <code>vel</code>, <code>energy</code>. With SoA those three vectors are sequentially scanned; AoS would force the loop to read all six fields whether it needs them or not.</p>
+<p><strong>Anti-pattern.</strong> Reaching for <code>Vec&lt;Creature&gt;</code> because “it’s neater”. Neatness is not a layout property. The cost is real and shows up at §1 onwards.</p>
+<p><strong>See also.</strong> 4 (cost &amp; budget), 6 (row is a tuple), 26 (hot/cold splits), 31 (disjoint writes parallelize).</p>
+<hr>
+<h2 id="8--where-theres-one-theres-many"><a class="header" href="#8--where-theres-one-theres-many">8 — Where there’s one, there’s many</a></h2>
+<p><strong>Definition.</strong> Code is written for the array. The single-instance case is simply N=1; it does not need its own abstraction. A function that takes one entity and returns one result is a special case of a function over a <code>Vec</code>; write the array version first and the singleton drops out.</p>
+<p><strong>Example.</strong> “Update one creature’s position” is <code>motion(&amp;mut pos[i..i+1], &amp;vel[i..i+1])</code>. “Update all creatures” is <code>motion(&amp;mut pos, &amp;vel)</code>. Same function, different slice. The card game illustrates the singularity case from the other side: a card game with 52 cards is three arrays — suit, rank, location — not 52 objects.</p>
+<p><strong>Anti-pattern.</strong> Writing <code>Card::shuffle(&amp;self)</code> and then puzzling over how to shuffle a deck. The deck is three <code>Vec</code>s; shuffling is permuting an order vector; the per-card operation never appears.</p>
+<p><strong>See also.</strong> 3 (Vec is a table), 13 (system as function over tables), 31 (disjoint writes parallelize).</p>
+<hr>
+<h2 id="9--the-sort-breaks-indices"><a class="header" href="#9--the-sort-breaks-indices">9 — The sort breaks indices</a></h2>
+<p><strong>Definition.</strong> Rearranging the rows of a table — sorting, swap-removing, compacting — breaks any external reference that pointed at a slot. The card you held at index 17 is still there, but index 17 may now be a different card. The student must feel this pain before the next node makes sense.</p>
+<p><strong>Example.</strong> In §5’s exercise 10, player 1 holds card indices <code>[3, 17, 21, 28, 41]</code>. The dealer sorts the deck columns themselves by suit. Player 1’s hand is now wrong: index 17 used to be the 5♥, but is now the 4♣. The student observes the bug; they don’t fix it yet.</p>
+<p><strong>Anti-pattern.</strong> Saving an index across a reordering. The fix — coming next — is to save a stable id, not a slot index.</p>
+<p><strong>See also.</strong> 5 (id is integer), 10 (stable IDs and generations), 23 (index maps), 28 (sort for locality).</p>
+<hr>
+<h2 id="10--stable-ids-and-generations"><a class="header" href="#10--stable-ids-and-generations">10 — Stable IDs and generations</a></h2>
+<p><strong>Definition.</strong> A separate <code>id</code> column gives a name that survives sorting. A <code>generation</code> counter on top gives a name that survives recycling: when a slot is reused, its generation increments, so any reference holding the old <code>(slot, gen)</code> pair can detect that it is stale.</p>
+<p><strong>Example.</strong> In the §1 simulator, every <code>creature</code> carries <code>id: u32</code> and <code>gen: u32</code>. A reference to creature <code>(id=42, gen=3)</code> survives sorting (the column is reordered, but the pair persists), and survives recycling (if slot 17 is freed and reused for a fresh creature, that fresh creature has <code>gen=4</code>, so the old <code>gen=3</code> reference no longer matches).</p>
+<p><strong>Anti-pattern.</strong> Treating slot index as identity. This works until the first sort, after which it never works again. The stable-id pattern is the cheapest possible fix and is in your stdlib’s flavour everywhere — <code>slotmap</code>, ECS-engine handle types, database surrogate keys.</p>
+<p><strong>See also.</strong> 5 (id is integer), 9 (sort breaks indices), 23 (index maps), 24 (append-only &amp; recycling).</p>
+<hr>
+<h2 id="11--the-tick"><a class="header" href="#11--the-tick">11 — The tick</a></h2>
+<p><strong>Definition.</strong> Programs run in discrete passes. State at the start of a tick is read; state at the end is written; nothing is half-updated mid-tick. The tick has two natural shapes: <em>turn-based</em> — the loop advances when an event arrives (a card game, a chess engine, a discrete-event simulator); and <em>time-driven</em> — the loop runs at a fixed rate (30 Hz, 1 kHz) with a per-tick budget.</p>
+<p><strong>Example.</strong> The card game is turn-based: a tick is “deal one card” or “play one move”. The §1 simulator is time-driven: a tick is one 33 ms step, during which all systems run in order. Both are tick loops; the difference is what drives the next pass.</p>
+<p><strong>Anti-pattern.</strong> Threading “real time” through the program as a global clock. The tick is the right unit because it makes determinism cheap (node 16) and bounds the work per pass.</p>
+<p><strong>See also.</strong> 4 (cost &amp; budget), 12 (event time vs tick time), 13 (system as function), 14 (systems compose into a DAG).</p>
+<hr>
+<h2 id="12--event-time-is-separate-from-tick-time"><a class="header" href="#12--event-time-is-separate-from-tick-time">12 — Event time is separate from tick time</a></h2>
+<p><strong>Definition.</strong> The tick rate is how often the loop runs — typically a fixed number per second (30 Hz, 1 kHz). The <em>event clock</em> is the simulation’s internal time, which lives on the events themselves. A 30 Hz loop can resolve microsecond-precision events because the timestamp travels with the event, not with the loop.</p>
+<p><strong>Example.</strong> In the multi-agent track, 10,000 delivery drones each carry an arrival timestamp at their next stop. The loop runs at 30 Hz, but inside one tick the simulator may process events whose timestamps differ by four microseconds. The visualisation samples at tick rate; the underlying physics runs at event-clock resolution. The same pattern recurs in the multiplayer track, where rollback works only because event time is not tick time.</p>
+<p><strong>Anti-pattern.</strong> Conflating the two — usually expressed as “my model can only resolve <code>dt = 1/30s</code> because the loop runs at 30 Hz”. This is the most common confusion in physical simulation and event-driven systems work, and it imposes a false ceiling on the model’s time resolution. The fix is structural: put the timestamp on the data.</p>
+<p><strong>See also.</strong> 11 (the tick), 16 (determinism by order), 37 (the log is the world).</p>
+<hr>
+<h2 id="13--a-system-is-a-function-over-tables"><a class="header" href="#13--a-system-is-a-function-over-tables">13 — A system is a function over tables</a></h2>
+<p><strong>Definition.</strong> A system declares its inputs (read-set) and outputs (write-set). It has no hidden state. The signature is the contract. Every system takes one of three shapes: an <em>operation</em> (1→1, every input row produces one output), a <em>filter</em> (1→{0,1}, every input row produces zero or one), or an <em>emission</em> (1→N, every input row produces zero or more). These are the same shapes as familiar database operations — <code>sort</code>, <code>groupby</code>, <code>filter</code>, <code>join</code>, <code>aggregate</code> — over component arrays. Even observability is a system: <code>inspect</code> holds read references to other systems’ tables, instantiated only when transparency is needed; in production it is <em>absent</em>, not gated.</p>
+<p><strong>Example.</strong> <code>motion</code> is an operation: read <code>(pos, vel)</code>, write <code>pos</code>. <code>apply_eat</code> is a filter: read pending eat events, output an updated energy and a removed food row. <code>apply_reproduce</code> is an emission: one parent input row, two offspring output rows. The simulator’s eight systems split cleanly into the three shapes.</p>
+<p><strong>Anti-pattern.</strong> A system that touches global state, mutates input parameters, or carries cross-tick state in a closure. None of these compose, none of these parallelize, and none of these can be tested without a fixture.</p>
+<p><strong>See also.</strong> 8 (one to many), 14 (systems compose into a DAG), 25 (ownership of tables), 31 (disjoint writes parallelize).</p>
+<hr>
+<h2 id="14--systems-compose-into-a-dag"><a class="header" href="#14--systems-compose-into-a-dag">14 — Systems compose into a DAG</a></h2>
+<p><strong>Definition.</strong> The order of systems is given by who reads what who wrote. A system that reads a table must run after every system that writes that table within the tick. The program is a <em>topological sort</em> of this graph; choose the sort, and the program runs. Designing the system order is the same problem as designing a database query plan: each system is a stage, the DAG is the plan, and the program executes the plan.</p>
+<p><strong>Example.</strong> The §1 simulator’s tick DAG: <code>food_spawn → motion → next_event → {apply_eat, apply_reproduce, apply_starve} → cleanup → inspect</code>. Drawing this DAG is the first thing to do when adding a new system; the question “what do I read?” forces the right edges.</p>
+<p><strong>Anti-pattern.</strong> Calling systems in the order they were written in the file. This works for the first three systems; by the tenth, the read/write dependencies are tangled and one bad ordering corrupts state in ways that are hard to find.</p>
+<p><strong>See also.</strong> 13 (system as function), 25 (ownership of tables), 34 (order is the contract), 31 (disjoint writes parallelize).</p>
+<hr>
+<h2 id="15--state-changes-between-ticks"><a class="header" href="#15--state-changes-between-ticks">15 — State changes between ticks</a></h2>
+<p><strong>Definition.</strong> Mutations buffer; the world transitions atomically at tick boundaries. Inside a tick, systems read consistent snapshots of their inputs and <em>queue</em> changes to their outputs. At the end of the tick, the queued changes are applied. This is the structural reason systems compose at all.</p>
+<p><strong>Example.</strong> When a creature dies in <code>apply_starve</code>, its id is appended to <code>to_remove</code>. The creature row is <em>not</em> yet gone; the rest of the tick’s systems still see it. After all systems complete, <code>cleanup</code> applies <code>to_remove</code> (and <code>to_insert</code> from <code>apply_reproduce</code>) in one sweep, and the next tick begins with the world in a consistent state.</p>
+<p><strong>Anti-pattern.</strong> Mutating the table inside a system pass. Either iteration breaks (because indices shift), or you serialise systems unnecessarily (because each must wait for the prior to commit). Buffering decouples the systems and gives you a natural place to log everything that changed — which is node 37’s punchline.</p>
+<p><strong>See also.</strong> 14 (systems compose into a DAG), 16 (determinism by order), 22 (mutations buffer), 37 (the log is the world).</p>
+<hr>
+<h2 id="16--determinism-by-order"><a class="header" href="#16--determinism-by-order">16 — Determinism by order</a></h2>
+<p><strong>Definition.</strong> Same inputs + same system order = same outputs. Reproducibility is structural, not a quality goal. It is what makes replay possible (you can rerun any tick from a snapshot), testing trustworthy (a property test can fix a seed), and the simulator’s regression test (the population graph) reliable.</p>
+<p><strong>Example.</strong> Two runs of the §1 simulator with the same seed and the same system order produce bit-identical population graphs. Reorder two systems with overlapping write-sets, and the runs diverge — which is exactly the bug that node 34 (“order is the contract”) is written to prevent.</p>
+<p><strong>Anti-pattern.</strong> Relying on ad-hoc randomness, system threads scheduled by the OS, or “good enough” reproducibility. These are fine for debugging but fatal for replay and for distributed extensions (see the monograph).</p>
+<p><strong>See also.</strong> 14 (systems compose into a DAG), 34 (order is the contract), 37 (the log is the world), 42 (tests are systems).</p>
+<hr>
+<h2 id="17--presence-replaces-flags"><a class="header" href="#17--presence-replaces-flags">17 — Presence replaces flags</a></h2>
+<p><strong>Definition.</strong> “Is hungry” is membership in a <code>Hungry</code> table, not a <code>bool</code> field on <code>Creature</code>. State is structural — a row exists or it does not — rather than a flag stored alongside other data. The change reads as small in code and turns out large in consequence: dispatch, parallelism, and persistence all simplify. Or in Fabian’s framing: instead of asking each room about its doors, ask the doors-table which doors belong to this room. The question is reversed; the lookup is reversed; the work shrinks.</p>
+<p><strong>Example.</strong> In the through-line simulator, a creature becomes hungry by having a row inserted into the <code>Hungry</code> table at its entity id. The system that drives hunger-related behaviour iterates <code>Hungry</code> directly; it does not scan <code>Creatures</code> checking a flag. The same pattern appears in <code>ppdn</code>’s daemon: <code>is_admitted(peer) = established_contacts.contains_key(peer)</code> — O(1), no I/O, no enum.</p>
+<p><strong>Anti-pattern.</strong> <code>if creature.is_hungry { ... }</code>. The flag forces every system that cares about hunger to filter the entire creature table; the table grows linearly with population whether or not anyone is hungry; and concurrent writes to the flag race against concurrent reads of unrelated fields in the same row.</p>
+<p><strong>See also.</strong> 13 (system as function over tables), 18 (add/remove = insert/delete), 19 (EBP dispatch), 20 (empty tables are free).</p>
+<hr>
+<h2 id="18--addremove--insertdelete"><a class="header" href="#18--addremove--insertdelete">18 — Add/remove = insert/delete</a></h2>
+<p><strong>Definition.</strong> A state transition is a structural move: insert a row in one table, remove a row from another. There is no <code>setHungry(true)</code>. To make a creature hungry, you insert a row into <code>Hungry</code>; to make it stop being hungry, you remove the row.</p>
+<p><strong>Example.</strong> When a creature eats food in §1, <code>apply_eat</code> removes the food row (<code>to_remove(food)</code>) and updates the creature’s energy. There is no <code>food.is_eaten = true</code> flag — the food simply ceases to be in the table.</p>
+<p><strong>Anti-pattern.</strong> Tombstoning rows with <code>is_alive = false</code> or <code>is_eaten = true</code> flags. The flag forces every reader to filter the table; the table grows linearly with history; concurrent writes to the flag race against unrelated readers. Structural removal — actually taking the row out — is cheaper and clearer.</p>
+<p><strong>See also.</strong> 17 (presence replaces flags), 19 (EBP dispatch), 21 (<code>swap_remove</code>), 22 (mutations buffer).</p>
+<hr>
+<h2 id="19--ebp-dispatch"><a class="header" href="#19--ebp-dispatch">19 — EBP dispatch</a></h2>
+<p><strong>Definition.</strong> A system iterates over the table whose presence defines its applicability. There is no per-row branch checking <em>“does this case apply to me”</em>; if a row is in the table, the system runs on it.</p>
+<p><strong>Example.</strong> The “process all hungry creatures” system iterates the <code>Hungry</code> table directly. There is no <code>for c in creatures: if c.is_hungry { ... }</code>. The dispatcher <em>is</em> the table; iterating means processing. A useful intuition: it is the difference between a wandering shopper trying to remember what they need and a shopper with a list. The list version is shorter, faster, and correct by construction.</p>
+<p><strong>Anti-pattern.</strong> Iterating a master table and filtering inside the loop. Every row that fails the filter is wasted memory traffic; the inner loop’s working set is bloated by rows that do not matter to it.</p>
+<p><strong>See also.</strong> 13 (system as function), 17 (presence replaces flags), 18 (add/remove = insert/delete), 20 (empty tables are free).</p>
+<hr>
+<h2 id="20--empty-tables-are-free"><a class="header" href="#20--empty-tables-are-free">20 — Empty tables are free</a></h2>
+<p><strong>Definition.</strong> No rows means no work. A simulation with 90% inactive entities does no work for the inactive ones — the dispatcher never visits them.</p>
+<p><strong>Example.</strong> The §1 simulator may have 10,000 creatures and 9,000 of them are not hungry yet (their energy is full). The hunger system iterates <code>Hungry</code> (1,000 rows), not <code>creature</code> (10,000 rows). Cost scales with active rows, not with population.</p>
+<p><strong>Anti-pattern.</strong> Iterating the master table “just to be safe”. The 9,000 not-hungry creatures cost as much as the 1,000 hungry ones, and no number of branch hints fixes that.</p>
+<p><strong>See also.</strong> 17 (presence replaces flags), 18 (add/remove = insert/delete), 19 (EBP dispatch), 29 (10K-to-1M wall).</p>
+<hr>
+<h2 id="21--swap_remove"><a class="header" href="#21--swap_remove">21 — <code>swap_remove</code></a></h2>
+<p><strong>Definition.</strong> Deletion in O(1) by moving the last row of a table into the deleted slot, then shrinking the table by one. Order is sacrificed for speed; the next two nodes fix the consequences. This and the rest of the Memory &amp; lifecycle phase only matter for <em>variable-quantity</em> tables; constant-quantity tables like the 52-card deck need none of it.</p>
+<p><strong>Example.</strong> When a creature dies in §1, <code>cleanup</code> calls <code>vec.swap_remove(slot)</code> on each component vector. This is O(1) per vector, six vectors, so O(6) per dead creature. The cost is constant regardless of population.</p>
+<p><strong>Anti-pattern.</strong> <code>vec.remove(slot)</code>, which shifts every later row left by one. For a one-million-creature table, removing 1000 dead creatures with <code>remove</code> is a billion memory moves; with <code>swap_remove</code> it is six thousand.</p>
+<p><strong>See also.</strong> 18 (add/remove = insert/delete), 22 (mutations buffer), 23 (index maps), 24 (append-only &amp; recycling).</p>
+<hr>
+<h2 id="22--mutations-buffer-cleanup-is-batched"><a class="header" href="#22--mutations-buffer-cleanup-is-batched">22 — Mutations buffer; cleanup is batched</a></h2>
+<p><strong>Definition.</strong> Inserts and removes during a tick are not applied immediately; they are recorded as dirty markers in side tables (commonly <code>to_insert</code> and <code>to_remove</code>). At the tick boundary, a single sweep applies them all. Structural changes happen <em>between</em> passes, not during them.</p>
+<p><strong>Example.</strong> In the through-line simulator, when a creature dies its entity id is appended to <code>to_remove</code>. The system that detected the death does not call <code>swap_remove</code> on the position table — that would corrupt the iteration the system is in the middle of. After every system in the tick has run, a cleanup pass swaps-and-pops each id from every component table and clears the marker lists.</p>
+<p><strong>Anti-pattern.</strong> Mutating tables in place inside a system pass. Either the iteration breaks (because the indices it is using just got rearranged), or you allocate per mutation (because growing a <code>Vec</code> mid-loop forces reallocation). In a simulation with steady birth and death, the cost is O(N) reallocations per tick — orders of magnitude over what the budget allows.</p>
+<p><strong>See also.</strong> 15 (state changes between ticks), 18 (add/remove = insert/delete), 21 (<code>swap_remove</code>), 23 (index maps).</p>
+<hr>
+<h2 id="23--index-maps"><a class="header" href="#23--index-maps">23 — Index maps</a></h2>
+<p><strong>Definition.</strong> When external references must survive reordering, an <code>id_to_index</code> map maintains the mapping. It is updated on every move — whether by <code>swap_remove</code>, by sort-for-locality, or by the buffered-cleanup sweep. Looking up a creature by id is O(1) through the map; no scanning required.</p>
+<p><strong>Example.</strong> A player holds creature id 42. The <code>creature</code> columns get sorted for locality (node 28). The <code>id_to_index</code> map is also rewritten in lockstep: <code>id_to_index[42]</code> now returns the new slot. The player’s reference still works.</p>
+<p><strong>Anti-pattern.</strong> Scanning the id column to find a row by id. This is O(N) per lookup, which is fine at §0 and slow at §1. The map is O(1).</p>
+<p><strong>See also.</strong> 5 (id is integer), 9 (sort breaks indices), 10 (stable IDs and generations), 28 (sort for locality).</p>
+<hr>
+<h2 id="24--append-only-and-recycling"><a class="header" href="#24--append-only-and-recycling">24 — Append-only and recycling</a></h2>
+<p><strong>Definition.</strong> Two strategies for slot reuse. <em>Append-only</em> tables grow forever; old slots stay valid forever. <em>Recycling</em> tables reuse vacated slots; the generation counter (node 10) prevents stale references. The choice is decided by access pattern: append-only is simpler but wastes memory under churn; recycling pays a small bookkeeping cost and bounds memory.</p>
+<p><strong>Example.</strong> The simulator’s <code>eaten</code>, <code>born</code>, <code>dead</code> logs are append-only — they record history and never delete. The <code>creature</code> table itself is recycling — slots are reused as creatures die and new ones are born. Two strategies, same simulator, different access patterns.</p>
+<p><strong>Anti-pattern.</strong> Always append-only “to keep things simple”. For a long-running simulator with steady churn, the table grows without bound and the working set blows the cache. Always recycling, conversely, breaks the history that node 37 wants to lean on.</p>
+<p><strong>See also.</strong> 10 (stable IDs and generations), 21 (<code>swap_remove</code>), 35 (boundary is the queue), 37 (the log is the world).</p>
+<hr>
+<h2 id="25--ownership-of-tables"><a class="header" href="#25--ownership-of-tables">25 — Ownership of tables</a></h2>
+<p><strong>Definition.</strong> Each table has exactly one writer. Many readers are fine. This is the rule that makes parallelism possible without locks, and it is the precondition for the inspection-system pattern: read-only access to all tables, no risk of races.</p>
+<p><strong>Example.</strong> In the §1 simulator, <code>motion</code> is the only writer of <code>creature.pos</code>. <code>apply_eat</code> is the only writer of <code>food</code>. <code>cleanup</code> is the only writer of the <code>creature</code> table’s structure (insertions and removals). When two systems have disjoint write-sets, they parallelize freely (node 31). The ownership rule is what makes the parallelization claim <em>true</em>.</p>
+<p><strong>Anti-pattern.</strong> Two systems writing the same field. This forces serialisation, locks, or atomics; whichever you pick, the system DAG (node 14) becomes a chain instead of a graph.</p>
+<p><strong>See also.</strong> 13 (system as function), 14 (systems DAG), 31 (disjoint writes parallelize), 39 (mechanism vs policy).</p>
+<hr>
+<h2 id="26--hotcold-splits"><a class="header" href="#26--hotcold-splits">26 — Hot/cold splits</a></h2>
+<p><strong>Definition.</strong> Fields touched in the inner loop go in one table; metadata read rarely goes in another. The inner loop’s footprint shrinks; cache works. SoA is the prerequisite — you cannot split fields you have already bundled into a struct.</p>
+<p><strong>Example.</strong> The §2 simulator splits <code>creature</code> into <code>creature_hot</code> (<code>pos</code>, <code>vel</code>, <code>energy</code> — read every tick by <code>motion</code> and <code>next_event</code>) and <code>creature_cold</code> (<code>birth_t</code>, <code>species</code>, <code>name</code> — read only when logging or debugging). The hot table fits in L2; the cold table does not have to.</p>
+<p><strong>Anti-pattern.</strong> A single fat table where every system reads all fields whether it uses them or not. The cold fields are paid for in cache traffic at every hot-path read.</p>
+<p><strong>See also.</strong> 4 (cost &amp; budget), 7 (SoA), 27 (working set vs cache), 28 (sort for locality).</p>
+<hr>
+<h2 id="27--working-set-vs-cache"><a class="header" href="#27--working-set-vs-cache">27 — Working set vs cache</a></h2>
+<p><strong>Definition.</strong> The size of the data the inner loop touches per pass decides speed more than the algorithm. If it fits in L1/L2, the loop is fast; if it does not, no algorithm saves you. This is what every other Scale-phase node serves: keeping the working set in cache.</p>
+<p><strong>Example.</strong> The §2 simulator’s <code>motion</code> loop reads two <code>f32×2</code> fields (<code>pos</code>, <code>vel</code>) per creature. At 1,000,000 creatures × 16 bytes = 16 MB — bigger than L2, fits in L3. The loop is L3-bound. Splitting hot/cold (node 26) and sorting for locality (node 28) shrinks the per-pass touch and brings the loop back into L2.</p>
+<p><strong>Anti-pattern.</strong> Optimising the algorithm without measuring the working set. A 2× algorithmic speedup that doubles the working set is a slowdown.</p>
+<p><strong>See also.</strong> 1 (machine model), 4 (cost &amp; budget), 26 (hot/cold splits), 28 (sort for locality).</p>
+<hr>
+<h2 id="28--sort-for-locality"><a class="header" href="#28--sort-for-locality">28 — Sort for locality</a></h2>
+<p><strong>Definition.</strong> Reordering rows so that frequently co-accessed entities sit together turns random access into sequential access. This is the technique that node 9 (sort breaks indices) was the prerequisite pain for: once you have stable ids and an index map (nodes 10, 23), you can sort the table without breaking external references.</p>
+<p><strong>Example.</strong> The §2 simulator sorts creatures by spatial cell so that creatures-likely-to-collide are adjacent in the column. The <code>next_event</code> system’s per-creature work now reads neighbours from the same cache line. The id-to-index map is rewritten in the same pass.</p>
+<p><strong>Anti-pattern.</strong> Skipping the sort because of node 9. The fear of breaking references is solved by node 10’s stable ids, not by leaving the table unsorted forever.</p>
+<p><strong>See also.</strong> 9 (sort breaks indices), 10 (stable IDs and generations), 23 (index maps), 27 (working set vs cache).</p>
+<hr>
+<h2 id="29--the-wall-at-10k--1m"><a class="header" href="#29--the-wall-at-10k--1m">29 — The wall at 10K → 1M</a></h2>
+<p><strong>Definition.</strong> What changes when allocations cannot be casual: pre-sized buffers, no per-frame heap traffic, <code>swap_remove</code> instead of <code>remove</code>, batched cleanup, consciously chosen layouts. The design budget from node 4 starts to bind. Code that worked at 10,000 stops working at 1,000,000 not because of complexity class, but because of constant factors.</p>
+<p><strong>Example.</strong> §1’s <code>apply_reproduce</code> calls <code>to_insert.push(offspring)</code> once per reproducing parent. At 10,000 creatures with 1% reproducing per tick, that is 100 pushes per tick — fine. At 1,000,000 with the same rate, it is 10,000 pushes per tick, and <code>to_insert</code>’s reallocations become visible. §2 pre-sizes <code>to_insert</code> to a typical batch capacity and the reallocations disappear.</p>
+<p><strong>Anti-pattern.</strong> Treating §1 code as ready for §2 scale without measurement. The wall is <em>constant factor</em>, not algorithm — profilers find it; intuition does not.</p>
+<p><strong>See also.</strong> 4 (cost &amp; budget), 21 (<code>swap_remove</code>), 22 (mutations buffer), 30 (1M-to-streaming wall).</p>
+<hr>
+<h2 id="30--the-wall-at-1m--streaming"><a class="header" href="#30--the-wall-at-1m--streaming">30 — The wall at 1M → streaming</a></h2>
+<p><strong>Definition.</strong> What changes when the table no longer fits in main memory at all. Snapshots, sliding windows, log-orientation. The world becomes a window over the log; only the relevant slice is in memory at any one time.</p>
+<p><strong>Example.</strong> §3’s simulator may simulate a year of population history at 30 Hz — close to a billion ticks. The <code>eaten</code>, <code>born</code>, and <code>dead</code> logs alone are too big to keep in memory. The simulator writes them through to disk (a storage system, node 38) and re-reads windows on demand. The world becomes a function of the log over a time range.</p>
+<p><strong>Anti-pattern.</strong> Treating “doesn’t fit in memory” as a problem to solve with a bigger machine. The streaming pattern scales to anything the log itself can hold; a bigger machine just postpones the same redesign.</p>
+<p><strong>See also.</strong> 27 (working set vs cache), 35 (boundary is the queue), 37 (the log is the world), 38 (storage systems).</p>
+<hr>
+<h2 id="31--disjoint-write-sets-parallelize-freely"><a class="header" href="#31--disjoint-write-sets-parallelize-freely">31 — Disjoint write-sets parallelize freely</a></h2>
+<p><strong>Definition.</strong> Two systems that write to disjoint tables can run in parallel without coordination. No locks, no atomics. This is what node 25’s ownership rule buys: every table has one writer, so any two systems with non-overlapping writes are by construction race-free.</p>
+<p><strong>Example.</strong> In the §1 simulator, <code>apply_eat</code> writes <code>food</code> and <code>creature.energy</code>; <code>apply_starve</code> writes only <code>creature</code> removals via <code>to_remove</code>. Disjoint write-sets — they can run in parallel. Compare with <code>motion</code> and <code>apply_eat</code>, both writing <code>creature.energy</code>: those must serialize.</p>
+<p><strong>Anti-pattern.</strong> Locking individual rows to allow concurrent writers to share a table. This is correct but slow and complicated; partitioning the table by entity range (node 32) is usually the better answer.</p>
+<p><strong>See also.</strong> 13 (system as function), 25 (ownership), 32 (partition not lock), 34 (order is the contract).</p>
+<hr>
+<h2 id="32--partition-dont-lock"><a class="header" href="#32--partition-dont-lock">32 — Partition, don’t lock</a></h2>
+<p><strong>Definition.</strong> When one system must write a single table from multiple threads, split the table by entity range (or by spatial cell, or by hash) and give each thread its own slice to write. You partition the data, not the access. Each thread’s slice has a single writer; nodes 25 and 31 still hold within each slice.</p>
+<p><strong>Example.</strong> The §2 <code>motion</code> system writes <code>creature.pos</code> for a million creatures across 8 threads. Instead of locking, the loop is split: thread <em>t</em> writes slots <code>t*N/8 .. (t+1)*N/8</code>. No lock, no atomic, no contention.</p>
+<p><strong>Anti-pattern.</strong> A <code>Mutex&lt;Vec&lt;T&gt;&gt;</code> shared across threads. Even when correct, the lock serialises the write under contention; you have re-introduced the single-writer rule the long way around.</p>
+<p><strong>See also.</strong> 25 (ownership), 28 (sort for locality), 31 (disjoint writes), 33 (false sharing).</p>
+<hr>
+<h2 id="33--false-sharing"><a class="header" href="#33--false-sharing">33 — False sharing</a></h2>
+<p><strong>Definition.</strong> Two threads writing to <em>different</em> fields that happen to land in the same cache line slow each other down through hardware. The cache coherency protocol forces every write to invalidate the line on the other thread, even though the writes don’t conflict logically.</p>
+<p><strong>Example.</strong> Eight threads each accumulate a counter in <code>counters: [u64; 8]</code>. Naive layout puts all 8 counters in one cache line — the threads thrash the line. Padding each counter to its own cache line (or putting them in separate vectors) eliminates the contention.</p>
+<p><strong>Anti-pattern.</strong> Laying out per-thread state as adjacent bytes/words. Almost always a footgun. When in doubt, give each thread its own allocation, or pad to cache-line boundaries.</p>
+<p><strong>See also.</strong> 27 (working set vs cache), 31 (disjoint writes), 32 (partition, don’t lock).</p>
+<hr>
+<h2 id="34--order-is-the-contract"><a class="header" href="#34--order-is-the-contract">34 — Order is the contract</a></h2>
+<p><strong>Definition.</strong> Parallelism is allowed <em>inside</em> a step (between systems with disjoint writes), never <em>across</em> steps. Determinism (node 16) depends on this discipline. The system DAG (node 14) defines the permitted concurrency; anything outside the DAG is undefined behaviour.</p>
+<p><strong>Example.</strong> In the §1 simulator, <code>apply_eat</code>, <code>apply_reproduce</code>, and <code>apply_starve</code> may run in parallel because their writes are disjoint. They must all complete before <code>cleanup</code> starts. They must all run after <code>next_event</code>. The order is the contract; parallelism happens inside the contract, never around it.</p>
+<p><strong>Anti-pattern.</strong> “Optimising” by running systems out of DAG order because the test passed once. Determinism is a property of structure, not of testing.</p>
+<p><strong>See also.</strong> 14 (systems compose into a DAG), 16 (determinism by order), 31 (disjoint writes parallelize), 32 (partition not lock).</p>
+<hr>
+<h2 id="35--the-boundary-is-the-queue"><a class="header" href="#35--the-boundary-is-the-queue">35 — The boundary is the queue</a></h2>
+<p><strong>Definition.</strong> Events flow into the world on one queue, results flow out on another. Inside, the world is pure transformation — no I/O, no time, no environment. Everything that crosses the boundary goes through a storage system (node 38). The queue is the seam.</p>
+<p><strong>Example.</strong> The §1 simulator’s input queue carries food-spawn events from the <code>food_spawner</code> policy; the output queue carries <code>eaten</code>, <code>born</code>, <code>dead</code> events to the population log. The simulator’s tick reads the input queue, transforms the world, writes to the output queue. Nothing else crosses the boundary.</p>
+<p><strong>Anti-pattern.</strong> Sprinkling I/O calls inside systems. Logging from <code>apply_eat</code>, calling out to a metrics service from <code>motion</code>. Each one couples a system to the environment; each makes deterministic replay impossible.</p>
+<p><strong>See also.</strong> 13 (system as function), 36 (persistence is table serialization), 37 (the log is the world), 38 (storage systems).</p>
+<hr>
+<h2 id="36--persistence-is-table-serialization"><a class="header" href="#36--persistence-is-table-serialization">36 — Persistence is table serialization</a></h2>
+<p><strong>Definition.</strong> A snapshot is the world’s tables written as a stream of <code>(entity, key, value)</code> triples — the same shape the world has in memory. Recovery is reading them back. There is no separate “domain model” to map; serialisation is <em>transposition</em>, not <em>translation</em>.</p>
+<p><strong>Example.</strong> The simulator can write <code>creature.pos</code>, <code>creature.vel</code>, <code>creature.energy</code> etc. to a single file as one big triple stream. To recover, read the triples back into the in-memory <code>Vec</code>s. No ORM, no schema migration, no impedance mismatch — the file is the same shape as the memory.</p>
+<p><strong>Anti-pattern.</strong> Building a separate persistence layer with its own object model. The translation between the persistence object and the in-memory state is friction; every change to one requires a change to the other; a class of bugs lives in that translation forever.</p>
+<p><strong>See also.</strong> 7 (SoA), 35 (boundary is the queue), 37 (the log is the world), 38 (storage systems).</p>
+<hr>
+<h2 id="37--the-log-is-the-world"><a class="header" href="#37--the-log-is-the-world">37 — The log is the world</a></h2>
+<p><strong>Definition.</strong> An append-only log of events is the canonical state; the world’s tables are the log decoded into SoA. They share a structure — <code>(rid, key, val)</code> triples either way — so replaying the log builds the tables, and serialising the tables produces a log. The two are not analogues; they are two views of one thing.</p>
+<p><strong>Example.</strong> <code>science/simlog/logger.py</code> stores rows as three parallel arrays: <code>rids</code> (which entity), <code>keys</code> (which component code), <code>vals</code> (the value, as <code>f64</code>). On read, the triples are re-densified into per-field arrays plus presence masks — the canonical SoA-plus-EBP shape. Any simulation that logs every event automatically has a replayable history; recovery is not a separate code path, it is the read path.</p>
+<p><strong>Anti-pattern.</strong> Treating logs as ledger / audit records and the world as the “real” state, with translation code on each side. The translation is friction; it implies impedance mismatch where there is none. When the log and the world share a shape, they are interchangeable representations and can be converted by transposition rather than translation.</p>
+<p><strong>See also.</strong> 16 (determinism by order), 30 (1M-to-streaming wall), 36 (persistence is table serialization), 38 (storage systems), 42 (tests are systems).</p>
+<hr>
+<h2 id="38--storage-systems-bandwidth-and-iops"><a class="header" href="#38--storage-systems-bandwidth-and-iops">38 — Storage systems: bandwidth and IOPS</a></h2>
+<p><strong>Definition.</strong> A storage system is the part of the program that crosses I/O — to disk (HDD/SSD/NVMe), to network, to a service. Its limits are <em>bandwidth</em> (bytes per second) and <em>IOPS</em> (operations per second), and both must be counted against the tick budget from node 4. SQLite is one specimen; a TCP socket is another; a network filesystem is a third. The pattern — single owner, batched writes, asynchronous flush — is the same across all of them.</p>
+<p><strong>Example.</strong> The §3 streaming simulator’s storage system writes the <code>eaten</code>/<code>born</code>/<code>dead</code> logs to disk in batches of 50,000 rows at WAL-mode SQLite. At 30 Hz with batches per tick, that is roughly 1.5 million rows/second — well within an SSD’s IOPS budget. Compare with one row per <code>INSERT</code>: 30 Hz × thousands of events = a different order of magnitude on the IOPS counter.</p>
+<p><strong>Anti-pattern.</strong> Treating I/O as free at the call site. Every row written through a single-row <code>INSERT</code> is one IOP; budgets that ignore IOPS hit the floor without warning.</p>
+<p><strong>See also.</strong> 4 (cost &amp; budget), 35 (boundary is the queue), 36 (persistence is table serialization), 37 (the log is the world).</p>
+<hr>
+<h2 id="39--mechanism-vs-policy"><a class="header" href="#39--mechanism-vs-policy">39 — Mechanism vs policy</a></h2>
+<p><strong>Definition.</strong> The kernel of a system exposes raw verbs. Rules — what is allowed, what triggers what — live at the edges, not in the kernel. Confusing the two is how systems calcify: a kernel that knows about a rule cannot drop the rule without rewriting itself.</p>
+<p><strong>Example.</strong> The simulator’s <code>cleanup</code> is mechanism: it applies whatever is in <code>to_remove</code> and <code>to_insert</code>, no opinions. The <code>food_spawn</code> system is policy: it decides <em>when</em> and <em>where</em> food appears, expressed as a set of rules over the <code>food_spawner</code> table. Replacing <code>food_spawn</code> with a different policy (a fixed schedule, an LLM, a player input) requires no change to <code>cleanup</code>.</p>
+<p><strong>Anti-pattern.</strong> Encoding policy decisions in the kernel — <code>if hungry &amp;&amp; food_nearby { eat }</code>. Once the rule is in the kernel, every variant of the rule needs a new branch, and the kernel grows linearly with rule count.</p>
+<p><strong>See also.</strong> 13 (system as function), 25 (ownership), 35 (boundary is the queue), 40 (compression-oriented).</p>
+<hr>
+<h2 id="40--compression-oriented-programming"><a class="header" href="#40--compression-oriented-programming">40 — Compression-oriented programming</a></h2>
+<p><strong>Definition.</strong> Write the concrete case three times before extracting. Don’t pre-architect. The from-scratch version is also the dependency-pricing test (node 41): most crates lose the comparison because they generalise more than your case requires.</p>
+<p><strong>Example.</strong> A student building three small functions to filter creatures by hunger, by age, and by location is tempted to extract a generic <code>filter_by</code> taking a closure. Don’t — yet. The three concrete versions are easier to read and benchmark, and they expose what is actually shared. Once a fourth case shows up, the genuine abstraction emerges from the pattern of the four, not from imagined future needs.</p>
+<p><strong>Anti-pattern.</strong> Designing the abstraction before the third use. The early-extracted abstraction is invariably wrong by the time the fourth use appears, and the cost of changing it then is much higher than writing the third concrete version would have been.</p>
+<p><strong>See also.</strong> 13 (system as function), 39 (mechanism vs policy), 41 (you can only fix what you wrote).</p>
+<hr>
+<h2 id="41--you-can-only-fix-what-you-wrote"><a class="header" href="#41--you-can-only-fix-what-you-wrote">41 — You can only fix what you wrote</a></h2>
+<p><strong>Definition.</strong> Foreign libraries are allowed; this is not a prohibition. But every dependency is a bet that someone else will keep it working, and the bet has a cost: if the library is wrong, abandoned, or breaking-changed, you cannot fix it. You can only replace it, fork it, or live with it. The discipline is to take the bet <em>consciously</em> — knowing how much code the dependency saves and how much risk it carries.</p>
+<p><strong>Example.</strong> In the multicore track, the student is tempted to add <code>rayon</code> for the parallel-sum opening. The exercise asks them to first write the 50-line manual <code>std::thread</code> version, time it, then read <code>rayon</code>’s relevant source. Most students discover <code>rayon</code> does about 200 lines more than they need; some still adopt it. The difference is that they now know what they bet on.</p>
+<p><strong>Anti-pattern.</strong> Reaching for <code>cargo add</code> reflexively, by name recognition or because a tutorial used the crate. The dependency arrives with no measurement, no reading, and no appraisal of what its absence would have cost.</p>
+<p><strong>See also.</strong> 38 (storage systems), 40 (compression-oriented programming), 42 (tests are systems).</p>
+<hr>
+<h2 id="42--tests-are-systems-tdd-from-day-one"><a class="header" href="#42--tests-are-systems-tdd-from-day-one">42 — Tests are systems; TDD from day one</a></h2>
+<p><strong>Definition.</strong> From the first exercise onward, every concept is approached test-first: <em>what’s the smallest case? what’s the largest? what should the answer be for <code>u8</code>, for <code>u32</code>, for 10,000 agent ids?</em> Tests are not a separate framework — they are systems that read tables and assert. A test rig is structurally identical to an inspection system. Property tests over component arrays and integration tests by replay log fall out of the structure rather than being a separate effort.</p>
+<p><strong>Example.</strong> §5’s first exercise — “build the deck” — has a test: after <code>new_deck()</code>, every (suit, rank) pair appears exactly once across the 52 rows. The test is a system: read <code>suits</code> and <code>ranks</code>; output an assertion result. The same shape is the InspectionSystem in <code>~/code/ppdn/SYSTEMS.md</code>: read references to all tables, assertions in test mode, transparency in <code>--debug</code> mode, identical code path.</p>
+<p><strong>Anti-pattern.</strong> Testing as a separate concern bolted on at the end. The tests then live in their own world, mirroring the real code with mocks and stubs and a separate vocabulary. Testing systems-as-systems makes the tests grow with the code, not against it.</p>
+<p><strong>See also.</strong> 13 (system as function), 16 (determinism by order), 37 (the log is the world), 40 (compression-oriented).</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../concepts/dag.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../concepts/dag.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-c2a407aa.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-a0b12cfe.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

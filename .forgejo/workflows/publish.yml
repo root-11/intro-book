@@ -1,0 +1,70 @@
+name: Publish book
+
+on:
+  push:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: never
+
+jobs:
+  publish:
+    name: Build and publish to Codeberg
+    runs-on: linux-amd64-nuc
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Rust
+        run: |
+          rustup update stable
+          rustup default stable
+
+      - name: Cache cargo registry + mdbook binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            .cargo/bin
+          key: ${{ runner.os }}-mdbook-v1
+
+      - name: Install mdbook + mdbook-mermaid (if not cached)
+        run: |
+          mkdir -p .cargo/bin
+          if [ ! -x .cargo/bin/mdbook ] || [ ! -x .cargo/bin/mdbook-mermaid ]; then
+            CARGO_INSTALL_ROOT=$(pwd)/.cargo cargo install mdbook mdbook-mermaid --locked
+          fi
+
+      - name: Install uv
+        run: pip install uv --quiet
+
+      - name: Build book
+        run: uv run build.py
+
+      - name: Configure SSH for Codeberg
+        env:
+          CODEBERG_SSH_KEY: ${{ secrets.CODEBERG_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$CODEBERG_SSH_KEY" > ~/.ssh/id_codeberg
+          chmod 600 ~/.ssh/id_codeberg
+          ssh-keyscan codeberg.org >> ~/.ssh/known_hosts 2>/dev/null
+          cat > ~/.ssh/config <<EOF
+          Host codeberg.org
+            User git
+            IdentityFile ~/.ssh/id_codeberg
+            IdentitiesOnly yes
+          EOF
+
+      - name: Push dist to Codeberg pages branch
+        env:
+          CODEBERG_USER: ${{ secrets.CODEBERG_USER }}
+        run: |
+          cd dist
+          git init -q -b pages
+          git config user.name "Forgejo CI"
+          git config user.email "ci@pi.local"
+          git add -A
+          git commit -q -m "Publish — ${GITHUB_SHA::7} $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git remote add origin git@codeberg.org:$CODEBERG_USER/intro-book.git
+          git push -fq origin pages

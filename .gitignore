@@ -1,0 +1,10 @@
+.env
+.env.local
+__pycache__/
+*.pyc
+target/
+.uv-cache/
+.mdbook/
+dist/
+.venv/
+.cargo/

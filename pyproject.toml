@@ -1,0 +1,22 @@
+[project]
+name = "intro"
+version = "0.0.1"
+description = "An Introduction to Programming, using ECS & EBP in Rust"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "CC-BY-4.0" }
+authors = [{ name = "Bjorn Madsen" }]
+dependencies = []
+
+# Optional dependencies for the helper scripts in `tools/`.
+# The scripts also declare these inline (PEP 723) so they work with
+# `uv run --script` outside the project venv.
+[project.optional-dependencies]
+tools = [
+    "pymupdf",        # tools/read_pdf.py
+    "beautifulsoup4", # tools/read_html.py
+    "lxml",           # tools/read_html.py
+]
+
+[tool.uv]
+managed = true

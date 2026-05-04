@@ -1,0 +1,33 @@
+[book]
+title = "An Introduction to Programming, using ECS & EBP in Rust"
+authors = ["Bjorn Madsen"]
+language = "en"
+src = ".mdbook"
+
+[build]
+build-dir = "dist"
+create-missing = false
+
+[output.html]
+default-theme = "light"
+preferred-dark-theme = "ayu"
+mathjax-support = true
+git-repository-url = ""
+git-repository-icon = ""
+no-section-label = true
+additional-js = ["mermaid.min.js", "mermaid-init.js"]
+
+[output.html.fold]
+enable = true
+level = 1
+
+[output.html.playground]
+editable = true
+runnable = true
+copyable = true
+line-numbers = true
+
+[preprocessor]
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
