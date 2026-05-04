@@ -19,6 +19,15 @@ jobs:
           rustup update stable
           rustup default stable
 
+      # Cache key: bump the suffix (-v1 → -v2 → ...) to force a clean rebuild
+      # of mdbook + mdbook-mermaid. Do this when:
+      #   - upgrading either tool to a new major/minor version,
+      #   - changing the rustup toolchain,
+      #   - adding/removing a preprocessor under [preprocessor.*] in book.toml,
+      #   - the cache appears stale (mysterious build failures with no source change).
+      # The cache stores: ~/.cargo/{registry,git} (downloaded crates, compiled
+      # source) and .cargo/bin (the installed mdbook + mdbook-mermaid binaries
+      # used directly by build.py).
       - name: Cache cargo registry + mdbook binaries
         uses: actions/cache@v4
         with:
