@@ -5,7 +5,7 @@
 
 ---
 
-# Trunk — Foundation
+# Part 1: Foundation
 
 - [The machine model](trunk/01_the_machine_model.md)
   - [Solutions](trunk/01_the_machine_model_solutions.md)
@@ -16,7 +16,7 @@
 - [Cost is layout, and you have a budget](trunk/04_cost_and_budget.md)
   - [Solutions](trunk/04_cost_and_budget_solutions.md)
 
-# Trunk — Identity & structure
+# Part 2: Identity & structure
 
 - [Identity is an integer](trunk/05_identity_is_an_integer.md)
   - [Solutions](trunk/05_identity_is_an_integer_solutions.md)
@@ -31,7 +31,7 @@
 - [Stable IDs and generations](trunk/10_stable_ids_and_generations.md)
   - [Solutions](trunk/10_stable_ids_and_generations_solutions.md)
 
-# Trunk — Time & passes
+# Part 3: Time & passes
 
 - [The tick](trunk/11_the_tick.md)
   - [Solutions](trunk/11_the_tick_solutions.md)
@@ -46,7 +46,7 @@
 - [Determinism by order](trunk/16_determinism_by_order.md)
   - [Solutions](trunk/16_determinism_by_order_solutions.md)
 
-# Trunk — Existence-based processing
+# Part 4: Existence-based processing
 
 - [Presence replaces flags](trunk/17_presence_replaces_flags.md)
   - [Solutions](trunk/17_presence_replaces_flags_solutions.md)
@@ -57,7 +57,7 @@
 - [Empty tables are free](trunk/20_empty_tables_are_free.md)
   - [Solutions](trunk/20_empty_tables_are_free_solutions.md)
 
-# Trunk — Memory & lifecycle
+# Part 5: Memory & lifecycle
 
 - [`swap_remove`](trunk/21_swap_remove.md)
   - [Solutions](trunk/21_swap_remove_solutions.md)
@@ -70,7 +70,7 @@
 - [Ownership of tables](trunk/25_ownership_of_tables.md)
   - [Solutions](trunk/25_ownership_of_tables_solutions.md)
 
-# Trunk — Scale
+# Part 6: Scale
 
 - [Hot/cold splits](trunk/26_hot_cold_splits.md)
   - [Solutions](trunk/26_hot_cold_splits_solutions.md)
@@ -83,7 +83,7 @@
 - [Moving beyond the wall](trunk/30_streaming_wall.md)
   - [Solutions](trunk/30_streaming_wall_solutions.md)
 
-# Trunk — Concurrency
+# Part 7: Concurrency
 
 - [Disjoint write-sets parallelize freely](trunk/31_disjoint_writes_parallelize.md)
   - [Solutions](trunk/31_disjoint_writes_parallelize_solutions.md)
@@ -94,7 +94,7 @@
 - [Order is the contract](trunk/34_order_is_the_contract.md)
   - [Solutions](trunk/34_order_is_the_contract_solutions.md)
 
-# Trunk — I/O & persistence
+# Part 8: I/O & persistence
 
 - [The boundary is the queue](trunk/35_boundary_is_the_queue.md)
   - [Solutions](trunk/35_boundary_is_the_queue_solutions.md)
@@ -105,12 +105,12 @@
 - [Storage systems: bandwidth and IOPS](trunk/38_storage_systems.md)
   - [Solutions](trunk/38_storage_systems_solutions.md)
 
-# Trunk — System of systems
+# Part 9: System of systems
 
 - [System of systems](trunk/39_system_of_systems.md)
   - [Solutions](trunk/39_system_of_systems_solutions.md)
 
-# Trunk — Discipline
+# Part 10: Discipline
 
 - [Mechanism vs policy](trunk/40_mechanism_vs_policy.md)
   - [Solutions](trunk/40_mechanism_vs_policy_solutions.md)
