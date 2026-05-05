@@ -169,15 +169,17 @@ def stage() -> None:
         text = _CALLOUT_RE.sub(lambda m: _render_callout(m, prefix), text)
         md.write_text(text, encoding="utf-8")
 
-    # 4. Adjust SUMMARY.md: source uses `../concepts/...` (relative to
-    #    book/SUMMARY.md, pointing to repo-root concepts/); staging uses
-    #    `concepts/...` (sibling).
-    summary = STAGING / "SUMMARY.md"
-    if summary.exists():
-        text = summary.read_text(encoding="utf-8")
+    # 4. Adjust top-level book pages (SUMMARY.md, front_matter.md,
+    #    nomenclature.md, ...): source uses `../concepts/` and `../code/`
+    #    (relative to book/, pointing at repo-root). After staging these
+    #    files sit at the staging root, so the prefix becomes a no-op.
+    #    Trunk chapters live one level deeper and use `../../X/`; those
+    #    were already rewritten to `../X/` in step 3.
+    for top_md in STAGING.glob("*.md"):
+        text = top_md.read_text(encoding="utf-8")
         text = text.replace("../concepts/", "concepts/")
         text = text.replace("../code/", "code/")
-        summary.write_text(text, encoding="utf-8")
+        top_md.write_text(text, encoding="utf-8")
 
     n_md = sum(1 for _ in STAGING.rglob("*.md"))
     print(f"Staged {n_md} markdown file(s) to {STAGING.relative_to(ROOT)}")
