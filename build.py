@@ -386,18 +386,24 @@ def stage_readme_in_dist() -> None:
     if not src.exists() or not DIST.exists():
         return
     text = src.read_text(encoding="utf-8")
-    # mdbook-flattened image roots
-    text = text.replace('"book/illustrations/', '"illustrations/')
-    text = text.replace('"book/covers/',        '"covers/')
-    text = text.replace('](book/illustrations/', '](illustrations/')
-    text = text.replace('](book/covers/',        '](covers/')
+    # mdbook flattens the staging tree, so any `book/X/` path becomes `X/` in dist.
+    # The asset directories that surface in the README via image / link refs:
+    for sub in ("illustrations", "covers", "icons", "simlog"):
+        text = text.replace(f'"book/{sub}/', f'"{sub}/')
+        text = text.replace(f'](book/{sub}/', f']({sub}/')
     # Cross-doc .md links → live-URL .html so they resolve on the static site
     def to_live(m: re.Match[str]) -> str:
         path = m.group(2).replace(".md", ".html")
         return f"{m.group(1)}{LIVE_URL}{path}{m.group(3)}"
     text = _DIST_README_LIVE_LINK_RE.sub(to_live, text)
     (DIST / "README.md").write_text(text, encoding="utf-8")
-    print(f"Wrote dist/README.md")
+    # Copy LICENSE files into dist/ so the README's License section resolves
+    # in the published Codeberg view (the source repo is private).
+    for name in ("LICENSE", "LICENSE-CC-BY-4.0", "LICENSE-MIT", "LICENSE-APACHE-2.0"):
+        p = ROOT / name
+        if p.exists():
+            shutil.copy(p, DIST / name)
+    print(f"Wrote dist/README.md and LICENSE files")
 
 
 def main() -> None:
