@@ -4,7 +4,9 @@ _written by [Bjorn Madsen](mailto:drbjornmadsen@gmail.com)_
 _updated: 2026-05-09_
 
 > **Read online:** [Codeberg](https://root-11.codeberg.page/intro-book/) · [GitHub Pages](https://root-11.github.io/intro-book/)
+>
 > **Clone source:** `git clone https://codeberg.org/root-11/intro-book.git` · `git clone https://github.com/root-11/intro-book.git`
+>
 > **Issues:** [Codeberg](https://codeberg.org/root-11/intro-book/issues) · [GitHub](https://github.com/root-11/intro-book/issues)
 
 <p align="center"><img src="illustrations/classroom.jpg" alt="A classroom: Understand, Model, Solve, Validate, Improve" style="max-height: 360px; max-width: 100%;"></p>
@@ -63,11 +65,15 @@ Most code blocks in the early chapters have a play button that runs the code in 
 From the simulator chapters onward, the exercises stop being self-contained snippets. They build the through-line: a working Rust program that grows from one hundred wandering creatures to a hundred million streamed ones. Running them needs a local Rust toolchain, a project that holds state between runs, and the ability to time loops on your own hardware. By that point you will want a clone of the book's repo:
 
 ```sh
-git clone <repo-url>
-cd intro
+git clone https://codeberg.org/root-11/intro-book.git
+cd intro-book
 cargo run --release --bin sim
 ```
 
 For the timing exercises in §1, the play button works but the numbers it produces are not yours — they come from a shared server the playground happens to be running on. The exercise asks "how fast does *your* machine run this?", and that question only has a real answer locally. Click play for a first taste; then run on your own hardware for the numbers the rest of the book references.
 
 The threshold between *playground* and *local* is fuzzy by intent. A reader on a phone or in a classroom can stay in the browser through §10. Beyond that, treat a local toolchain as part of the curriculum.
+
+## The companion edition
+
+If you want to read the same book in a slow language and see what *discipline* must replace what the type system here enforces for you, the [Python edition](https://root-11.codeberg.page/intro-book-python/) covers the same forty-four sections in Python and `numpy`. The architecture is identical; the language differs. Many readers find Python a useful contrast: every borrow-check error here is a runtime mistake there, and the per-chapter Python commentary names the cost.

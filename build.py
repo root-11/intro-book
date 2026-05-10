@@ -108,8 +108,8 @@ def _render_callout(match: re.Match[str], icons_prefix: str) -> str:
     ).strip()
     return (
         f'<table class="callout callout-{ctype.lower()}" '
-        f'style="width: 100%; border-left: 3px solid #aaa; '
-        f'background: #f9f9f9; margin: 1em 0;">\n'
+        f'style="width: 100%; border-left: 3px solid var(--quote-border, #aaa); '
+        f'background: var(--quote-bg, #f9f9f9); color: var(--fg, inherit); margin: 1em 0;">\n'
         f'<tr>\n'
         f'<td style="width: 110px; vertical-align: top; padding: 0.6em;">\n'
         f'<img src="{icons_prefix}icons/{icon_file}" alt="{label}" '
