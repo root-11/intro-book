@@ -1,6 +1,11 @@
 # An Introduction to Programming *using entity-component-systems & existence-based processing in `rust`*
 
 _written by [Bjorn Madsen](mailto:drbjornmadsen@gmail.com)_
+_updated: 2026-05-09_
+
+> **Read online:** [Codeberg](https://root-11.codeberg.page/intro-book/) · [GitHub Pages](https://root-11.github.io/intro-book/)
+> **Clone source:** `git clone https://codeberg.org/root-11/intro-book.git` · `git clone https://github.com/root-11/intro-book.git`
+> **Issues:** [Codeberg](https://codeberg.org/root-11/intro-book/issues) · [GitHub](https://github.com/root-11/intro-book/issues)
 
 <p align="center"><img src="illustrations/classroom.jpg" alt="A classroom: Understand, Model, Solve, Validate, Improve" style="max-height: 360px; max-width: 100%;"></p>
 

@@ -9,7 +9,7 @@ env:
 
 jobs:
   publish:
-    name: Build and publish to Codeberg
+    name: Build and publish (Codeberg + GitHub Pages)
     runs-on: linux-amd64-nuc
     steps:
       - uses: actions/checkout@v5
@@ -61,11 +61,32 @@ jobs:
           CODEBERG_USER: ${{ secrets.CODEBERG_USER }}
         run: |
           export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_codeberg -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+          rm -rf dist/.git  # in case a previous step left one behind
           cd dist
           git init -q -b pages
           git config user.name "Forgejo CI"
           git config user.email "ci@pi.local"
           git add -A
           git commit -q -m "Publish — ${GITHUB_SHA::7} $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          git remote add origin "git@codeberg.org:$CODEBERG_USER/intro-book.git"
-          git push -fq origin pages
+          git remote add codeberg "git@codeberg.org:$CODEBERG_USER/intro-book.git"
+          git push -fq codeberg pages
+
+      # ---- GitHub Pages mirror (failover host) --------------------------------
+
+      - name: Write GitHub SSH key
+        env:
+          # Forgejo reserves the GITHUB_* secret namespace for actions-protocol
+          # compatibility, so we use GIT_HUB_* instead.
+          GIT_HUB_SSH_KEY: ${{ secrets.GIT_HUB_SSH_KEY }}
+        run: |
+          printf '%s\n' "$GIT_HUB_SSH_KEY" > "$HOME/.ssh/id_github"
+          chmod 600 "$HOME/.ssh/id_github"
+
+      - name: Push dist to GitHub gh-pages branch
+        env:
+          GIT_HUB_USER: ${{ secrets.GIT_HUB_USER }}
+        run: |
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+          cd dist
+          git remote add github "git@github.com:$GIT_HUB_USER/intro-book.git"
+          git push -fq github pages:gh-pages

@@ -8,3 +8,4 @@ target/
 dist/
 .venv/
 .cargo/
+.notes/
