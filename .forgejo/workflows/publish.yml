@@ -90,3 +90,24 @@ jobs:
           cd dist
           git remote add github "git@github.com:$GIT_HUB_USER/intro-book.git"
           git push -fq github pages:gh-pages
+
+      # ---- Source mirrors --------------------------------------------------
+      # The front_matter promises readers can `git clone` from Codeberg/GitHub
+      # and get the source. Push main to both so that promise holds. The Pages
+      # branches above are the rendered HTML; this section is the source code.
+
+      - name: Push source main to Codeberg
+        env:
+          CODEBERG_USER: ${{ secrets.CODEBERG_USER }}
+        run: |
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_codeberg -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+          git remote add codeberg-src "git@codeberg.org:$CODEBERG_USER/intro-book.git" 2>/dev/null || true
+          git push -fq codeberg-src HEAD:main
+
+      - name: Push source main to GitHub
+        env:
+          GIT_HUB_USER: ${{ secrets.GIT_HUB_USER }}
+        run: |
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+          git remote add github-src "git@github.com:$GIT_HUB_USER/intro-book.git" 2>/dev/null || true
+          git push -fq github-src HEAD:main
