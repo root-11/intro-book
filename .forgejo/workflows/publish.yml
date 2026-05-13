@@ -13,6 +13,8 @@ jobs:
     runs-on: linux-amd64-nuc
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # full history so the source-mirror push to Codeberg/GitHub is not shallow
 
       - name: Install Rust
         run: |
