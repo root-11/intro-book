@@ -1,0 +1,42 @@
+# Licensing
+
+This repository contains two kinds of material under two licences.
+
+## Prose, illustrations, exercises, and the book in general
+
+Licensed under the **Creative Commons Attribution 4.0 International License**
+(CC BY 4.0). You are free to share and adapt the material, including for
+commercial purposes, provided you give appropriate credit, provide a link to
+the licence, and indicate whether changes were made.
+
+The full legal text is in [`LICENSE-CC-BY-4.0`](LICENSE-CC-BY-4.0).
+Summary: <https://creativecommons.org/licenses/by/4.0/>.
+
+This applies to:
+
+- everything in `book/`, `concepts/`, and `code/sim/SPEC.md` (the prose),
+- the diagrams under `artwork/` and any in-line figures,
+- the exercise specifications.
+
+## Code samples and reference solutions
+
+Licensed under **MIT** ([`LICENSE-MIT`](LICENSE-MIT)) **or Apache-2.0**
+([`LICENSE-APACHE-2.0`](LICENSE-APACHE-2.0)) at your option — the standard
+Rust dual-licence pattern.
+
+This applies to:
+
+- reference Rust solutions in `book/trunk/*_solutions.md`,
+- the through-line simulator code under `code/sim/` (when written),
+- helper scripts in `tools/`,
+- `build.py`.
+
+## Why split
+
+CC BY for the prose lets readers redistribute and adapt the book — translate it,
+excerpt it for courses, mirror it on Codeberg or elsewhere — provided they
+attribute. MIT/Apache-2.0 for the code lets the code be incorporated into other
+projects under the same terms most of the Rust ecosystem uses.
+
+If you want to use a fragment and the line between prose and code is unclear,
+either licence applies — pick whichever is more useful to you.
