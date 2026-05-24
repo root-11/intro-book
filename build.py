@@ -132,6 +132,38 @@ def _icons_prefix_for(md_path: Path, staging_root: Path) -> str:
     return "../" * depth
 
 
+# The Concept DAG is a ~4600px-wide mermaid graph. Rendered inline, mdbook fits
+# it to the content column and its labels shrink to ~3px. So in the staged copy
+# (only) we replace the mermaid block with a pre-rendered SVG (checked in at
+# book/illustrations/dag.svg via tools/render_dag.sh), shown as a clickable
+# preview that opens the full-resolution vector in a new tab. The source
+# ```mermaid stays canonical for GitHub/Forgejo, which render it natively.
+_MERMAID_BLOCK_RE = re.compile(r"^```mermaid\n.*?\n```\n", re.DOTALL | re.MULTILINE)
+
+_DAG_SVG_EMBED = (
+    '<a href="../illustrations/dag.svg" target="_blank" rel="noopener" '
+    'title="Open the full-resolution DAG in a new tab">\n'
+    '<img src="../illustrations/dag.svg" '
+    'alt="The concept DAG: 43 nodes across 8 phases" '
+    'style="max-width: 100%; height: auto;">\n'
+    '</a>\n\n'
+    '*[Open the full-resolution DAG in a new tab.](../illustrations/dag.svg)*\n'
+)
+
+
+def _embed_dag_svg(staging_root: Path) -> None:
+    dag = staging_root / "concepts" / "dag.md"
+    if not dag.exists():
+        return
+    text = dag.read_text(encoding="utf-8")
+    new_text, n = _MERMAID_BLOCK_RE.subn(_DAG_SVG_EMBED, text, count=1)
+    if n:
+        dag.write_text(new_text, encoding="utf-8")
+        print("Embedded book/illustrations/dag.svg in staged concepts/dag.md")
+    else:
+        print("WARNING: no mermaid block found in staged concepts/dag.md — DAG not embedded")
+
+
 def stage() -> None:
     if STAGING.exists():
         shutil.rmtree(STAGING)
@@ -180,6 +212,9 @@ def stage() -> None:
         text = text.replace("../concepts/", "concepts/")
         text = text.replace("../code/", "code/")
         top_md.write_text(text, encoding="utf-8")
+
+    # 5. Swap the inline DAG mermaid for the pre-rendered SVG embed (mdbook only).
+    _embed_dag_svg(STAGING)
 
     n_md = sum(1 for _ in STAGING.rglob("*.md"))
     print(f"Staged {n_md} markdown file(s) to {STAGING.relative_to(ROOT)}")
