@@ -54,6 +54,8 @@ Quick reference for symbols, notation, and abbreviations the book uses. Concept 
 | TDD | Test-Driven Development |
 | LRU | Least Recently Used (cache eviction policy) |
 
+*EBP* is this book's shorthand. The spelled-out term — *existence-based processing* — is Richard Fabian's, from [*Data-Oriented Design*](https://www.dataorienteddesign.com/dodbook/); §17 introduces it from the simulator. An acronym index will not list "EBP" because the source literature spells the term out rather than abbreviating it.
+
 ## Naming in code
 
 - `snake_case` for variables, functions, fields.
