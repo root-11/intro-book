@@ -1,4 +1,4 @@
-//! Reference implementation for §5–§10. The deck program grown across the
+//! Reference implementation for §5-§10. The deck program grown across the
 //! Identity & structure phase. Each section's contributions are commented.
 //!
 //! Run:    cargo run --release
@@ -6,10 +6,10 @@
 //!
 //! The deck has no `Card` struct. The card at slot `i` is the row
 //! `(suits[i], ranks[i], locations[i], dealt_at[i], ids[i])`. Every
-//! reordering must touch all five columns — that is the §6 contract.
+//! reordering must touch all five columns - that is the §6 contract.
 
 // =================================================================
-// §5 — Identity is an integer
+// §5 - Identity is an integer
 // =================================================================
 
 const N_CARDS: usize = 52;
@@ -43,7 +43,7 @@ fn card_to_string(suit: u8, rank: u8) -> String {
     format!("{rank_str}{suit_char}")
 }
 
-// LCG random — Numerical Recipes constants. Seeded; deterministic across runs.
+// LCG random - Numerical Recipes constants. Seeded; deterministic across runs.
 struct Lcg(u64);
 impl Lcg {
     fn new(seed: u64) -> Self { Self(seed) }
@@ -62,7 +62,7 @@ fn fisher_yates_shuffle(order: &mut [usize], rng: &mut Lcg) {
 }
 
 // =================================================================
-// §6 — A row is a tuple
+// §6 - A row is a tuple
 // =================================================================
 
 /// Return the row at slot `i`. The same `i` against every column gives the row.
@@ -104,7 +104,7 @@ fn sort_deck_by_suit_then_rank(
 }
 
 // =================================================================
-// §8 — Where there's one, there's many. Every query is a function over slices.
+// §8 - Where there's one, there's many. Every query is a function over slices.
 // =================================================================
 
 /// Returns the *ids* (not slots) of cards held by `player`. Ids survive a sort;
@@ -134,7 +134,7 @@ fn count_by_location(locations: &[u8]) -> [usize; 6] {
 }
 
 // =================================================================
-// §10 — Stable IDs. `slot_of` is O(N) linear search; for 52 cards it's
+// §10 - Stable IDs. `slot_of` is O(N) linear search; for 52 cards it's
 // nothing. For variable-quantity tables, see §23 (Index maps).
 // =================================================================
 
@@ -151,7 +151,7 @@ fn main() {
     let mut dealt_at: Vec<u32> = vec![u32::MAX; N_CARDS];
     let mut ids:      Vec<u32> = (0..52u32).collect();
 
-    // Shuffle (§5.3). Reorder via order vector — the columns themselves
+    // Shuffle (§5.3). Reorder via order vector - the columns themselves
     // are touched only by reorder_deck.
     let mut order: Vec<usize> = (0..N_CARDS).collect();
     let mut rng = Lcg::new(0x1234_5678);
@@ -163,7 +163,7 @@ fn main() {
         println!("  slot {i:>2}: id={:>2} {}", ids[i], card_to_string(suits[i], ranks[i]));
     }
 
-    // §5.5 — deal 5 cards each to 4 players from the top of the deck.
+    // §5.5 - deal 5 cards each to 4 players from the top of the deck.
     let tick: u32 = 0;
     for player in 1u8..=4 {
         for _ in 0..5 {
@@ -175,7 +175,7 @@ fn main() {
 
     println!("\nCounts by location: {:?}", count_by_location(&locations));
 
-    // §10.4 — query holdings by stable ids.
+    // §10.4 - query holdings by stable ids.
     println!();
     for player in 1u8..=4 {
         let held = cards_held_by(&locations, &ids, player);
@@ -188,7 +188,7 @@ fn main() {
         println!("Player {player} (ids {:?}): {}", held, strs.join(" "));
     }
 
-    // §10.3 — sort the deck after the deal. Player 1's id list is unchanged;
+    // §10.3 - sort the deck after the deal. Player 1's id list is unchanged;
     // their slots have moved. cards_held_by(locations, ids, 1) returns the
     // same five ids as before the sort, and slot_of(ids, id) finds them.
     let p1_before = cards_held_by(&locations, &ids, 1);
@@ -209,7 +209,7 @@ fn main() {
 }
 
 // =================================================================
-// Tests — exercises whose claims are verifiable.
+// Tests - exercises whose claims are verifiable.
 // =================================================================
 
 #[cfg(test)]
@@ -279,7 +279,7 @@ mod tests {
             .map(|&id| { let s = slot_of(&ids, id).unwrap(); (suits[s], ranks[s]) })
             .collect();
 
-        // The *set* of ids is unchanged. Their order is not — `cards_held_by`
+        // The *set* of ids is unchanged. Their order is not - `cards_held_by`
         // walks in slot order, and the sort moves slots around.
         assert_eq!(
             held_before.iter().copied().collect::<std::collections::HashSet<_>>(),

@@ -3,7 +3,7 @@
 #
 # Why: the published mdbook site fits inline mermaid to the ~750px content
 # column. The DAG is ~4600px wide, so it is scaled down ~6x and its labels
-# render at ~3px — unreadable (reported by a reader on python-discourse).
+# render at ~3px - unreadable (reported by a reader on python-discourse).
 # We render the DAG once to book/illustrations/dag.svg and embed it
 # (clickable -> full-resolution in a new tab) during staging; see build.py's
 # _embed_dag_svg(). The ```mermaid source in concepts/dag.md stays canonical

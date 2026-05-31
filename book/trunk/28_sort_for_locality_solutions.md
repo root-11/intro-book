@@ -1,6 +1,6 @@
-# Solutions: 28 — Sort for locality
+# Solutions: 28 - Sort for locality
 
-## Exercise 1 — Compute spatial cells
+## Exercise 1 - Compute spatial cells
 
 ```rust
 fn spatial_cell(pos: (f32, f32), cell_size: f32) -> u32 {
@@ -21,7 +21,7 @@ for &p in &pos {
 
 Output: roughly 100 cells, each holding ~10 creatures (uniform distribution). A skewed distribution would cluster.
 
-## Exercise 2 — Sort by cell
+## Exercise 2 - Sort by cell
 
 ```rust,no_run
 fn sort_creatures_for_locality(world: &mut World, cell_size: f32) {
@@ -44,25 +44,25 @@ fn sort_creatures_for_locality(world: &mut World, cell_size: f32) {
 
 After the sort, `pos[0..10]` are all in the same cell (or a small number of adjacent cells). Spatial neighbours are now memory neighbours.
 
-## Exercise 4 — Time `next_event`
+## Exercise 4 - Time `next_event`
 
 A naive `next_event` for each creature scans the next 100 entries of `pos`:
 
-Pre-sort: those 100 entries are random — random RAM access, ~50–100 ns per check, ~5 µs per creature. At 1M creatures, ~5 seconds per tick. Impossible.
+Pre-sort: those 100 entries are random - random RAM access, ~50-100 ns per check, ~5 µs per creature. At 1M creatures, ~5 seconds per tick. Impossible.
 
-Post-sort: those 100 entries are spatial neighbours — sequential reads, ~1–2 ns per check, ~150 ns per creature. At 1M creatures, ~150 ms per tick. Still over budget for 30 Hz, but ~30× faster.
+Post-sort: those 100 entries are spatial neighbours - sequential reads, ~1-2 ns per check, ~150 ns per creature. At 1M creatures, ~150 ms per tick. Still over budget for 30 Hz, but ~30× faster.
 
 The combination with the sort cadence (exercise 5) usually brings this in budget.
 
-## Exercise 5 — Sort cadence
+## Exercise 5 - Sort cadence
 
-Sort cost at 1M: ~10 ms. Per-tick savings on `next_event` post-sort: ~500 ms (compared to pre-sort). One sort every 50 ticks amortises sort cost to 0.2 ms/tick — vastly cheaper than the savings.
+Sort cost at 1M: ~10 ms. Per-tick savings on `next_event` post-sort: ~500 ms (compared to pre-sort). One sort every 50 ticks amortises sort cost to 0.2 ms/tick - vastly cheaper than the savings.
 
 If the world's positions barely change tick-to-tick, you can sort even less often. If positions change wildly, you need more frequent sorts. The right cadence is data-dependent and worth measuring.
 
-## Exercise 6 — Z-order
+## Exercise 6 - Z-order
 
-A simple stripe packing puts cells with the same x in adjacent linear positions. A Z-order (Morton) curve interleaves x and y bits, so spatial neighbours in 2D are usually neighbours in the linear order — even across "stripe" boundaries.
+A simple stripe packing puts cells with the same x in adjacent linear positions. A Z-order (Morton) curve interleaves x and y bits, so spatial neighbours in 2D are usually neighbours in the linear order - even across "stripe" boundaries.
 
 A Morton encoder for 16-bit x, y:
 
@@ -82,4 +82,4 @@ fn morton_2d(x: u16, y: u16) -> u32 {
 }
 ```
 
-Z-order typically gives ~10–30 % better cache locality than stripe packing on 2D access patterns. The cost is a few more bit operations per row.
+Z-order typically gives ~10-30 % better cache locality than stripe packing on 2D access patterns. The cost is a few more bit operations per row.

@@ -1,4 +1,4 @@
-//! power_loop — sustain a workload while you measure package power in another terminal.
+//! power_loop - sustain a workload while you measure package power in another terminal.
 //!
 //! Usage:
 //!
@@ -14,11 +14,11 @@
 //!     sudo perf stat -a -e power/energy-pkg/ -- sleep 30
 //!
 //! Divide the reported joules by 30 for the average package watts. Compare
-//! across modes — and against an idle baseline. Used by §4's exercise 9.
+//! across modes - and against an idle baseline. Used by §4's exercise 9.
 
 use std::time::{Duration, Instant};
 
-/// Working-set size in u64 elements. 10M × 8 B = 80 MB — bigger than any L3
+/// Working-set size in u64 elements. 10M × 8 B = 80 MB - bigger than any L3
 /// on commodity hardware, so the loop is RAM-bound under both modes.
 const N: usize = 10_000_000;
 
@@ -92,6 +92,6 @@ fn main() {
 
     let elapsed = start.elapsed();
     eprintln!(
-        "done: {iters} iterations in {elapsed:?} — sum = {sum} (kept to prevent dead-code elim)"
+        "done: {iters} iterations in {elapsed:?} - sum = {sum} (kept to prevent dead-code elim)"
     );
 }

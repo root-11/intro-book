@@ -1,8 +1,8 @@
-# 13 — A system is a function over tables
+# 13 - A system is a function over tables
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 13](../../concepts/glossary.md#13--a-system-is-a-function-over-tables).*
 
-<p align="center"><img src="../illustrations/differential_equations.jpg" alt="A mouse at the chalkboard — systems are functions of state" style="max-height: 300px; max-width: 100%;"></p>
+<p align="center"><img src="../illustrations/differential_equations.jpg" alt="A mouse at the chalkboard - systems are functions of state" style="max-height: 300px; max-width: 100%;"></p>
 
 A *system* is a function that reads from one or more tables and writes to one or more tables. It declares its inputs (the *read-set*) and its outputs (the *write-set*). It has no hidden state, no global side effects, no interaction with the outside world during a tick. The signature is the contract.
 
@@ -29,9 +29,9 @@ These three shapes are the same shapes a database query takes. `SELECT * FROM t 
 
 The contract that the system has *no hidden state* is what makes systems compose. Two systems with disjoint write-sets can run in parallel without coordination ([§31](31_disjoint_writes_parallelize.md)). Two systems whose read-set and write-set form a chain must run in order ([§14](14_systems_compose_into_a_dag.md)). The contract is the basis for all of this.
 
-Even *observability* is a system. A debug inspector is a system whose read-set is "all tables" and whose write-set is "nothing". It runs alongside the others, gathers data for inspection, and produces no side effects on the world. In production it is *absent*, not gated by a flag — the binary simply does not contain it.
+Even *observability* is a system. A debug inspector is a system whose read-set is "all tables" and whose write-set is "nothing". It runs alongside the others, gathers data for inspection, and produces no side effects on the world. In production it is *absent*, not gated by a flag - the binary simply does not contain it.
 
-A few patterns to watch for. A function that reads a table, writes to it, and reads it again in the same call is *not* a system — it has implicit ordering inside the body. Either split it into two systems with explicit ordering, or buffer the writes until the function exits. A function that takes `&mut World` and mutates whatever it likes is *not* a system — it has no declared write-set, and you cannot reason about it from its signature.
+A few patterns to watch for. A function that reads a table, writes to it, and reads it again in the same call is *not* a system - it has implicit ordering inside the body. Either split it into two systems with explicit ordering, or buffer the writes until the function exits. A function that takes `&mut World` and mutates whatever it likes is *not* a system - it has no declared write-set, and you cannot reason about it from its signature.
 
 A system declares its inputs, declares its outputs, and does no more. That is the shape that lets every other discipline in the book work.
 
@@ -55,4 +55,4 @@ Reference notes in [13_system_as_function_solutions.md](13_system_as_function_so
 
 ## What's next
 
-[§14 — Systems compose into a DAG](14_systems_compose_into_a_dag.md) takes the next step: when many systems run together, how do they fit?
+[§14 - Systems compose into a DAG](14_systems_compose_into_a_dag.md) takes the next step: when many systems run together, how do they fit?

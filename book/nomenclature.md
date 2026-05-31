@@ -6,9 +6,9 @@ Quick reference for symbols, notation, and abbreviations the book uses. Concept 
 
 | Symbol | Meaning |
 |---|---|
-| §N | Section number — e.g., §5 refers to section 5. |
+| §N | Section number - e.g., §5 refers to section 5. |
 | → | Leads to / becomes / transitions to. Appears in section titles (e.g., §29 "10K → 1M") and prose. |
-| `[!NOTE]` / `[!TIP]` / `[!WARNING]` | Callout box — content the reader should pay particular attention to. |
+| `[!NOTE]` / `[!TIP]` / `[!WARNING]` | Callout box - content the reader should pay particular attention to. |
 
 ## Text formatting
 
@@ -23,7 +23,7 @@ Quick reference for symbols, notation, and abbreviations the book uses. Concept 
 | Variable | Meaning |
 |---|---|
 | `i`, `j` | Index into a table. `i` is the index of the row currently under discussion. |
-| `t` or `tick` | Tick number — the simulator's step counter. |
+| `t` or `tick` | Tick number - the simulator's step counter. |
 | `id` | Stable entity identifier (an integer). |
 | `gen` | Generation counter, paired with a slot index to detect stale references (§10). |
 | `pos`, `vel` | Position and velocity of a creature. |
@@ -47,14 +47,14 @@ Quick reference for symbols, notation, and abbreviations the book uses. Concept 
 | ECS | Entity-Component-Systems |
 | EBP | Existence-Based Processing |
 | DOD | Data-Oriented Design |
-| SoA | Structure of Arrays — each field is its own column. |
-| AoS | Array of Structures — each row is its own struct. |
+| SoA | Structure of Arrays - each field is its own column. |
+| AoS | Array of Structures - each row is its own struct. |
 | DAG | Directed Acyclic Graph |
 | IOPS | I/O Operations Per Second |
 | TDD | Test-Driven Development |
 | LRU | Least Recently Used (cache eviction policy) |
 
-*EBP* is this book's shorthand. The spelled-out term — *existence-based processing* — is Richard Fabian's, from [*Data-Oriented Design*](https://www.dataorienteddesign.com/dodbook/); §17 introduces it from the simulator. An acronym index will not list "EBP" because the source literature spells the term out rather than abbreviating it.
+*EBP* is this book's shorthand. The spelled-out term - *existence-based processing* - is Richard Fabian's, from [*Data-Oriented Design*](https://www.dataorienteddesign.com/dodbook/); §17 introduces it from the simulator. An acronym index will not list "EBP" because the source literature spells the term out rather than abbreviating it.
 
 ## Naming in code
 

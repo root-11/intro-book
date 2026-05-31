@@ -1,10 +1,10 @@
-# 16 — Determinism by order
+# 16 - Determinism by order
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 16](../../concepts/glossary.md#16--determinism-by-order).*
 
-<p align="center"><img src="../illustrations/monte_carlo.jpg" alt="Monte Carlo estimate of π — same seed, same answer, every run" style="max-height: 300px; max-width: 100%;"></p>
+<p align="center"><img src="../illustrations/monte_carlo.jpg" alt="Monte Carlo estimate of π - same seed, same answer, every run" style="max-height: 300px; max-width: 100%;"></p>
 
-A program is *deterministic* if the same inputs and the same execution produce the same outputs, every time. Sounds obvious. It is not — most modern programs are *not* deterministic by default. Threads run in OS-scheduled order. Hash maps may iterate in randomised order. The system clock differs by run. `rand::thread_rng()` differs by process.
+A program is *deterministic* if the same inputs and the same execution produce the same outputs, every time. Sounds obvious. It is not - most modern programs are *not* deterministic by default. Threads run in OS-scheduled order. Hash maps may iterate in randomised order. The system clock differs by run. `rand::thread_rng()` differs by process.
 
 In an ECS architecture, determinism is structural. Same world state at tick start + same system order + same inputs (events, RNG seed) = same world state at tick end. Bit-identical. Every time.
 
@@ -23,15 +23,15 @@ The recipe for determinism is simple: forbid every source of non-determinism in 
 - **No threads inside a system.** A system runs single-threaded internally. Parallelism happens *between* systems with disjoint write-sets ([§31](31_disjoint_writes_parallelize.md)), not inside one system.
 - **Buffered mutations.** [§15](15_state_changes_between_ticks.md)'s rule: mutations apply at tick boundaries, not mid-tick.
 
-These rules are restrictive. They are also the price of every benefit listed above. Most modern programs decline to pay this price and accept the costs — flaky tests, unreproducible bugs, divergent distributed simulation. The book pays the price.
+These rules are restrictive. They are also the price of every benefit listed above. Most modern programs decline to pay this price and accept the costs - flaky tests, unreproducible bugs, divergent distributed simulation. The book pays the price.
 
-The cost of determinism is not absolute. *Within* a system, the implementation is free to use whatever it likes — SIMD intrinsics, branch hints, compile-time tricks — as long as the inputs and outputs are bit-identical to what the abstract specification demands. The discipline is at the system boundary: between systems, everything must be reproducible.
+The cost of determinism is not absolute. *Within* a system, the implementation is free to use whatever it likes - SIMD intrinsics, branch hints, compile-time tricks - as long as the inputs and outputs are bit-identical to what the abstract specification demands. The discipline is at the system boundary: between systems, everything must be reproducible.
 
 A test for determinism is concrete. Run the simulator twice with the same seed, the same input event log, the same system order. After 1 000 ticks, hash the entire world state. If the hashes match, you are deterministic. If they do not, find the system whose output first differs, and trace the source of variability. Often: a `HashMap`, a system clock, a thread.
 
-A simulator that is deterministic is also a simulator that *can be tested*. Once that property holds, every other quality goal — performance, parallelism, distribution — becomes safe to optimise toward. Without determinism, every optimisation is a coin flip.
+A simulator that is deterministic is also a simulator that *can be tested*. Once that property holds, every other quality goal - performance, parallelism, distribution - becomes safe to optimise toward. Without determinism, every optimisation is a coin flip.
 
-The full payoff of determinism arrives at the *save and load* phase named in [§11](11_the_tick.md). The simulator can be paused, its tables serialised to disk, reloaded later, and resumed — and the result must be indistinguishable from a run that never paused. The mechanics arrive in [§36 — Persistence is table serialization](36_persistence_is_serialization.md): a snapshot is the world's tables written as a stream of `(entity, key, value)` triples — the same shape they have in memory. Combined with the input event log, replay is structural — read the snapshot, replay events through the same DAG with the same seed, you reconstruct the world at any later tick exactly. Determinism (this section), serialization ([§36](36_persistence_is_serialization.md)), and log-as-world ([§37](37_log_is_world.md)) are the three legs of replay.
+The full payoff of determinism arrives at the *save and load* phase named in [§11](11_the_tick.md). The simulator can be paused, its tables serialised to disk, reloaded later, and resumed - and the result must be indistinguishable from a run that never paused. The mechanics arrive in [§36 - Persistence is table serialization](36_persistence_is_serialization.md): a snapshot is the world's tables written as a stream of `(entity, key, value)` triples - the same shape they have in memory. Combined with the input event log, replay is structural - read the snapshot, replay events through the same DAG with the same seed, you reconstruct the world at any later tick exactly. Determinism (this section), serialization ([§36](36_persistence_is_serialization.md)), and log-as-world ([§37](37_log_is_world.md)) are the three legs of replay.
 
 ## Exercises
 
@@ -47,4 +47,4 @@ Reference notes in [16_determinism_by_order_solutions.md](16_determinism_by_orde
 
 ## What's next
 
-You have closed Time & passes. The next phase is *Existence-based processing*, starting with [§17 — Presence replaces flags](17_presence_replaces_flags.md). The simulator's hunger and starvation systems are about to lose their booleans.
+You have closed Time & passes. The next phase is *Existence-based processing*, starting with [§17 - Presence replaces flags](17_presence_replaces_flags.md). The simulator's hunger and starvation systems are about to lose their booleans.

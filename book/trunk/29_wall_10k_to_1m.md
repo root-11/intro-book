@@ -1,12 +1,12 @@
-# 29 — The wall at 10K → 1M
+# 29 - The wall at 10K → 1M
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 29](../../concepts/glossary.md#29--the-wall-at-10k--1m).*
 
-<p align="center"><img src="../illustrations/hard_hat_repeat.jpg" alt="Construction mouse — scale up the build, MEASURE / CALCULATE / DESIGN / BUILD / REPEAT" style="max-height: 300px; max-width: 100%;"></p>
+<p align="center"><img src="../illustrations/hard_hat_repeat.jpg" alt="Construction mouse - scale up the build, MEASURE / CALCULATE / DESIGN / BUILD / REPEAT" style="max-height: 300px; max-width: 100%;"></p>
 
-A simulator that runs cleanly at 10 000 creatures often grinds to a halt at 1 000 000. Not because the algorithm changed — because constant factors that were invisible at the smaller scale now bind.
+A simulator that runs cleanly at 10 000 creatures often grinds to a halt at 1 000 000. Not because the algorithm changed - because constant factors that were invisible at the smaller scale now bind.
 
-This chapter is about *finding the wall*. The fixes are techniques you already have: hot/cold splits (§26), working-set discipline (§27), sort for locality (§28), pre-sized buffers, batched cleanup. The chapter's job is to teach the reader to *measure* — to find which constant factors blew up.
+This chapter is about *finding the wall*. The fixes are techniques you already have: hot/cold splits (§26), working-set discipline (§27), sort for locality (§28), pre-sized buffers, batched cleanup. The chapter's job is to teach the reader to *measure* - to find which constant factors blew up.
 
 Constant-factor bugs that bind at 10K → 1M:
 
@@ -17,7 +17,7 @@ Constant-factor bugs that bind at 10K → 1M:
 - **Per-tick allocation.** A system that allocates a fresh `Vec` per tick was fine when the `Vec` was 1 KB. At 1M it is 100 KB; allocation latency starts to matter. Fix: reuse buffers across ticks.
 - **Logging.** A `println!` per creature was tolerable at 10K. At 1M it is the simulator's bottleneck. Fix: buffered logging, periodic snapshots, or simply turn it off.
 
-The pattern: any cost that was O(1) per creature, multiplied by 1M, is no longer free. Anything that was O(N) per tick at 10K is now O(N²)-equivalent in wall time. The fixes are local — each cost is a single-line change — but finding them requires measurement.
+The pattern: any cost that was O(1) per creature, multiplied by 1M, is no longer free. Anything that was O(N) per tick at 10K is now O(N²)-equivalent in wall time. The fixes are local - each cost is a single-line change - but finding them requires measurement.
 
 The right tool is a profiler. `cargo flamegraph` (or `perf record` + `perf report`) tells you where the time goes. The same simulator at 10K and 1M produces different flame graphs; the wall is the difference.
 
@@ -39,4 +39,4 @@ Reference notes in [29_wall_10k_to_1m_solutions.md](29_wall_10k_to_1m_solutions.
 
 ## What's next
 
-[§30 — Moving beyond the wall](30_streaming_wall.md) takes the next step: when even your fastest, tightest, hot/cold-split, sorted-for-locality simulator no longer fits in RAM, the architecture itself shifts.
+[§30 - Moving beyond the wall](30_streaming_wall.md) takes the next step: when even your fastest, tightest, hot/cold-split, sorted-for-locality simulator no longer fits in RAM, the architecture itself shifts.

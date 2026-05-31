@@ -17,7 +17,7 @@ fn main() {
     println!("  f32: 1e10 - (1e10 - 1.0) = {}", f32_diff);
     println!("  f64: 1e10 - (1e10 - 1.0) = {}", f64_diff);
 
-    // §2 exercise 7 stretch — show f32 epsilon
+    // §2 exercise 7 stretch - show f32 epsilon
     println!();
     println!("f32::MAX        = {:e}", f32::MAX);
     println!("f32::EPSILON    = {:e}", f32::EPSILON);

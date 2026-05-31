@@ -1,6 +1,6 @@
-# Solutions: 40 — Mechanism vs policy
+# Solutions: 40 - Mechanism vs policy
 
-## Exercise 1 — Find the mechanism
+## Exercise 1 - Find the mechanism
 
 | system            | mechanism                                       | policy                                  |
 |-------------------|-------------------------------------------------|-----------------------------------------|
@@ -15,7 +15,7 @@
 
 `cleanup` is the cleanest mechanism in the simulator: no decisions, just commits. `inspect` is the cleanest read-only mechanism. `apply_starve` and `apply_reproduce` are mostly policy with a thin mechanism layer.
 
-## Exercise 2 — Replace a policy
+## Exercise 2 - Replace a policy
 
 ```rust,no_run
 fn apply_starve(/* ... */) {
@@ -29,7 +29,7 @@ fn apply_starve(/* ... */) {
 
 `cleanup` does not change. The simulator behaves differently; the kernel is unmoved. This is the test of separation: did the change touch only one file?
 
-## Exercise 3 — Add a new policy
+## Exercise 3 - Add a new policy
 
 ```rust,no_run
 fn apply_predation(/* ... */) {
@@ -43,10 +43,10 @@ fn apply_predation(/* ... */) {
 
 Both `apply_starve` and `apply_predation` push to `to_remove`. Cleanup applies the union without distinction. The two policies compose because they produce the same shape of output (an id to remove); the mechanism does not care why.
 
-## Exercise 4 — Anti-pattern
+## Exercise 4 - Anti-pattern
 
 Common offender: a logger system that writes directly to disk inside the system body, rather than pushing to an output queue. It mixes "decide what to log" (policy) with "write to disk" (mechanism). Refactor the disk write into a queue + cleanup-style flush.
 
-## Exercise 5 — A second mechanism
+## Exercise 5 - A second mechanism
 
-A `cleanup_with_archive` mechanism reads `to_remove` and, instead of `swap_remove`-ing the row, copies it into a `dead` archive table before removing it from `creatures`. Policies (`apply_starve`, `apply_predation`) are unchanged — they still push to `to_remove`. Switch between the two mechanisms by swapping which one is in the DAG, not by editing any policy.
+A `cleanup_with_archive` mechanism reads `to_remove` and, instead of `swap_remove`-ing the row, copies it into a `dead` archive table before removing it from `creatures`. Policies (`apply_starve`, `apply_predation`) are unchanged - they still push to `to_remove`. Switch between the two mechanisms by swapping which one is in the DAG, not by editing any policy.

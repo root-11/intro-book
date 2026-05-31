@@ -1,4 +1,4 @@
-//! soa_vs_aos — count entries with a given location in SoA vs AoS layouts.
+//! soa_vs_aos - count entries with a given location in SoA vs AoS layouts.
 //! Used by §7 exercises 3, 4, 5.
 //!
 //!     cargo run --release --bin soa_vs_aos

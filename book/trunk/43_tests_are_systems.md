@@ -1,8 +1,8 @@
-# 43 — Tests are systems; TDD from day one
+# 43 - Tests are systems; TDD from day one
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 43](../../concepts/glossary.md#43--tests-are-systems-tdd-from-day-one).*
 
-<p align="center"><img src="../illustrations/dag_planning_checklist.jpg" alt="PLAN, ANALYZE, DESIGN, BUILD, TEST, IMPROVE — tests are part of the same loop, written first" style="max-height: 300px; max-width: 100%;"></p>
+<p align="center"><img src="../illustrations/dag_planning_checklist.jpg" alt="PLAN, ANALYZE, DESIGN, BUILD, TEST, IMPROVE - tests are part of the same loop, written first" style="max-height: 300px; max-width: 100%;"></p>
 
 A test reads the world's state and asserts that some property holds. A system reads the world's state and writes a derived result. The two are structurally the same.
 
@@ -37,7 +37,7 @@ Three benefits compound.
 
 **Replay tests over event logs fall out.** A replay test loads a recorded log, runs the replayer, and compares the resulting world to a snapshot. The "test" is the comparison; the comparison is a system over both worlds' tables.
 
-**Integration tests do not need mocks.** A mock exists because the test cannot exercise the real component. The boundary-as-queue rule from [§35](35_boundary_is_the_queue.md) means there are no external components inside the simulator — every external interaction goes through the queues. A test fills the in-queue with synthetic input, runs the simulator, asserts on the out-queue. No mocks; the test reads the same data the simulator reads.
+**Integration tests do not need mocks.** A mock exists because the test cannot exercise the real component. The boundary-as-queue rule from [§35](35_boundary_is_the_queue.md) means there are no external components inside the simulator - every external interaction goes through the queues. A test fills the in-queue with synthetic input, runs the simulator, asserts on the out-queue. No mocks; the test reads the same data the simulator reads.
 
 The TDD-from-day-one piece is what makes this practical. From [§5](05_identity_is_an_integer.md) onward, every concept in the book is approached test-first. *What's the smallest case? What's the largest? What should the answer be for `u8`, for `u32`, for 10 000 agent ids?* The deck-game exercises start by asking "what should this return for a deck of 0 cards, of 1, of 52?" The simulator's exercises ask "what should population be after 100 ticks of zero food?" Tests come first; implementation follows.
 
@@ -49,7 +49,7 @@ The discipline pays off three ways:
 
 The book is closing.
 
-Forty-two concepts; nine phases; one through-line simulator. The disciplines named in this last phase — mechanism vs policy, compression-oriented programming, you-can-only-fix-what-you-wrote, tests-are-systems — are the rules that hold the rest together. They are not new architecture. They are how the architecture earlier chapters built stays maintainable.
+Forty-two concepts; nine phases; one through-line simulator. The disciplines named in this last phase - mechanism vs policy, compression-oriented programming, you-can-only-fix-what-you-wrote, tests-are-systems - are the rules that hold the rest together. They are not new architecture. They are how the architecture earlier chapters built stays maintainable.
 
 A simulator that respects all forty-three nodes is one whose state is in tables, whose transformations are systems, whose tick is a pure function, whose history is a log, whose persistence is transposition, whose tests are systems, and whose dependencies are bets you took with your eyes open.
 
@@ -60,13 +60,13 @@ That is the data-oriented program. That is the book.
 1. **A test as a system.** Take the `no_creature_moves_too_far` system from the prose. Add it to your simulator's DAG behind a `--test` flag. Run for 100 ticks. The system should report zero suspicious creatures.
 2. **A property test.** Run the simulator for 1000 ticks with seed `0xCAFE`. Assert: `population <= 2 * initial_population`. Run twice with the same seed; both runs should report the same outcome (passing or failing at the same tick).
 3. **A replay test.** Save the in-queue of a 100-tick run. Load it into a fresh simulator and replay. After 100 ticks, hash both worlds. They must match.
-4. **TDD a new system.** Pick a piece of behaviour you have not built — say, "creatures with energy above 50 grow more slowly". Write the test first: what's the smallest case (one creature)? Largest (a million)? Then write the system. Confirm the test passes.
-5. **The InspectionSystem connection.** Take the test from exercise 1 and the inspection-system idea from [§13](13_system_as_function.md). Argue why they are structurally identical — same read-set, same lack of write-set, same scheduling slot.
+4. **TDD a new system.** Pick a piece of behaviour you have not built - say, "creatures with energy above 50 grow more slowly". Write the test first: what's the smallest case (one creature)? Largest (a million)? Then write the system. Confirm the test passes.
+5. **The InspectionSystem connection.** Take the test from exercise 1 and the inspection-system idea from [§13](13_system_as_function.md). Argue why they are structurally identical - same read-set, same lack of write-set, same scheduling slot.
 6. *(stretch)* **A test runner that *is* the simulator's scheduler.** Implement a tiny test runner whose only difference from the simulator's scheduler is *which* systems it includes in the DAG: production systems for live runs, test-and-inspection systems for test runs. The two binaries share most of their code; the difference is the systems list.
 
 Reference notes in [43_tests_are_systems_solutions.md](43_tests_are_systems_solutions.md).
 
 ## What's next
 
-You have closed the trunk. [§44 — What you have built](44_closure.md) looks back at the shape of what you built and opens the questions the book deliberately did not settle.
+You have closed the trunk. [§44 - What you have built](44_closure.md) looks back at the shape of what you built and opens the questions the book deliberately did not settle.
 

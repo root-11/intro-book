@@ -1,20 +1,20 @@
-# 38 — Storage systems: bandwidth and IOPS
+# 38 - Storage systems: bandwidth and IOPS
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 38](../../concepts/glossary.md#38--storage-systems-bandwidth-and-iops).*
 
-A *storage system* is the part of the program that crosses the boundary into something that holds bytes for longer than RAM does. Disk, network, distributed file system, message queue, message broker — all are storage systems. They differ in technology; they share a cost model.
+A *storage system* is the part of the program that crosses the boundary into something that holds bytes for longer than RAM does. Disk, network, distributed file system, message queue, message broker - all are storage systems. They differ in technology; they share a cost model.
 
 The cost has two dimensions.
 
-**Bandwidth** — bytes per second. How fast bytes can move through the storage system. NVMe SSD is roughly 3-7 GB/s read, 2-5 GB/s write. SATA SSD: ~500 MB/s. Spinning HDD: 100-200 MB/s sequential. Gigabit network: 100 MB/s. 10 Gbit network: 1 GB/s. SQLite on local NVMe: 200-500 MB/s for bulk inserts.
+**Bandwidth** - bytes per second. How fast bytes can move through the storage system. NVMe SSD is roughly 3-7 GB/s read, 2-5 GB/s write. SATA SSD: ~500 MB/s. Spinning HDD: 100-200 MB/s sequential. Gigabit network: 100 MB/s. 10 Gbit network: 1 GB/s. SQLite on local NVMe: 200-500 MB/s for bulk inserts.
 
-**IOPS** — operations per second. How many separate read/write operations the storage system can complete per second. NVMe: 100K-1M random IOPS; sequential IOPS counts are much higher (the underlying flash can stream). SATA SSD: 50-100K IOPS. HDD: 100-200 IOPS (limited by seek time). Network connection: bounded by latency × concurrency.
+**IOPS** - operations per second. How many separate read/write operations the storage system can complete per second. NVMe: 100K-1M random IOPS; sequential IOPS counts are much higher (the underlying flash can stream). SATA SSD: 50-100K IOPS. HDD: 100-200 IOPS (limited by seek time). Network connection: bounded by latency × concurrency.
 
 A workload's cost is bounded by *both*. A 1 MB sequential read on NVMe is one IOP and ~250 µs of bandwidth time. A million 1-byte random reads is a million IOPs and ~10 seconds of latency time. Same total bytes, three orders of magnitude apart.
 
 The [§22](22_mutations_buffer.md) batched-cleanup pattern at [§30](30_streaming_wall.md)'s streaming scale gathers many small mutations into one large write. This converts a high-IOPS, low-bandwidth workload (1000 separate writes per tick) into a low-IOPS, bandwidth-friendly one (one batched write per tick). The pattern is the natural fit for storage systems where IOPS is the binding constraint.
 
-<p align="center"><img src="../illustrations/power_supply_components.jpg" alt="Storage systems have bandwidth and IOPS — counted like power and current" style="max-height: 300px; max-width: 100%;"></p>
+<p align="center"><img src="../illustrations/power_supply_components.jpg" alt="Storage systems have bandwidth and IOPS - counted like power and current" style="max-height: 300px; max-width: 100%;"></p>
 
 Three concrete examples worth keeping in mind:
 
@@ -22,11 +22,11 @@ Three concrete examples worth keeping in mind:
 
 **Network sockets.** A round-trip to a server is bounded by latency: ~0.1 ms LAN, ~10-100 ms internet, ~1 ms data centre. Each round-trip is one IOP from the workload's perspective. Bandwidth is not the binding constraint until the response is many KB. The §22 pattern at this scale: batch many requests into one round-trip.
 
-**Distributed file systems.** S3, EFS, CephFS — bandwidth scales with concurrency (many parallel reads from many objects = high aggregate bandwidth) but per-object IOPS is low (one operation per request). Workloads that want sequential bandwidth fan out across many objects; workloads that want low latency on small reads do not fit this storage system.
+**Distributed file systems.** S3, EFS, CephFS - bandwidth scales with concurrency (many parallel reads from many objects = high aggregate bandwidth) but per-object IOPS is low (one operation per request). Workloads that want sequential bandwidth fan out across many objects; workloads that want low latency on small reads do not fit this storage system.
 
-The lesson: when adding a storage system to the simulator, measure both bandwidth *and* IOPS *of your workload* — not just the system's spec sheet. A 7 GB/s NVMe drive limited to 100 K IOPS is bottlenecked at ~30 KB per IOP for random workloads. Below that block size, IOPS bind.
+The lesson: when adding a storage system to the simulator, measure both bandwidth *and* IOPS *of your workload* - not just the system's spec sheet. A 7 GB/s NVMe drive limited to 100 K IOPS is bottlenecked at ~30 KB per IOP for random workloads. Below that block size, IOPS bind.
 
-The §4 budget framing applies here too. A 30 Hz tick has 33 ms of budget. A 100 µs disk read costs 0.3 % of the budget. Ten of them cost 3 %. A hundred cost 30 % — already a third of the tick. Bound the I/O per tick, batch where possible, and treat every cross-boundary operation as a real cost in the same ledger as cache misses and arithmetic.
+The §4 budget framing applies here too. A 30 Hz tick has 33 ms of budget. A 100 µs disk read costs 0.3 % of the budget. Ten of them cost 3 %. A hundred cost 30 % - already a third of the tick. Bound the I/O per tick, batch where possible, and treat every cross-boundary operation as a real cost in the same ledger as cache misses and arithmetic.
 
 The simulator inside the boundary is a pure function. The storage system at the boundary is the function's connection to durable reality. The cost of that connection is the bandwidth × IOPS budget; the discipline is the batching pattern; the architecture is the queue.
 
@@ -43,4 +43,4 @@ Reference notes in [38_storage_systems_solutions.md](38_storage_systems_solution
 
 ## What's next
 
-You have closed I/O & persistence. The simulator can now talk to durable storage and external systems without sacrificing determinism or layout discipline. The next phase is *System of systems*, starting with [§39 — System of systems](39_system_of_systems.md): the patterns for work that does not fit the standard tick model — long-running optimisation, time-sliced search, out-of-loop computation. After that, *Discipline* (§40-§43) closes the book with the design rules that keep the simulator working over time.
+You have closed I/O & persistence. The simulator can now talk to durable storage and external systems without sacrificing determinism or layout discipline. The next phase is *System of systems*, starting with [§39 - System of systems](39_system_of_systems.md): the patterns for work that does not fit the standard tick model - long-running optimisation, time-sliced search, out-of-loop computation. After that, *Discipline* (§40-§43) closes the book with the design rules that keep the simulator working over time.

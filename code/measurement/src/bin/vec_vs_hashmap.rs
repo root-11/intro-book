@@ -1,4 +1,4 @@
-//! Vec[i] vs HashMap::get — sequential access on N=1M.
+//! Vec[i] vs HashMap::get - sequential access on N=1M.
 //! Used by §3 exercise 4 and §4 exercise 3.
 
 use std::collections::HashMap;

@@ -1,14 +1,14 @@
-# 32 — Partition, don't lock
+# 32 - Partition, don't lock
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 32](../../concepts/glossary.md#32--partition-dont-lock).*
 
-<p align="center"><img src="../illustrations/bridge_clipboard.jpg" alt="Bridges drawn as independent spans — partition into disjoint write-sets" style="max-height: 300px; max-width: 100%;"></p>
+<p align="center"><img src="../illustrations/bridge_clipboard.jpg" alt="Bridges drawn as independent spans - partition into disjoint write-sets" style="max-height: 300px; max-width: 100%;"></p>
 
-§31 said "disjoint write-sets parallelise freely". What if the system has to write *one* table from many threads? Motion at 1M creatures wants to update `creature.pos` for every creature; the table is one. Eight threads, one table — looks like a lock case.
+§31 said "disjoint write-sets parallelise freely". What if the system has to write *one* table from many threads? Motion at 1M creatures wants to update `creature.pos` for every creature; the table is one. Eight threads, one table - looks like a lock case.
 
 It is not. The fix is to *partition the data*, not to lock the access.
 
-Each thread takes a slice of the table. Thread *t* writes slots `t * N/8 .. (t+1) * N/8` and only those slots. The slices are disjoint by construction; no thread can write where another is writing. Inside each slice, a single thread is the writer — node 25's ownership rule still holds, just at the slice level instead of the table level.
+Each thread takes a slice of the table. Thread *t* writes slots `t * N/8 .. (t+1) * N/8` and only those slots. The slices are disjoint by construction; no thread can write where another is writing. Inside each slice, a single thread is the writer - node 25's ownership rule still holds, just at the slice level instead of the table level.
 
 ```rust,no_run
 use std::thread;
@@ -37,7 +37,7 @@ The choice of partitioning matters.
 
 **By entity range** (above): simple, works when access is uniform. Each thread does the same work on a different slice.
 
-**By spatial cell** (after sort-for-locality, [§28](28_sort_for_locality.md)): each thread takes a region of the world. Useful when interactions are local — neighbours-only collisions, regional behaviours. Threads at boundary cells need a small synchronisation step (or a halo region copied into each thread's input).
+**By spatial cell** (after sort-for-locality, [§28](28_sort_for_locality.md)): each thread takes a region of the world. Useful when interactions are local - neighbours-only collisions, regional behaviours. Threads at boundary cells need a small synchronisation step (or a halo region copied into each thread's input).
 
 **By hash**: each thread takes ids whose hash modulo N matches its thread number. Useful when access is uniform but you want stable thread-to-data mapping across ticks.
 
@@ -45,7 +45,7 @@ The choice of partitioning matters.
 
 The partition shape is the design choice; the partition mechanism (slicing) is trivial in Rust.
 
-A subtlety: even with partitioning, *false sharing* (next section) can wreck the performance gains. If two threads write adjacent fields in the same cache line, the hardware coherency protocol forces them to take turns despite the logical independence. The fix is alignment, padding, or partitioning at cache-line boundaries — [§33](33_false_sharing.md) develops it.
+A subtlety: even with partitioning, *false sharing* (next section) can wreck the performance gains. If two threads write adjacent fields in the same cache line, the hardware coherency protocol forces them to take turns despite the logical independence. The fix is alignment, padding, or partitioning at cache-line boundaries - [§33](33_false_sharing.md) develops it.
 
 The pattern is the right answer to "but I have one big table". You almost never need a lock; you need a partition.
 
@@ -61,4 +61,4 @@ Reference notes in [32_partition_dont_lock_solutions.md](32_partition_dont_lock_
 
 ## What's next
 
-[§33 — False sharing](33_false_sharing.md) names the hardware-level pitfall that can sink the partition pattern: two threads writing different fields in the same cache line slow each other down despite logical independence.
+[§33 - False sharing](33_false_sharing.md) names the hardware-level pitfall that can sink the partition pattern: two threads writing different fields in the same cache line slow each other down despite logical independence.

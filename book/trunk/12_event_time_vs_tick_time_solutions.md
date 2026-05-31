@@ -1,6 +1,6 @@
-# Solutions: 12 — Event time vs tick time
+# Solutions: 12 - Event time vs tick time
 
-## Exercise 1 — A tiny event queue
+## Exercise 1 - A tiny event queue
 
 ```rust
 fn main() {
@@ -22,11 +22,11 @@ fn main() {
 
 The events come out timestamp-sorted, even though they were generated in arbitrary order. The sort is the entire trick.
 
-## Exercise 2 — The wrong way
+## Exercise 2 - The wrong way
 
 A 30 Hz counter advances by `1.0 / 30.0 ≈ 0.0333`. Asking it to fire an event at `t = 0.005` either fires the event at `t = 0.0333` (the first tick boundary that crosses 0.005) or skips it entirely. Either way, the model has lost 28 ms of resolution.
 
-## Exercise 3 — The right way
+## Exercise 3 - The right way
 
 Inside the 30 Hz loop:
 
@@ -38,19 +38,19 @@ while events.first().map(|e| e.0 <= real_now).unwrap_or(false) {
 }
 ```
 
-The event at `t = 0.005` fires inside whichever tick has `real_now >= 0.005` — the first one — and the printed `t` is `0.005`, not the tick boundary. The simulation time is what the data says.
+The event at `t = 0.005` fires inside whichever tick has `real_now >= 0.005` - the first one - and the printed `t` is `0.005`, not the tick boundary. The simulation time is what the data says.
 
-## Exercise 4 — Sampling at different rates
+## Exercise 4 - Sampling at different rates
 
 Run the same event list through three loops at 30 Hz, 60 Hz, 1 Hz. The events fire at the same `t` values in all three runs. Only the wall-clock time at which they fire differs. The model is invariant under tick rate.
 
-## Exercise 5 — Float and time
+## Exercise 5 - Float and time
 
-`f32` has ~7 significant decimal digits. At `t ≈ 1 hour = 3600 s`, the smallest distinguishable step is roughly `3600 / 10^7 = 0.00036 s = 360 µs`. At `t ≈ 1 day = 86400 s`, ~8.6 ms. At `t ≈ 1 year ≈ 3.15 × 10^7 s`, ~3.2 s — `f32` cannot represent millisecond resolution at year-scale.
+`f32` has ~7 significant decimal digits. At `t ≈ 1 hour = 3600 s`, the smallest distinguishable step is roughly `3600 / 10^7 = 0.00036 s = 360 µs`. At `t ≈ 1 day = 86400 s`, ~8.6 ms. At `t ≈ 1 year ≈ 3.15 × 10^7 s`, ~3.2 s - `f32` cannot represent millisecond resolution at year-scale.
 
 `f64` has ~15-16 significant digits. At one year, the smallest step is microseconds. For any simulation longer than a few hours of real time at sub-millisecond resolution, use `f64` for timestamps.
 
-## Exercise 6 — Budget-aware loop
+## Exercise 6 - Budget-aware loop
 
 ```rust,no_run
 let tick_start = Instant::now();

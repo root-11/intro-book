@@ -69,7 +69,7 @@ jobs:
           git config user.name "Forgejo CI"
           git config user.email "ci@pi.local"
           git add -A
-          git commit -q -m "Publish — ${GITHUB_SHA::7} $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git commit -q -m "Publish - ${GITHUB_SHA::7} $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           git remote add codeberg "git@codeberg.org:$CODEBERG_USER/intro-book.git"
           git push -fq codeberg pages
 

@@ -1,6 +1,6 @@
-# Solutions: 2 — Numbers and how they fit
+# Solutions: 2 - Numbers and how they fit
 
-## Exercise 1 — Sizes
+## Exercise 1 - Sizes
 
 ```rust
 use std::mem::size_of;
@@ -17,7 +17,7 @@ fn main() {
 }
 ```
 
-## Exercise 2 — Cache-line packing
+## Exercise 2 - Cache-line packing
 
 |  type | bytes | per 64-byte line |
 |------:|------:|-----------------:|
@@ -28,11 +28,11 @@ fn main() {
 | `f32` |   4   |        16        |
 | `f64` |   8   |         8        |
 
-## Exercise 3 — Width and speed
+## Exercise 3 - Width and speed
 
 A `Vec<u8>` sum reads roughly 1/8 the bytes that a `Vec<u64>` sum does. Modern CPUs are usually memory-bandwidth bound on simple sums, so expect about 4-8× speed difference (not always 8×, because the small-element loop may not auto-vectorise as well, or because the wider type fits more arithmetic per instruction).
 
-## Exercise 4 — Float weirdness
+## Exercise 4 - Float weirdness
 
 ```
 0.0 / 0.0 = NaN
@@ -44,7 +44,7 @@ nan != nan  // true!
 
 `NaN != NaN` is by IEEE 754 definition: there is no sensible value to compare with, so equality is false. `assert!(nan == nan)` would *panic*; we want `assert!(nan != nan)`.
 
-## Exercise 5 — Catastrophic cancellation
+## Exercise 5 - Catastrophic cancellation
 
 ```rust
 let a: f32 = 1e10;
@@ -58,7 +58,7 @@ println!("{}", a - b);    // closer to 1.0
 
 `f32` has ~7 decimal digits; `1e10` already exhausts those. `f64` has ~15.
 
-## Exercise 6 — Choose a width
+## Exercise 6 - Choose a width
 
 | column | type | reasoning |
 |---|---|---|
@@ -68,6 +68,6 @@ println!("{}", a - b);    // closer to 1.0
 | user id, 100M users | `u32` | 4×10⁹ headroom |
 | 16-bit PCM sample | `i16` | the format defines it |
 
-## Exercise 7 — `f32` ranges
+## Exercise 7 - `f32` ranges
 
-`f32::MAX ≈ 3.4×10³⁸`. `f32::EPSILON ≈ 1.2×10⁻⁷`. EPSILON is the smallest `x` for which `1.0 + x ≠ 1.0`. Adding many `EPSILON`-scale numbers to a large value can therefore *not increase it* — they get absorbed. Summing 10⁹ small floats is often less accurate than summing them in pairs (a *Kahan sum* fixes this).
+`f32::MAX ≈ 3.4×10³⁸`. `f32::EPSILON ≈ 1.2×10⁻⁷`. EPSILON is the smallest `x` for which `1.0 + x ≠ 1.0`. Adding many `EPSILON`-scale numbers to a large value can therefore *not increase it* - they get absorbed. Summing 10⁹ small floats is often less accurate than summing them in pairs (a *Kahan sum* fixes this).

@@ -1,4 +1,4 @@
-//! cache_cliffs — sum a Vec<u64> at increasing sizes, print ns/element.
+//! cache_cliffs - sum a Vec<u64> at increasing sizes, print ns/element.
 //! Used by §1 exercise 4 and §4 exercise 4.
 //!
 //!     cargo run --release --bin cache_cliffs
@@ -9,12 +9,12 @@ use std::io::Write;
 use std::time::Instant;
 
 const SIZES: &[usize] = &[
-    1_000,        // ~8 KB     — L1
-    10_000,       // ~80 KB    — L1/L2
-    100_000,      // ~800 KB   — L2/L3
-    1_000_000,    // ~8 MB     — L3/RAM
-    10_000_000,   // ~80 MB    — RAM
-    100_000_000,  // ~800 MB   — RAM
+    1_000,        // ~8 KB     - L1
+    10_000,       // ~80 KB    - L1/L2
+    100_000,      // ~800 KB   - L2/L3
+    1_000_000,    // ~8 MB     - L3/RAM
+    10_000_000,   // ~80 MB    - RAM
+    100_000_000,  // ~800 MB   - RAM
 ];
 
 const TARGET_NS: u128 = 100_000_000; // run each size for at least 100 ms

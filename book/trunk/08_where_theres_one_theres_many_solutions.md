@@ -1,6 +1,6 @@
-# Solutions: 8 — Where there's one, there's many
+# Solutions: 8 - Where there's one, there's many
 
-## Exercise 1 — The function over a slice
+## Exercise 1 - The function over a slice
 
 ```rust
 fn highest_rank_in_hand(hand: &[u32], ranks: &[u8]) -> Option<u8> {
@@ -26,7 +26,7 @@ println!("{:?}", highest_rank_in_hand(&hand0, &ranks)); // None
 
 One function. Three N values. The N = 1 and N = 0 cases are not special-cased; they fall out.
 
-## Exercise 2 — Reverse the urge
+## Exercise 2 - Reverse the urge
 
 ```rust
 fn face_cards(ranks: &[u8]) -> Vec<bool> {
@@ -36,11 +36,11 @@ fn face_cards(ranks: &[u8]) -> Vec<bool> {
 
 Compared to a per-card `Card::is_face_card(&self) -> bool` plus a loop, the array version is shorter, more cache-friendly, and trivially vectorisable.
 
-## Exercise 3 — The N = 0 case
+## Exercise 3 - The N = 0 case
 
-`Option<u8>` returning `None` is the cleanest answer. A panic is hostile to callers (the empty case is a *valid* state of the world — a player just played their last card). A sentinel like `255` confuses the type. `Option` makes the absence visible at the type level.
+`Option<u8>` returning `None` is the cleanest answer. A panic is hostile to callers (the empty case is a *valid* state of the world - a player just played their last card). A sentinel like `255` confuses the type. `Option` makes the absence visible at the type level.
 
-## Exercise 4 — Singleton as trivial array
+## Exercise 4 - Singleton as trivial array
 
 ```rust
 fn red_mask(suits: &[u8]) -> Vec<bool> {
@@ -53,7 +53,7 @@ let is_red_one = red_mask(&[one_suit])[0]; // true
 
 The singleton drops out as a one-element call. There is no separate `is_red(suit: u8) -> bool` function. If the call site is ergonomic enough you may write a thin wrapper for clarity, but the array version is the canonical implementation.
 
-## Exercise 5 — Count overhead
+## Exercise 5 - Count overhead
 
 ```rust,no_run
 use std::time::Instant;
@@ -77,11 +77,11 @@ let count: u64 = mask.iter().filter(|&&b| b).count() as u64;
 println!("array: {:?}, count = {count}", t.elapsed());
 ```
 
-Both produce the same count. At 100,000 entries the array version is typically 2-5× faster — partly because the compiler vectorises `iter().map().collect()` more aggressively than an indexed loop, partly because the predicate is hoisted to the SIMD-friendly form.
+Both produce the same count. At 100,000 entries the array version is typically 2-5× faster - partly because the compiler vectorises `iter().map().collect()` more aggressively than an indexed loop, partly because the predicate is hoisted to the SIMD-friendly form.
 
 The point is not the exact ratio but that the array version *has* room to be optimised. The per-element version is already at its compiler ceiling.
 
-## Exercise 6 — From a tutorial
+## Exercise 6 - From a tutorial
 
 This is open-ended. The expected outcome: the rewritten array-first version is shorter, has fewer indirections, and answers cross-cutting queries (all face cards on the table; all spades in any hand) in one function call rather than a loop over methods.
 

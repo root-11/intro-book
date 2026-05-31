@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# audit_links.sh — list every markdown link in the book, classified by target.
+# audit_links.sh - list every markdown link in the book, classified by target.
 #
 # Usage:
 #   tools/audit_links.sh                  # offline, columnar (default)

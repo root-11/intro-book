@@ -1,4 +1,4 @@
-# 35 — The boundary is the queue
+# 35 - The boundary is the queue
 
 <p align="center"><img src="../covers/phase_io_persistence.jpg" alt="I/O & persistence phase" style="max-height: 380px; max-width: 100%;"></p>
 
@@ -38,7 +38,7 @@ Why this matters:
 
 **Testability.** A test fills the in-queue with a synthetic input, runs one tick, asserts on the out-queue. The test does not need to mock `File`, `TcpStream`, or the system clock; the queue interface is the only thing the simulator sees.
 
-**Distribution.** A distributed simulator with multiple nodes communicates via queues — each node's out-queue feeds another node's in-queue. The queue interface is the same on a single machine and across a network. The simulator's design does not change.
+**Distribution.** A distributed simulator with multiple nodes communicates via queues - each node's out-queue feeds another node's in-queue. The queue interface is the same on a single machine and across a network. The simulator's design does not change.
 
 **Auditability.** Every input that ever reached the simulator is in the in-queue's history. Every output is in the out-queue's history. The simulator's full external interface is two append-only logs.
 
@@ -59,4 +59,4 @@ Reference notes in [35_boundary_is_the_queue_solutions.md](35_boundary_is_the_qu
 
 ## What's next
 
-[§36 — Persistence is table serialization](36_persistence_is_serialization.md) takes the next step: when the simulator pauses and resumes, persistence is just writing the columns and reading them back. No translation, no impedance mismatch.
+[§36 - Persistence is table serialization](36_persistence_is_serialization.md) takes the next step: when the simulator pauses and resumes, persistence is just writing the columns and reading them back. No translation, no impedance mismatch.

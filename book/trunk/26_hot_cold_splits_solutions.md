@@ -1,6 +1,6 @@
-# Solutions: 26 — Hot/cold splits
+# Solutions: 26 - Hot/cold splits
 
-## Exercise 1 — Audit access patterns
+## Exercise 1 - Audit access patterns
 
 For the simulator's eight systems, the field accesses look roughly like this:
 
@@ -17,7 +17,7 @@ For the simulator's eight systems, the field accesses look roughly like this:
 
 Hot fields (read by motion, next_event, apply_eat, apply_reproduce, apply_starve every tick): `pos`, `vel`, `energy`. Cold: `birth_t`, `id`, `gen` (cleanup and inspect only).
 
-## Exercise 2 — Build the split
+## Exercise 2 - Build the split
 
 ```rust,no_run
 struct CreatureHot {
@@ -44,11 +44,11 @@ fn append(hot: &mut CreatureHot, cold: &mut CreatureCold, row: CreatureRow) {
 
 Both tables share the slot index. `hot.pos[17]` and `cold.id[17]` describe the same creature.
 
-## Exercise 3 — Time motion at 1M
+## Exercise 3 - Time motion at 1M
 
 Pre-split: motion's per-tick cost ≈ 3 ns/elem × 1M = 3 ms. Post-split: ≈ 1.5 ns/elem × 1M = 1.5 ms. The factor of 2 is roughly the bandwidth saved by not reading `birth_t`, `id`, `gen` on each iteration.
 
-## Exercise 4 — Cleanup must touch both
+## Exercise 4 - Cleanup must touch both
 
 ```rust,no_run
 fn delete_creature(hot: &mut CreatureHot, cold: &mut CreatureCold, slot: usize) {
@@ -63,14 +63,14 @@ fn delete_creature(hot: &mut CreatureHot, cold: &mut CreatureCold, slot: usize) 
 
 Six `swap_remove` calls instead of three. Still O(6) per delete; the cost is unchanged. Alignment is preserved across both tables because the same slot is removed in lockstep.
 
-## Exercise 5 — A bad split
+## Exercise 5 - A bad split
 
-If `energy` is moved to `creature_cold`, motion's loop now misses cache on every read of `energy` — a cache line per row instead of one cache line per several rows. The bandwidth saved on `birth_t` is dwarfed by the bandwidth lost on `energy`. Motion gets ~1.3× *slower*, not faster.
+If `energy` is moved to `creature_cold`, motion's loop now misses cache on every read of `energy` - a cache line per row instead of one cache line per several rows. The bandwidth saved on `birth_t` is dwarfed by the bandwidth lost on `energy`. Motion gets ~1.3× *slower*, not faster.
 
 The lesson: which fields are hot is decided by the inner loops, not by the data model.
 
-## Exercise 6 — The all-fields case
+## Exercise 6 - The all-fields case
 
-A serialiser reads every field. With the split, it reads two tables instead of one — the cost of the second `Vec` traversal plus the cost of the second range of cache lines. About 5–10% overhead vs the unsplit version.
+A serialiser reads every field. With the split, it reads two tables instead of one - the cost of the second `Vec` traversal plus the cost of the second range of cache lines. About 5-10% overhead vs the unsplit version.
 
 This is fine. The serialiser does not run every tick; it runs at snapshot points. The hot path runs every tick and pays the much larger savings. Average-case cost goes down even though the worst-case cost goes up slightly.

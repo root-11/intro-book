@@ -1,6 +1,6 @@
-# Solutions: 42 — You can only fix what you wrote
+# Solutions: 42 - You can only fix what you wrote
 
-## Exercise 1 — Cargo.toml audit
+## Exercise 1 - Cargo.toml audit
 
 For a typical Rust project's direct dependencies, the classification might look like:
 
@@ -15,7 +15,7 @@ For a typical Rust project's direct dependencies, the classification might look 
 
 The classification reveals which dependencies are bets you have already made (and cannot easily walk back) versus which are bets you can still walk away from.
 
-## Exercise 2 — From-scratch test
+## Exercise 2 - From-scratch test
 
 For `slotmap`: the core (slot allocator, generation counter, get/insert/remove) would be a few hundred lines of Rust. Plausibly a day or two of focused work. If `slotmap` ever became unmaintained, this is your migration path.
 
@@ -23,7 +23,7 @@ For `tokio`: not realistically replaceable. Adoption is a commitment to the ecos
 
 The exercise's value is calibration: how much code does each dependency actually save?
 
-## Exercise 3 — Breakage drill
+## Exercise 3 - Breakage drill
 
 Possible answers for various scenarios:
 
@@ -34,13 +34,13 @@ Possible answers for various scenarios:
 
 Documenting these answers up front is cheap. Discovering them under pressure is expensive.
 
-## Exercise 4 — Small over big
+## Exercise 4 - Small over big
 
 Two crates that do the same job: `easy_thing` (5 000 lines, 50 features) and `simple_thing` (500 lines, 5 features). If you only use the 5 features, prefer `simple_thing`. The smaller crate is easier to read, easier to fork, easier to vendor, easier to debug.
 
 The bigger crate's extra features are someone else's needs, not yours. They are dependency mass without value.
 
-## Exercise 5 — Vendoring
+## Exercise 5 - Vendoring
 
 ```toml
 [dependencies]

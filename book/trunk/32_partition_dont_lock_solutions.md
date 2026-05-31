@@ -1,6 +1,6 @@
-# Solutions: 32 — Partition, don't lock
+# Solutions: 32 - Partition, don't lock
 
-## Exercise 1 — Partition motion
+## Exercise 1 - Partition motion
 
 ```rust,no_run
 use std::thread;
@@ -26,7 +26,7 @@ thread::scope(|s| {
 
 `chunks_mut` is the standard library's slice splitter. Each thread receives its own `&mut [T]`; the borrow checker is satisfied; no `Mutex` is required.
 
-## Exercise 2 — Speedup at scale
+## Exercise 2 - Speedup at scale
 
 | N      |  1 thread |  4 threads |  8 threads |
 |-------:|----------:|-----------:|-----------:|
@@ -36,13 +36,13 @@ thread::scope(|s| {
 
 At 10M, the working set is 200 MB, well past L3. The loop is memory-bandwidth bound; adding threads stops helping past 4 cores. At 1M (in L3), 8 threads gives ≈ 5× speedup.
 
-## Exercise 3 — Spatial partition
+## Exercise 3 - Spatial partition
 
-After [§28](28_sort_for_locality.md)'s spatial sort, creatures in the same region are adjacent in memory. Assigning each thread a region means the cache lines a thread loads are the cache lines that thread uses — no cross-thread cache traffic.
+After [§28](28_sort_for_locality.md)'s spatial sort, creatures in the same region are adjacent in memory. Assigning each thread a region means the cache lines a thread loads are the cache lines that thread uses - no cross-thread cache traffic.
 
 For systems with neighbour reads (`next_event`'s collision check), spatial partitioning is roughly 10-30 % faster than entity-range partitioning at scale, depending on neighbour density.
 
-## Exercise 4 — Workload-weighted partition
+## Exercise 4 - Workload-weighted partition
 
 A naive partition with 1M creatures and 100K active gives some threads all the work and others none. A weighted partition divides the *active* set:
 
@@ -59,7 +59,7 @@ thread::scope(|s| {
 
 Each thread gets ≈ 12 500 active creatures. Cost-per-thread is balanced; total time ≈ `total_active_work / N_THREADS`. The naive version would have one thread doing all the active work → speedup ≈ 1×.
 
-## Exercise 5 — `rayon::par_chunks_mut`
+## Exercise 5 - `rayon::par_chunks_mut`
 
 ```rust,no_run
 use rayon::prelude::*;

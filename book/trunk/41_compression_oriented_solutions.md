@@ -1,10 +1,10 @@
-# Solutions: 41 — Compression-oriented programming
+# Solutions: 41 - Compression-oriented programming
 
-## Exercise 1 — Too-early abstraction
+## Exercise 1 - Too-early abstraction
 
 Look for traits with one impl, generic functions with one caller, or `enum`-shaped types with single-variant patterns. Each is a candidate for inlining. The test: what would the code look like if you removed the abstraction? Often it is clearer.
 
-## Exercise 2 — Three concrete versions
+## Exercise 2 - Three concrete versions
 
 ```rust,no_run
 fn filter_by_hunger(creatures: &[Creature], threshold: f32) -> Vec<u32> {
@@ -32,9 +32,9 @@ fn filter_by_location(creatures: &[Creature], region: Region) -> Vec<u32> {
 }
 ```
 
-Three independent functions. The obvious shared abstraction is `filter_by(predicate: impl Fn(&Creature) -> bool)`. But — read them again. Each is four lines. The abstraction would be one line at each call site. Is the saving worth the indirection?
+Three independent functions. The obvious shared abstraction is `filter_by(predicate: impl Fn(&Creature) -> bool)`. But - read them again. Each is four lines. The abstraction would be one line at each call site. Is the saving worth the indirection?
 
-## Exercise 3 — Resist extraction
+## Exercise 3 - Resist extraction
 
 For four-line functions, the concrete versions are often more legible. The extracted `filter_by(creatures, |c| c.energy < HUNGER)` is the same length but adds a closure. The reader has to parse the closure to know what is being filtered.
 
@@ -46,7 +46,7 @@ The abstraction earns its place when:
 
 For three small cases, leave them concrete.
 
-## Exercise 4 — A fourth case
+## Exercise 4 - A fourth case
 
 `filter_creatures_by_proximity_to_food` takes both `creatures` AND `food`. The signature `fn filter_by(creatures: &[Creature], pred: F)` cannot express it without smuggling `food` through a closure capture. Two options:
 
@@ -55,7 +55,7 @@ For three small cases, leave them concrete.
 
 The fourth case shows the abstraction's limits. A real shared structure would handle it without a special branch.
 
-## Exercise 5 — Library audit
+## Exercise 5 - Library audit
 
 Open-ended. Look at any crate's exported API. For each function or trait, ask: how many concrete cases preceded this in the ecosystem? Often you will find:
 

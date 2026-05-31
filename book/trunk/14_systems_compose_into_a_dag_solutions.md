@@ -1,10 +1,10 @@
-# Solutions: 14 — Systems compose into a DAG
+# Solutions: 14 - Systems compose into a DAG
 
-## Exercise 1 — Draw the DAG
+## Exercise 1 - Draw the DAG
 
 Drawing it by hand from the read-sets and write-sets in `code/sim/SPEC.md` reproduces the diagram in the chapter. Forks (after `next_event`) and joins (before `cleanup`) are the structural fingerprints of parallel-friendly stages.
 
-## Exercise 2 — Spot the cycle
+## Exercise 2 - Spot the cycle
 
 The proposed change creates:
 
@@ -13,17 +13,17 @@ The proposed change creates:
 - `next_event` reads `food`, writes `pending_event`
 - `apply_starve` reads `pending_event`
 
-So `apply_starve → food_spawn → next_event → apply_starve` — a cycle.
+So `apply_starve → food_spawn → next_event → apply_starve` - a cycle.
 
 Three ways to break it:
 
 1. **Buffer the write.** `apply_starve` pushes to `food_to_drop` (a side table); a separate next-tick `food_drop` system applies it.
-2. **Reorder the policy.** Move "food appears where creatures died" out of the inner loop entirely — make food spawn pre-emptive, decoupled from death events.
+2. **Reorder the policy.** Move "food appears where creatures died" out of the inner loop entirely - make food spawn pre-emptive, decoupled from death events.
 3. **Accept the latency.** Allow `apply_starve` to write to a *next-tick* `food` buffer that `food_spawn` reads next tick. The food appears one tick late.
 
 The first is the standard fix: introduce a side table, defer the cross-system write to the next tick.
 
-## Exercise 3 — Topological sort
+## Exercise 3 - Topological sort
 
 ```
 A writes X
@@ -34,7 +34,7 @@ D reads Y and Z, writes W
 
 Dependencies: A → B, A → C, B → D, C → D. B and C are at the same DAG level: they share a read of X but their write-sets (Y and Z) are disjoint, so they can run in parallel. Valid orders include `A, B, C, D` and `A, C, B, D`. Both are correct.
 
-## Exercise 4 — Compose two systems
+## Exercise 4 - Compose two systems
 
 ```rust,no_run
 fn tick(world: &mut World, dt: f32) {
@@ -45,7 +45,7 @@ fn tick(world: &mut World, dt: f32) {
 
 The order is forced: `motion` writes `pos`, `next_event` reads `pos`. Reverse the order and `next_event` reads stale positions.
 
-## Exercise 5 — Add cleanup
+## Exercise 5 - Add cleanup
 
 ```rust,no_run
 fn tick(world: &mut World, dt: f32) {
@@ -57,7 +57,7 @@ fn tick(world: &mut World, dt: f32) {
 
 `cleanup` reads `to_remove` and `to_insert`, writes `creatures`. Neither `motion` nor `next_event` touches those tables, so `cleanup` runs at the end with no DAG conflicts.
 
-## Exercise 6 — A query planner
+## Exercise 6 - A query planner
 
 A SQL plan for `SELECT u.name FROM users u JOIN orders o ON u.id = o.user_id WHERE o.amount > 100` decomposes into:
 

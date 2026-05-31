@@ -1,10 +1,10 @@
-# 39 — System of systems
+# 39 - System of systems
 
 <p align="center"><img src="../covers/phase_system_of_systems.jpg" alt="System of systems phase" style="max-height: 380px; max-width: 100%;"></p>
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 39](../../concepts/glossary.md#39--system-of-systems).*
 
-The trunk so far has assumed every system runs every tick and completes within the tick budget. That covers most of what the simulator does — motion, EBP dispatch, cleanup, persistence — and the surrounding chapters earned the assumption. But the assumption is not universal. Practical simulators have at least three classes of work that do not fit it.
+The trunk so far has assumed every system runs every tick and completes within the tick budget. That covers most of what the simulator does - motion, EBP dispatch, cleanup, persistence - and the surrounding chapters earned the assumption. But the assumption is not universal. Practical simulators have at least three classes of work that do not fit it.
 
 - **Optimisation.** A scheduler choosing which tasks each warehouse robot should take next. A combat AI choosing a counter-strategy. A constraint solver finding a feasible plan. These can take seconds or minutes; they cannot fit in a 33 ms tick.
 - **Search.** The nearest-task scan for a warehouse operator. A path-finder over a large map. A neighbour query in a million-creature world. Even with [§28](28_sort_for_locality.md)'s spatial sort, some searches genuinely take longer than one tick can afford.
@@ -16,7 +16,7 @@ The unifying principle: **a system has a cadence, and the cadence does not have 
 
 ## Anytime algorithms
 
-An *anytime* algorithm produces a valid answer at any time after it has started. The longer it runs, the better the answer. CP-SAT, Monte Carlo Tree Search, evolutionary algorithms, simulated annealing, branch-and-bound — all are anytime. They have a common shape: maintain a *best so far*; refine it as long as time permits; return *best so far* when the budget runs out.
+An *anytime* algorithm produces a valid answer at any time after it has started. The longer it runs, the better the answer. CP-SAT, Monte Carlo Tree Search, evolutionary algorithms, simulated annealing, branch-and-bound - all are anytime. They have a common shape: maintain a *best so far*; refine it as long as time permits; return *best so far* when the budget runs out.
 
 For the simulator, the system call looks synchronous from the trunk's perspective:
 
@@ -31,13 +31,13 @@ fn plan_route(world: &World, deadline: Instant) -> Route {
 }
 ```
 
-The deadline is the budget. The algorithm respects it. Quality is a function of how much time was available — at 5 ms it is mediocre but valid; at 50 ms it is good; at 500 ms it is near-optimal. The simulator can give it whatever budget the tick allows and never get blocked.
+The deadline is the budget. The algorithm respects it. Quality is a function of how much time was available - at 5 ms it is mediocre but valid; at 50 ms it is good; at 500 ms it is near-optimal. The simulator can give it whatever budget the tick allows and never get blocked.
 
 This is [§4](04_cost_and_budget.md) applied to a long computation: the budget is named explicitly, and the algorithm honours it. The student who has internalised the budget calculus already knows how to design these algorithms; the only new vocabulary is the *anytime* contract.
 
 ## Time-sliced computation
 
-Some work cannot be made anytime — there is no "best partial answer" until the work is complete. A spatial search that has examined 20 % of the cells has a 20 % chance of having found the answer; otherwise it has nothing useful to report. For these, the pattern is *time-slicing*: divide the work across many ticks, with the system's *progress* as part of its persistent state.
+Some work cannot be made anytime - there is no "best partial answer" until the work is complete. A spatial search that has examined 20 % of the cells has a 20 % chance of having found the answer; otherwise it has nothing useful to report. For these, the pattern is *time-slicing*: divide the work across many ticks, with the system's *progress* as part of its persistent state.
 
 ```rust,no_run
 struct SpatialSearch {
@@ -66,7 +66,7 @@ This is [§15](15_state_changes_between_ticks.md) applied to a long computation:
 
 ## Out-of-loop computation
 
-For work that is genuinely too large for *any* tick budget — a game AI re-planning its grand strategy, an offline machine-learning model, a remote optimisation service — the pattern is *out-of-loop*: the work runs on a separate thread, process, or machine, completely outside the simulator's tick. The simulator never blocks. When the work completes, its result enters the simulator through the input queue ([§35](35_boundary_is_the_queue.md)) like any other input event.
+For work that is genuinely too large for *any* tick budget - a game AI re-planning its grand strategy, an offline machine-learning model, a remote optimisation service - the pattern is *out-of-loop*: the work runs on a separate thread, process, or machine, completely outside the simulator's tick. The simulator never blocks. When the work completes, its result enters the simulator through the input queue ([§35](35_boundary_is_the_queue.md)) like any other input event.
 
 ```rust,no_run
 // Out-of-loop, on a worker thread:
@@ -85,19 +85,19 @@ fn dispatch_ai(world: &World, snapshot_tx: &Sender<WorldSnapshot>) {
 }
 ```
 
-The simulator dispatches a snapshot every second; the AI thread chews on it; the strategy update lands in the input queue some time later. The strategy might be three ticks late, or three seconds late — the simulator does not know and does not care. The result is just one more input event; the queue mechanism is the same.
+The simulator dispatches a snapshot every second; the AI thread chews on it; the strategy update lands in the input queue some time later. The strategy might be three ticks late, or three seconds late - the simulator does not know and does not care. The result is just one more input event; the queue mechanism is the same.
 
-This is [§35](35_boundary_is_the_queue.md) applied to a long computation: anything that crosses the boundary takes its own time, and the queue absorbs the latency. The discipline is not to wait — never block the tick on an out-of-loop result.
+This is [§35](35_boundary_is_the_queue.md) applied to a long computation: anything that crosses the boundary takes its own time, and the queue absorbs the latency. The discipline is not to wait - never block the tick on an out-of-loop result.
 
 ## Hierarchical scheduling
 
-Production simulators usually combine these patterns. Game engines run physics at 60 Hz (every-tick), AI at 5 Hz (every-12-ticks), save-game at 0.1 Hz (every-300-ticks), and a strategic planner out-of-loop on a worker. Industrial control loops run inner loops at 1 kHz and outer loops at 10 Hz. The DAG generalises: each system is annotated with its cadence; the scheduler runs each according to its frequency or trigger; the result is a *system of systems* — one architecture, many cadences.
+Production simulators usually combine these patterns. Game engines run physics at 60 Hz (every-tick), AI at 5 Hz (every-12-ticks), save-game at 0.1 Hz (every-300-ticks), and a strategic planner out-of-loop on a worker. Industrial control loops run inner loops at 1 kHz and outer loops at 10 Hz. The DAG generalises: each system is annotated with its cadence; the scheduler runs each according to its frequency or trigger; the result is a *system of systems* - one architecture, many cadences.
 
 The chapter is constructive: it names the three patterns and shows where each fits the simulator's existing structure. The next phase, *Discipline*, addresses what comes after: how to keep the architecture working as it ages, as people leave, as requirements change. *Making it work* is this chapter; *keeping it working* is the four chapters that follow.
 
 ## Exercises
 
-1. **Audit cadence.** For each system in your simulator, name its cadence. Most are "every tick"; the ones that are not are candidates for the patterns in this chapter. Note any system whose work is currently capped or skipped because it would exceed the budget — these are unmet needs the patterns can serve.
+1. **Audit cadence.** For each system in your simulator, name its cadence. Most are "every tick"; the ones that are not are candidates for the patterns in this chapter. Note any system whose work is currently capped or skipped because it would exceed the budget - these are unmet needs the patterns can serve.
 2. **Anytime path-finder.** Implement `plan_route(world, deadline)` for one creature. The function returns the best path found within the deadline. With a 5 ms deadline, time how good the answers are; with 50 ms, how much better. Plot quality vs deadline.
 3. **Time-sliced spatial search.** Implement `SpatialSearch` and `step_search` as in the prose. Run it across multiple ticks, advancing the cursor by a budget-bounded `max_cells` each tick. Verify the result is identical to a single-pass search done in one go.
 4. **Out-of-loop AI.** Spawn a worker thread that receives world snapshots and returns strategy updates via channels. Dispatch a snapshot every second; let the worker take 5 seconds; observe that the simulator's tick rate is unaffected and the strategy update lands at the queue when ready.
@@ -108,4 +108,4 @@ Reference notes in [39_system_of_systems_solutions.md](39_system_of_systems_solu
 
 ## What's next
 
-[§40 — Mechanism vs policy](40_mechanism_vs_policy.md) opens *Discipline*: the rules that hold the architecture together over time. Where this chapter was about *making* the system work for problems that don't fit the standard tick, the next four chapters are about *keeping* it working as it ages.
+[§40 - Mechanism vs policy](40_mechanism_vs_policy.md) opens *Discipline*: the rules that hold the architecture together over time. Where this chapter was about *making* the system work for problems that don't fit the standard tick, the next four chapters are about *keeping* it working as it ages.

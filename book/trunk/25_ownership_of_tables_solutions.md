@@ -1,6 +1,6 @@
-# Solutions: 25 — Ownership of tables
+# Solutions: 25 - Ownership of tables
 
-## Exercise 1 — Identify the writers
+## Exercise 1 - Identify the writers
 
 | table              | one writer       | notes                                       |
 |--------------------|------------------|---------------------------------------------|
@@ -15,7 +15,7 @@
 
 The `to_remove` / `to_insert` "many writers" is allowed because each system writes only its own pushes; nobody reads the side table until cleanup.
 
-## Exercise 2 — Constructed violation
+## Exercise 2 - Constructed violation
 
 ```rust,no_run
 // Two systems both write energy directly. Don't do this.
@@ -41,7 +41,7 @@ std::thread::scope(|s| {
 
 Rust's borrow checker rejects the code: `&mut energy` cannot be borrowed twice. The language refuses to compile the violation.
 
-## Exercise 3 — Refactor
+## Exercise 3 - Refactor
 
 Add a side buffer:
 
@@ -61,7 +61,7 @@ fn apply_energy(energy: &mut [f32], deltas: &[(usize, f32)]) {
 
 Now `apply_eat` and `apply_decay` write to disjoint slices of `energy_delta` (use `Vec::extend_from_slice` from per-thread buffers, then merge). The single writer of `energy` is `apply_energy`. The rule holds.
 
-## Exercise 4 — InspectionSystem
+## Exercise 4 - InspectionSystem
 
 ```rust,no_run
 struct WorldSnapshot {
@@ -83,9 +83,9 @@ fn inspect(world: &World) -> WorldSnapshot {
 }
 ```
 
-`fn(&World) -> Snapshot` — read-only; no `&mut` anywhere. The system can run alongside any other system without violating ownership; multiple parallel readers are fine.
+`fn(&World) -> Snapshot` - read-only; no `&mut` anywhere. The system can run alongside any other system without violating ownership; multiple parallel readers are fine.
 
-## Exercise 5 — Borrow checker
+## Exercise 5 - Borrow checker
 
 ```rust,ignore
 let mut a = vec![1, 2, 3];
@@ -99,7 +99,7 @@ error[E0499]: cannot borrow `a` as mutable more than once at a time
 
 The error is the language enforcing the architecture. Two `&mut` borrows of the same `Vec` cannot coexist. By choosing `&mut [T]` everywhere our systems take their write-set, the compiler enforces single-writer ownership at compile time.
 
-## Exercise 6 — Audit
+## Exercise 6 - Audit
 
 The audit should find:
 

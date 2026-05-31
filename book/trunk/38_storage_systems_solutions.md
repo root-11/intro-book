@@ -1,6 +1,6 @@
-# Solutions: 38 — Storage systems
+# Solutions: 38 - Storage systems
 
-## Exercise 1 — Bandwidth
+## Exercise 1 - Bandwidth
 
 ```sh
 $ dd if=/dev/zero of=/tmp/test bs=1M count=1024 oflag=direct
@@ -16,7 +16,7 @@ Typical numbers:
 
 `oflag=direct` bypasses the OS page cache, giving you the device's actual bandwidth, not what the page cache absorbs.
 
-## Exercise 2 — IOPS
+## Exercise 2 - IOPS
 
 ```rust,no_run
 use std::io::Write;
@@ -30,7 +30,7 @@ let start = Instant::now();
 for _ in 0..n {
     f.write_all(&buf)?;
 }
-f.sync_all()?; // important — without this, writes sit in the OS buffer
+f.sync_all()?; // important - without this, writes sit in the OS buffer
 let elapsed = start.elapsed();
 println!("IOPS: {:.0}", n as f64 / elapsed.as_secs_f64());
 ```
@@ -43,7 +43,7 @@ Typical numbers:
 
 Without `sync_all`, the kernel buffers writes; the apparent IOPS is much higher than the device's actual rate. The actual disk-side IOPS is what `sync_all` exposes.
 
-## Exercise 3 — Batched vs unbatched
+## Exercise 3 - Batched vs unbatched
 
 ```rust,no_run
 // Unbatched: 1M writes
@@ -67,7 +67,7 @@ Typical results on NVMe:
 
 100-500× faster. The exact ratio depends on the OS page cache's absorption behaviour; with `sync_all` to expose the actual disk-side cost, the gap is at the upper end.
 
-## Exercise 4 — SQLite throughput
+## Exercise 4 - SQLite throughput
 
 ```rust,no_run
 // Per-row INSERT (no transaction): ~50K rows/sec
@@ -91,9 +91,9 @@ sql.pop(); // trailing comma
 conn.execute(&sql, [])?;
 ```
 
-The IOPS dimension binds the per-row version (each `INSERT` is one disk operation when not in a transaction). The transaction version reduces per-row to one shared commit. The bulk-VALUES version reduces 1M operations to one — bandwidth-bound, not IOPS-bound.
+The IOPS dimension binds the per-row version (each `INSERT` is one disk operation when not in a transaction). The transaction version reduces per-row to one shared commit. The bulk-VALUES version reduces 1M operations to one - bandwidth-bound, not IOPS-bound.
 
-## Exercise 5 — Tick budget
+## Exercise 5 - Tick budget
 
 At 30 Hz: 33 ms / tick = 33 000 µs.
 
@@ -105,7 +105,7 @@ For 1000 mutations per tick:
 
 Unbatched mutations cannot fit a 30 Hz budget; batched ones easily can.
 
-## Exercise 6 — A second storage system
+## Exercise 6 - A second storage system
 
 For SSHFS at LAN latency (~0.5 ms RTT):
 

@@ -1,6 +1,6 @@
-# Solutions: 36 — Persistence is table serialization
+# Solutions: 36 - Persistence is table serialization
 
-## Exercise 1 — Snapshot
+## Exercise 1 - Snapshot
 
 ```rust,no_run
 const SCHEMA_VERSION: u16 = 1;
@@ -29,9 +29,9 @@ fn write_slice<T>(f: &mut std::fs::File, v: &[T]) -> std::io::Result<()> {
 }
 ```
 
-The `unsafe` is for direct byte access. In production, use `bytemuck::Pod` to get the same effect safely. For 1 M creatures, the snapshot is roughly 24 MB; writing it is one bulk syscall, ~5–10 ms on NVMe.
+The `unsafe` is for direct byte access. In production, use `bytemuck::Pod` to get the same effect safely. For 1 M creatures, the snapshot is roughly 24 MB; writing it is one bulk syscall, ~5-10 ms on NVMe.
 
-## Exercise 2 — Load
+## Exercise 2 - Load
 
 ```rust,no_run
 fn load(path: &Path) -> std::io::Result<World> {
@@ -58,7 +58,7 @@ fn load(path: &Path) -> std::io::Result<World> {
 
 After load, `hash_world(&loaded)` matches `hash_world(&original)` byte for byte. Determinism + transposition = round-trip safety.
 
-## Exercise 3 — OOP comparison
+## Exercise 3 - OOP comparison
 
 For 1 M creatures:
 
@@ -68,7 +68,7 @@ For 1 M creatures:
 
 The column-direct version is bound by sequential disk bandwidth. The per-row versions add CPU encoding cost on top.
 
-## Exercise 4 — Schema versioning
+## Exercise 4 - Schema versioning
 
 ```rust,no_run
 let schema_version = u16::from_le_bytes(sv);
@@ -81,7 +81,7 @@ if schema_version >= 2 {
 
 Old snapshots (v1) lack the `hunger_buildup` column; the loader supplies zeros. New snapshots (v2) include it. Both round-trip cleanly. Version migration lives at load time, in one place; the rest of the simulator does not know about it.
 
-## Exercise 5 — Memory-mapped snapshot
+## Exercise 5 - Memory-mapped snapshot
 
 ```rust,no_run
 use memmap2::MmapOptions;
@@ -89,7 +89,7 @@ use memmap2::MmapOptions;
 let f = std::fs::File::open(path)?;
 let mmap = unsafe { MmapOptions::new().map(&f)? };
 let bytes: &[u8] = &mmap;
-// Parse columns directly from `bytes` — no copy.
+// Parse columns directly from `bytes` - no copy.
 ```
 
 For a 24 MB snapshot:

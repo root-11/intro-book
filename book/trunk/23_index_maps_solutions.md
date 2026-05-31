@@ -1,6 +1,6 @@
-# Solutions: 23 — Index maps
+# Solutions: 23 - Index maps
 
-## Exercise 1 — Build the map
+## Exercise 1 - Build the map
 
 ```rust,no_run
 const INVALID: u32 = u32::MAX;
@@ -27,7 +27,7 @@ fn append(world: &mut World, mut row: CreatureRow) -> u32 {
 
 The map grows lazily as new ids are issued. `INVALID` marks dead/never-used slots.
 
-## Exercise 2 — O(1) presence query
+## Exercise 2 - O(1) presence query
 
 ```rust,no_run
 fn is_alive(world: &World, id: u32) -> bool {
@@ -41,9 +41,9 @@ fn slot_of(world: &World, id: u32) -> Option<usize> {
 }
 ```
 
-`is_alive` is two array reads and a comparison — a handful of nanoseconds. Compare with the linear scan from §17, which is hundreds of microseconds at 1 M creatures.
+`is_alive` is two array reads and a comparison - a handful of nanoseconds. Compare with the linear scan from §17, which is hundreds of microseconds at 1 M creatures.
 
-## Exercise 3 — Maintain on swap_remove
+## Exercise 3 - Maintain on swap_remove
 
 ```rust,no_run
 fn delete_by_id(world: &mut World, id: u32) {
@@ -60,7 +60,7 @@ fn delete_by_id(world: &mut World, id: u32) {
 
 Three writes: remove from creatures, update the moved row's slot, mark the deleted id invalid. ~12 bytes per delete; ~12 GB/s of memory bandwidth means each delete is well under 10 ns of bandwidth cost.
 
-## Exercise 4 — Time the difference
+## Exercise 4 - Time the difference
 
 At 1 M creatures, the linear-scan presence check costs ~1 ms. The indexed version costs ~50 ns. Run 100 000 queries per tick:
 
@@ -69,11 +69,11 @@ At 1 M creatures, the linear-scan presence check costs ~1 ms. The indexed versio
 
 The factor of N (a million) shows up in real wall time.
 
-## Exercise 5 — Bandwidth cost of cleanup
+## Exercise 5 - Bandwidth cost of cleanup
 
 1 000 deletes per tick × 12 bytes each = 12 KB written per tick. At ~12 GB/s memory bandwidth, that is ~1 µs. Compare to a 30 Hz budget of 33 ms: ~0.003 % of the tick. The cleanup pass is essentially free; the system can afford to run every tick without measurable cost.
 
-## Exercise 6 — Sort-for-locality compatibility
+## Exercise 6 - Sort-for-locality compatibility
 
 ```rust,no_run
 fn sort_creatures_for_locality(world: &mut World) {
@@ -91,9 +91,9 @@ fn sort_creatures_for_locality(world: &mut World) {
 }
 ```
 
-Every slot moves; the map is rewritten entirely. External references to ids continue to work; references to slots would not (which is why nobody holds slots — they hold ids).
+Every slot moves; the map is rewritten entirely. External references to ids continue to work; references to slots would not (which is why nobody holds slots - they hold ids).
 
-## Exercise 7 — From-scratch generational arena
+## Exercise 7 - From-scratch generational arena
 
 ```rust,no_run
 struct SlotMap<T> {
@@ -127,4 +127,4 @@ impl<T: Clone + Default> SlotMap<T> {
 }
 ```
 
-Compare with [`slotmap::SlotMap`](https://docs.rs/slotmap/) — the same machinery. The crate adds a packed key (slot + gen in one `u64`), an iterator API, and a `null()` sentinel. The shape is identical.
+Compare with [`slotmap::SlotMap`](https://docs.rs/slotmap/) - the same machinery. The crate adds a packed key (slot + gen in one `u64`), an iterator API, and a `null()` sentinel. The shape is identical.

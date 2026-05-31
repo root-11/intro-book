@@ -1,6 +1,6 @@
-# Solutions: 37 — The log is the world
+# Solutions: 37 - The log is the world
 
-## Exercise 1 — Log the simulator
+## Exercise 1 - Log the simulator
 
 ```rust,no_run
 struct Event {
@@ -32,7 +32,7 @@ fn cleanup(world: &mut World, events: &mut Vec<Event>) {
 
 For a 100-creature simulator with steady birth and death, 100 ticks → roughly 200-1000 events depending on activity rate.
 
-## Exercise 2 — Reconstruct from the log
+## Exercise 2 - Reconstruct from the log
 
 ```rust,no_run
 fn replay(initial: &World, events: &[Event]) -> World {
@@ -52,11 +52,11 @@ fn replay(initial: &World, events: &[Event]) -> World {
 
 Run the simulator live for 100 ticks → world A. Run `replay(initial, &events)` → world B. `hash_world(&A) == hash_world(&B)`. The world is the log decoded.
 
-## Exercise 3 — Save and load the log
+## Exercise 3 - Save and load the log
 
-The log is a `Vec<Event>` — same shape as any column-based table. Use [§36](36_persistence_is_serialization.md)'s column serialisation pattern. Save the log; load it; replay it onto the initial world; compare hashes.
+The log is a `Vec<Event>` - same shape as any column-based table. Use [§36](36_persistence_is_serialization.md)'s column serialisation pattern. Save the log; load it; replay it onto the initial world; compare hashes.
 
-## Exercise 4 — Snapshot + log
+## Exercise 4 - Snapshot + log
 
 ```rust,no_run
 // At tick 0: snapshot.
@@ -72,7 +72,7 @@ let world_at_T = replay(&snap_world, &log[0..events_through_tick(T)]);
 
 Snapshots are taken at convenient points; the log is appended continuously. Reconstruction at any T uses the most recent snapshot at S ≤ T plus the log slice from S to T.
 
-## Exercise 5 — Triple-store form
+## Exercise 5 - Triple-store form
 
 ```rust,no_run
 struct Triple { rid: u32, key: u8, val: f64 }
@@ -89,12 +89,12 @@ let triples: Vec<Triple> = events.iter().flat_map(|e| match e.kind {
 
 For events with sparse fields (a `DIE` event uses only `creature_id`; an `EAT` event uses three fields), the triple-store form is 2-3× more compact because empty fields don't take space.
 
-## Exercise 6 — A working specimen
+## Exercise 6 - A working specimen
 
 [`science/simlog/logger.py`](../simlog/logger.py) implements the triple-store shape directly:
 
-- `rids: Vec<u32>` — which entity (the row id)
-- `keys: Vec<u16>` — which column (a numeric code)
-- `vals: Vec<f64>` — the value, as 8 bytes (integers up to 2⁵³ round-trip exactly; strings are codebook-encoded to integers, then stored as the integer)
+- `rids: Vec<u32>` - which entity (the row id)
+- `keys: Vec<u16>` - which column (a numeric code)
+- `vals: Vec<f64>` - the value, as 8 bytes (integers up to 2⁵³ round-trip exactly; strings are codebook-encoded to integers, then stored as the integer)
 
 On read, these are densified into per-field `Vec`s plus presence masks. The same shape that was on disk is now in memory, ready for systems to iterate. The library does not need to know what an "event" is; it stores triples and lets the consumer interpret them. The §17/§37 structural pattern in working code.

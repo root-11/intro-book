@@ -1,6 +1,6 @@
-# Solutions: 33 — False sharing
+# Solutions: 33 - False sharing
 
-## Exercise 1 — The pathological counter
+## Exercise 1 - The pathological counter
 
 ```rust,no_run
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -25,7 +25,7 @@ println!("8 threads on one cache line: {:?}", t.elapsed());
 
 Compare with a single-threaded loop doing 8 × ITERS increments on a single counter. On most chips the single-threaded version is *faster* than the 8-thread version. True negative scaling.
 
-## Exercise 2 — The padded version
+## Exercise 2 - The padded version
 
 ```rust,no_run
 #[repr(align(64))]
@@ -34,9 +34,9 @@ struct Padded(AtomicU64);
 let counters: [Padded; 8] = std::array::from_fn(|_| Padded(AtomicU64::new(0)));
 ```
 
-Each `Padded` occupies a full cache line. The 8 padded counters span 8 cache lines. Re-time the parallel loop. It should now scale near-linearly — typically 6-8× faster than single-threaded.
+Each `Padded` occupies a full cache line. The 8 padded counters span 8 cache lines. Re-time the parallel loop. It should now scale near-linearly - typically 6-8× faster than single-threaded.
 
-## Exercise 3 — Per-thread `to_remove`
+## Exercise 3 - Per-thread `to_remove`
 
 The data inside each thread's `Vec<u32>` lives on the heap, in regions the allocator distributes to be far apart (typically separated by at least one page = 4 KB). False sharing on the data is unlikely.
 
@@ -49,7 +49,7 @@ struct ThreadLocalVec(Vec<u32>);
 let segments: [ThreadLocalVec; 8] = std::array::from_fn(|_| ThreadLocalVec(Vec::new()));
 ```
 
-## Exercise 4 — Adjacent struct fields
+## Exercise 4 - Adjacent struct fields
 
 ```rust,no_run
 struct TwoCounters { a: AtomicU64, b: AtomicU64 } // 16 bytes, one cache line
@@ -66,7 +66,7 @@ thread::scope(|s| {
 });
 ```
 
-Two threads, separate fields, same cache line. Performance is similar to two threads contending on one field — the line is invalidated on every write either way.
+Two threads, separate fields, same cache line. Performance is similar to two threads contending on one field - the line is invalidated on every write either way.
 
 Fix: pad each field to its own cache line.
 
@@ -77,7 +77,7 @@ struct PaddedAtomic(AtomicU64);
 struct TwoCounters { a: PaddedAtomic, b: PaddedAtomic } // 128 bytes, two lines
 ```
 
-## Exercise 5 — Find your cache-line size
+## Exercise 5 - Find your cache-line size
 
 ```sh
 $ getconf LEVEL1_DCACHE_LINESIZE

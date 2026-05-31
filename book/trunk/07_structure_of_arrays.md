@@ -1,10 +1,10 @@
-# 7 — Structure of arrays (SoA)
+# 7 - Structure of arrays (SoA)
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 7](../../concepts/glossary.md#7--structure-of-arrays-soa).*
 
-<p align="center"><img src="../illustrations/ecs_banner.jpg" alt="Three mice: ENTITY, COMPONENT, SYSTEMS — naming the layout that splits an entity into component columns" style="max-height: 300px; max-width: 100%;"></p>
+<p align="center"><img src="../illustrations/ecs_banner.jpg" alt="Three mice: ENTITY, COMPONENT, SYSTEMS - naming the layout that splits an entity into component columns" style="max-height: 300px; max-width: 100%;"></p>
 
-Your deck has three `Vec`s: `suits`, `ranks`, `locations`. Each field lives in its own array, indexed by entity. This layout is called *Structure of Arrays* — SoA. The opposite layout — a single `Vec<Card>` where each element is a struct holding all three fields — is called *Array of Structs* — AoS. They are different choices about *where the same data lives*.
+Your deck has three `Vec`s: `suits`, `ranks`, `locations`. Each field lives in its own array, indexed by entity. This layout is called *Structure of Arrays* - SoA. The opposite layout - a single `Vec<Card>` where each element is a struct holding all three fields - is called *Array of Structs* - AoS. They are different choices about *where the same data lives*.
 
 ```rust,no_run
 // SoA: three columns, indexed in lockstep
@@ -17,13 +17,13 @@ struct Card { suit: u8, rank: u8, location: u8 }
 let cards: Vec<Card> = vec![/* 52 */];
 ```
 
-Most programmers reach for AoS by default because it groups "related" data together. The trouble is that in a real loop "related" is whatever the inner loop reads, not whatever the data model says belongs together. A system that counts cards in player 1's hand reads only `locations` — it does not need suits or ranks at all. With SoA, that loop reads exactly 52 bytes from `locations`. With AoS, the loop reads all three bytes of each `Card` (because they live next to each other in memory and arrive on the same cache line) and ignores two of them — three times the memory traffic for the same answer.
+Most programmers reach for AoS by default because it groups "related" data together. The trouble is that in a real loop "related" is whatever the inner loop reads, not whatever the data model says belongs together. A system that counts cards in player 1's hand reads only `locations` - it does not need suits or ranks at all. With SoA, that loop reads exactly 52 bytes from `locations`. With AoS, the loop reads all three bytes of each `Card` (because they live next to each other in memory and arrive on the same cache line) and ignores two of them - three times the memory traffic for the same answer.
 
-At 52 cards the difference is invisible. At one million creatures with six fields each, the difference is the difference between a 30 Hz simulation and a 5 Hz one. The motion system in §1's simulator reads only `pos`, `vel`, and `energy` — three of six creature fields. With SoA it reads three sequential streams of exactly the bytes it needs. With AoS it reads all six fields of every creature, paying twice the memory bandwidth for half the data it actually wants.
+At 52 cards the difference is invisible. At one million creatures with six fields each, the difference is the difference between a 30 Hz simulation and a 5 Hz one. The motion system in §1's simulator reads only `pos`, `vel`, and `energy` - three of six creature fields. With SoA it reads three sequential streams of exactly the bytes it needs. With AoS it reads all six fields of every creature, paying twice the memory bandwidth for half the data it actually wants.
 
 This is the bandwidth-bound regime named in §4. SoA keeps the inner loop's working set small; AoS bloats it with fields the loop ignores. At cache-spilling sizes (any working set bigger than L3) the bloat becomes the dominant cost.
 
-SoA is therefore the default in this book. AoS is sometimes the right choice — for example when every system reads every field, or when N is so small the cache line is dominated by per-row overhead either way. But this is a tradeoff to *earn* by measurement, not to assume by habit. Write SoA first; switch to AoS only when a benchmark forces you to.
+SoA is therefore the default in this book. AoS is sometimes the right choice - for example when every system reads every field, or when N is so small the cache line is dominated by per-row overhead either way. But this is a tradeoff to *earn* by measurement, not to assume by habit. Write SoA first; switch to AoS only when a benchmark forces you to.
 
 ## Exercises
 
@@ -45,4 +45,4 @@ Reference notes in [07_structure_of_arrays_solutions.md](07_structure_of_arrays_
 
 ## What's next
 
-[§8 — Where there's one, there's many](08_where_theres_one_theres_many.md) is the universalising principle. The deck taught it implicitly; the next section names it.
+[§8 - Where there's one, there's many](08_where_theres_one_theres_many.md) is the universalising principle. The deck taught it implicitly; the next section names it.

@@ -1,14 +1,14 @@
-# Solutions: 1 — The machine model
+# Solutions: 1 - The machine model
 
 These exercises are about *measuring your machine*. Numbers vary; ratios are stable. Run them and write down what you see.
 
-## Exercise 1 — Cache sizes
+## Exercise 1 - Cache sizes
 
 Linux: `lscpu | grep -E 'L1|L2|L3'` or `getconf -a | grep CACHE`.
 
 Typical desktop x86-64 in 2026: L1d 32-48 KB per core, L2 1-2 MB per core, L3 16-128 MB shared. Apple Silicon: larger L1, very large shared L2.
 
-## Exercise 2 — Sequential sum
+## Exercise 2 - Sequential sum
 
 ```rust
 use std::time::Instant;
@@ -27,7 +27,7 @@ fn main() {
 
 Expect somewhere around 0.2-1 ns per element on modern hardware. The loop is memory-bandwidth bound; the CPU is mostly waiting for RAM to deliver lines.
 
-## Exercise 3 — Random-access sum
+## Exercise 3 - Random-access sum
 
 ```rust
 use std::time::Instant;
@@ -55,15 +55,15 @@ fn main() {
 }
 ```
 
-Expect 30-100 ns per element — close to the RAM-latency cost. Each access misses cache.
+Expect 30-100 ns per element - close to the RAM-latency cost. Each access misses cache.
 
-## Exercise 4 — Cache cliffs
+## Exercise 4 - Cache cliffs
 
 The transitions you see roughly correspond to spilling out of L1 (~32 KB), L2 (~1-2 MB), L3 (~32 MB). Below L1 you should see ~0.1-0.3 ns/elem. In L3 maybe 0.5-1.5 ns. Past L3, 0.5-3 ns (sequential, since prefetcher helps even from RAM).
 
 For random-access cliffs (a more dramatic plot), repeat exercise 3 at sizes 1K, 10K, 100K, 1M, 10M, 100M. The transitions are sharper.
 
-## Exercise 5 — Pointer chasing
+## Exercise 5 - Pointer chasing
 
 ```rust
 use std::time::Instant;
@@ -103,9 +103,9 @@ fn main() {
 
 A `Vec<u64>` sum is roughly 1 ns/elem; the linked-list walk is roughly 50-100 ns/elem. The ratio is the L1-to-RAM gap from the prose.
 
-Important: building the linked list with deep recursion would blow the stack at large N. The `build` function above uses a loop precisely so it can scale. The `sum` is also iterative — a recursive walk would blow the stack on the way down.
+Important: building the linked list with deep recursion would blow the stack at large N. The `build` function above uses a loop precisely so it can scale. The `sum` is also iterative - a recursive walk would blow the stack on the way down.
 
-## Exercise 6 — Reading lscpu against your benchmarks
+## Exercise 6 - Reading lscpu against your benchmarks
 
 The transitions are noisy because:
 - Cache levels overlap (a hot cache line might still be in L1 after spilling to L2).

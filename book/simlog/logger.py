@@ -1,32 +1,32 @@
-"""SimLogSparse — high-throughput sparse simulation logger.
+"""SimLogSparse - high-throughput sparse simulation logger.
 
 Why this design?
 ----------------
 We benchmarked seven logger architectures head-to-head on realistic
-simulation workloads (2 M rows, 11–34 fields, ~5 populated per row,
+simulation workloads (2 M rows, 11-34 fields, ~5 populated per row,
 2 string fields, 9 numeric).  Results on a single core (ns per log() call):
 
     Architecture                 5 kw    11 kw   Strings?  Sparse?
     ─────────────────────────── ────── ──────── ───────── ────────
-    list.append (baseline)          12                –        –
+    list.append (baseline)          12                -        -
     SimLogFast   (numpy SoA)       810    1 495      no*      no
     SimLogLists  (list→numpy)      811    1 550      no*      no
     SimLogSparse (list COO)        934    1 906      yes     yes  ◄─ winner
     SimLogCodebook (dual COO)      967    1 950      yes     yes
     SimLogSparseNP (numpy COO)   1 161    2 199      yes     yes
     SimLog (numpy SoA, kwargs)   2 271    2 271      no      no
-    SimLogText (logging)         6 548                yes      –
+    SimLogText (logging)         6 548                yes      -
 
     * disqualified: caller must pre-encode strings to ints.
 
 Key findings:
   • SimLogFast/SimLogLists are fastest but cannot accept strings natively,
-    pushing encoding work onto the caller — unfair in a general-purpose API.
+    pushing encoding work onto the caller - unfair in a general-purpose API.
   • Pre-allocated numpy arrays (SimLogSparseNP) are *slower* than Python
     lists: numpy scalar writes incur indexing/dtype overhead per element,
     while list.append() is a single amortised C call.
   • Dual-stream COO (SimLogCodebook) adds ~3 % overhead over single-stream
-    (SimLogSparse) with no benefit — float64 covers both int and float.
+    (SimLogSparse) with no benefit - float64 covers both int and float.
   • At typical fill rates (5 of 34 fields), sparse storage uses ~6× less
     working memory than dense column arrays.
 
@@ -44,7 +44,7 @@ Architecture
 
 Quick start
 -----------
-    # write — field names and types discovered from kwargs
+    # write - field names and types discovered from kwargs
     with SimLogSparse('logs/', mode='w') as log:
         log.log(time=1.0, value=42.0, activity='picking', entity_id=7)
         log.log(time=2.0, value=13.0)  # sparse: only 2 of 4 fields
@@ -164,7 +164,7 @@ class SimLogSparse:
         cb_path = self._path / '_codebook.json'
         if not cb_path.exists():
             raise FileNotFoundError(
-                f"no _codebook.json in {self._path} — was the writer closed properly?")
+                f"no _codebook.json in {self._path} - was the writer closed properly?")
         with open(cb_path) as f:
             cb = json.load(f)
         with np.load(chunks[0]) as data:

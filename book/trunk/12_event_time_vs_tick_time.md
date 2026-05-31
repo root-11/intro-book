@@ -1,4 +1,4 @@
-# 12 — Event time is separate from tick time
+# 12 - Event time is separate from tick time
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 12](../../concepts/glossary.md#12--event-time-is-separate-from-tick-time).*
 
@@ -6,9 +6,9 @@ Most beginners assume the loop's frequency sets the model's time resolution. If 
 
 <p align="center"><img src="../illustrations/oscilloscope_sine.jpg" alt="An oscilloscope: sample rate is independent of signal frequency" style="max-height: 300px; max-width: 100%;"></p>
 
-The tick rate is *how often the loop runs*. It says nothing about what the loop does inside one tick. Inside one tick, the loop can process events at arbitrary timestamps — microsecond, picosecond, whatever the data carries. The clock lives on the events, not on the loop.
+The tick rate is *how often the loop runs*. It says nothing about what the loop does inside one tick. Inside one tick, the loop can process events at arbitrary timestamps - microsecond, picosecond, whatever the data carries. The clock lives on the events, not on the loop.
 
-Concretely: a 30 Hz loop receiving 1 000 events per tick, each with microsecond-precision timestamps, processes them in timestamp order — applying each event's effect with the precision the timestamp implies. Output to the rest of the world (rendering, logging, network) happens at 30 Hz, but the *physics inside* runs at microsecond resolution. The tick is a *sampling* rate; the events are the actual phenomena.
+Concretely: a 30 Hz loop receiving 1 000 events per tick, each with microsecond-precision timestamps, processes them in timestamp order - applying each event's effect with the precision the timestamp implies. Output to the rest of the world (rendering, logging, network) happens at 30 Hz, but the *physics inside* runs at microsecond resolution. The tick is a *sampling* rate; the events are the actual phenomena.
 
 This is the model used by:
 
@@ -19,7 +19,7 @@ This is the model used by:
 
 In each case, the tick rate of the host loop is irrelevant to the simulation's resolution. The data carries the time.
 
-This separation is what makes the simulator's `pending_event` table possible. Each tick, the loop builds a list of events that should fire — collisions, eats, reproductions — each tagged with its predicted timestamp. The events fire in timestamp order regardless of which tick they were *predicted in*. A creature that "would have eaten 2 µs into the tick" has its eat applied at that exact moment, not at the start or end of the tick.
+This separation is what makes the simulator's `pending_event` table possible. Each tick, the loop builds a list of events that should fire - collisions, eats, reproductions - each tagged with its predicted timestamp. The events fire in timestamp order regardless of which tick they were *predicted in*. A creature that "would have eaten 2 µs into the tick" has its eat applied at that exact moment, not at the start or end of the tick.
 
 The pitfall is hard-coding the tick interval as the simulation's clock granularity. Code that says
 
@@ -35,7 +35,7 @@ creature.energy -= elapsed_event_seconds * burn_rate;
 
 using the actual elapsed event-time, not the tick interval.
 
-Event time and tick time are decoupled because they answer different questions. Event time answers *when did this thing happen*. Tick time answers *when does the loop wake up*. The same model can be sampled at any tick rate the application needs — visualisation at 30 Hz, recording at 60 Hz, fast-forward replay at 1 kHz — without changing what the model means.
+Event time and tick time are decoupled because they answer different questions. Event time answers *when did this thing happen*. Tick time answers *when does the loop wake up*. The same model can be sampled at any tick rate the application needs - visualisation at 30 Hz, recording at 60 Hz, fast-forward replay at 1 kHz - without changing what the model means.
 
 ## Exercises
 
@@ -52,4 +52,4 @@ Reference notes in [12_event_time_vs_tick_time_solutions.md](12_event_time_vs_ti
 
 ## What's next
 
-[§13 — A system is a function over tables](13_system_as_function.md) introduces the building block of every tick: the system. Read-set in, write-set out, no hidden state, no surprises.
+[§13 - A system is a function over tables](13_system_as_function.md) introduces the building block of every tick: the system. Read-set in, write-set out, no hidden state, no surprises.

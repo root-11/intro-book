@@ -7,7 +7,7 @@ const N: usize = 1_000_000;
 const REMOVALS: usize = 1_000;
 
 fn main() {
-    // Vec::remove path — each removal shifts ~half the vector.
+    // Vec::remove path - each removal shifts ~half the vector.
     let mut v: Vec<u32> = (0..N as u32).collect();
     let t0 = Instant::now();
     let mut sink = 0u32;
@@ -18,7 +18,7 @@ fn main() {
     std::hint::black_box(sink);
     let dt_remove = t0.elapsed();
 
-    // Vec::swap_remove path — O(1) per removal.
+    // Vec::swap_remove path - O(1) per removal.
     let mut v: Vec<u32> = (0..N as u32).collect();
     let t0 = Instant::now();
     let mut sink = 0u32;

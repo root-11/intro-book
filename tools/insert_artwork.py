@@ -7,7 +7,7 @@
 
 Each entry below names: target file, anchor text already in the file, the
 HTML to insert, and whether the insert goes before or after the anchor.
-The script is idempotent — if the HTML is already present, the file is
+The script is idempotent - if the HTML is already present, the file is
 not changed.
 """
 from __future__ import annotations
@@ -45,47 +45,47 @@ PHASE_DIVIDERS = [
 # In-line illustrations: each entry names file, anchor, image, alt, width.
 # `before` means insert immediately before the anchor line.
 INLINE = [
-    # §4 — cost & budget — Ohm's Law alongside the "millivolts and microamps" line.
+    # §4 - cost & budget - Ohm's Law alongside the "millivolts and microamps" line.
     ("trunk/04_cost_and_budget.md",
      "*Good design is measured in millivolts and microamps*",
      "../illustrations/ohms_law.jpg", "Ohm's Law: V = I·R", 380, "before-paragraph"),
 
-    # §6 — a row is a tuple — CAD bearing drawing where rows are first explained.
+    # §6 - a row is a tuple - CAD bearing drawing where rows are first explained.
     ("trunk/06_a_row_is_a_tuple.md",
      "A creature at index 17 has its position",
      "../illustrations/cad_bearing.jpg", "A bearing's dimensioned drawing names every field", 400, "before-paragraph"),
 
-    # §12 — event time vs tick time — oscilloscope showing sine wave.
+    # §12 - event time vs tick time - oscilloscope showing sine wave.
     ("trunk/12_event_time_vs_tick_time.md",
      "The tick rate is *how often the loop runs*",
      "../illustrations/oscilloscope_sine.jpg", "An oscilloscope: sample rate is independent of signal frequency", 420, "before-paragraph"),
 
-    # §14 — DAG — planning checklist illustration.
+    # §14 - DAG - planning checklist illustration.
     ("trunk/14_systems_compose_into_a_dag.md",
      "Draw the dependency graph.",
-     "../illustrations/dag_planning_checklist.jpg", "PLAN / ANALYZE / DESIGN / BUILD / TEST / IMPROVE — the planning DAG", 420, "before-paragraph"),
+     "../illustrations/dag_planning_checklist.jpg", "PLAN / ANALYZE / DESIGN / BUILD / TEST / IMPROVE - the planning DAG", 420, "before-paragraph"),
 
-    # §14 — second illustration at chapter close: visualize the problem.
+    # §14 - second illustration at chapter close: visualize the problem.
     ("trunk/14_systems_compose_into_a_dag.md",
      "## What's next",
      "../illustrations/tip_visualize_full.jpg", "Visualize the problem. A good diagram can reveal the solution.", 280, "before"),
 
-    # §16 — determinism — assumptions-define-the-model illustration.
+    # §16 - determinism - assumptions-define-the-model illustration.
     ("trunk/16_determinism_by_order.md",
      "In an ECS architecture, determinism is structural",
      "../illustrations/note_assumptions_full.jpg", "Assumptions define the model. Know them, question them, and test them.", 280, "before-paragraph"),
 
-    # §38 — storage systems — power supply with components.
+    # §38 - storage systems - power supply with components.
     ("trunk/38_storage_systems.md",
      "Three concrete examples worth keeping in mind",
-     "../illustrations/power_supply_components.jpg", "Storage systems have bandwidth and IOPS — counted like power and current", 420, "before-paragraph"),
+     "../illustrations/power_supply_components.jpg", "Storage systems have bandwidth and IOPS - counted like power and current", 420, "before-paragraph"),
 
-    # §41 — compression-oriented — break complex problems into smaller parts.
+    # §41 - compression-oriented - break complex problems into smaller parts.
     ("trunk/41_compression_oriented.md",
      "The discipline is structural, not stylistic.",
      "../illustrations/tip_simplify_full.jpg", "Break complex problems into smaller parts. Simplicity leads to clarity.", 280, "before-paragraph"),
 
-    # §43 — closing — mathematics describes / models the real world.
+    # §43 - closing - mathematics describes / models the real world.
     ("trunk/43_tests_are_systems.md",
      "If this book changed how you think about programs",
      "../illustrations/mathematics_describes.jpg", "Mathematics describes, models, implements, and improves the world.", 380, "before-paragraph"),

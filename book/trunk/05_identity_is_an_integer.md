@@ -1,4 +1,4 @@
-# 5 — Identity is an integer
+# 5 - Identity is an integer
 
 <p align="center"><img src="../covers/phase_identity_structure.jpg" alt="Identity & structure phase" style="max-height: 380px; max-width: 100%;"></p>
 
@@ -6,7 +6,7 @@
 
 Hand a programmer fifty-two cards and tell them to write code that shuffles, sorts, and deals. Ask how long.
 
-Most will start drawing classes — `Card`, `Deck`, `Hand`, `Player`, maybe a `Game` — and quote you four hours. They are being honest. The class hierarchy is real work. There will be constructors, copy semantics, and a vague unease about whether `Hand` should hold pointers or values, whether `Deck` owns its cards or borrows them, whether shuffling should mutate the deck or return a new one.
+Most will start drawing classes - `Card`, `Deck`, `Hand`, `Player`, maybe a `Game` - and quote you four hours. They are being honest. The class hierarchy is real work. There will be constructors, copy semantics, and a vague unease about whether `Hand` should hold pointers or values, whether `Deck` owns its cards or borrows them, whether shuffling should mutate the deck or return a new one.
 
 The whole problem fits in three lines. The way it fits is the lesson of this section.
 
@@ -48,7 +48,7 @@ for i in 0..52 {
 }
 ```
 
-Shuffling — the move students expect to be hard — is shuffling the order of indices. `0..52` becomes `[7, 32, 1, 19, ...]`, and you read your way through the cards in that order:
+Shuffling - the move students expect to be hard - is shuffling the order of indices. `0..52` becomes `[7, 32, 1, 19, ...]`, and you read your way through the cards in that order:
 
 ```rust
 let mut order: Vec<usize> = (0..52).collect();
@@ -65,13 +65,13 @@ order.sort_by_key(|&i| (suits[i], ranks[i]));
 
 The cards do not move. Their identifiers are reordered.
 
-That's the deck of cards in maybe twenty lines of Rust. It includes shuffle, sort, deal, and several queries. It is not a stylistic shortcut; it is what a deck of cards *is*. The OOP version's four hours of work was the cost of pretending a card was an object that owned its suit and rank, when actually a card is one number — an index — and its suit and rank are values stored in arrays at that index.
+That's the deck of cards in maybe twenty lines of Rust. It includes shuffle, sort, deal, and several queries. It is not a stylistic shortcut; it is what a deck of cards *is*. The OOP version's four hours of work was the cost of pretending a card was an object that owned its suit and rank, when actually a card is one number - an index - and its suit and rank are values stored in arrays at that index.
 
 We call this **identity-is-an-integer**, and it is the precondition for every economy the rest of this book buys you. Persistence will work because tables are easy to serialise. Parallelism will work because indices are cheap to partition. Replay will work because a deck is just three arrays in a state. None of it works if you reach for `class Card`.
 
 > [!NOTE]
 >
-> *The strong form, which we will return to later:* sometimes you do not even need the index. The pair `(suit, rank)` already uniquely identifies a playing card — there are only fifty-two such pairs. The index is a *surrogate key*; the pair is a *natural key*. For variable-quantity tables (creatures that come and go) you usually need a surrogate, because two creatures can be identical. For a constant-quantity 52-card deck, you do not.
+> *The strong form, which we will return to later:* sometimes you do not even need the index. The pair `(suit, rank)` already uniquely identifies a playing card - there are only fifty-two such pairs. The index is a *surrogate key*; the pair is a *natural key*. For variable-quantity tables (creatures that come and go) you usually need a surrogate, because two creatures can be identical. For a constant-quantity 52-card deck, you do not.
 
 ## Exercises
 
@@ -85,11 +85,11 @@ The first time through, write everything from scratch in `src/main.rs`. Resist t
 6. **Hand query.** Write `fn cards_held_by(locations: &[u8], player: u8) -> Vec<usize>` returning all card indices currently held by a given player.
 7. **Count by location.** Write a function that returns counts grouped by location: how many in the deck, in each hand, in discard.
 8. **Deal four hands.** Deal 5 cards to each of players 1, 2, 3, 4. Print all four hands.
-9. *(stretch)* **Drop the index.** Rewrite `cards_held_by` to return `Vec<(u8, u8)>` of (suit, rank) pairs directly — no indices. What does this make easier? What does it make harder? (Hint: you cannot move the cards back to the deck without knowing which `i` they were.)
-10. *(stretch)* **The sort hazard.** While player 1 is holding indices `[3, 17, 21, 28, 41]`, sort the deck arrays themselves (not just the order) by suit. What does player 1 think they hold now? This is the bug node 9 ("[sort breaks indices](../../concepts/dag.md)") was written for. Don't fix it yet — observe it.
+9. *(stretch)* **Drop the index.** Rewrite `cards_held_by` to return `Vec<(u8, u8)>` of (suit, rank) pairs directly - no indices. What does this make easier? What does it make harder? (Hint: you cannot move the cards back to the deck without knowing which `i` they were.)
+10. *(stretch)* **The sort hazard.** While player 1 is holding indices `[3, 17, 21, 28, 41]`, sort the deck arrays themselves (not just the order) by suit. What does player 1 think they hold now? This is the bug node 9 ("[sort breaks indices](../../concepts/dag.md)") was written for. Don't fix it yet - observe it.
 
 Reference solutions for exercises 1-3 in [05_identity_is_an_integer_solutions.md](05_identity_is_an_integer_solutions.md). Solutions for the rest follow the same shape.
 
 ## What's next
 
-Exercise 10 leaves you with a bug. The next section ([§9 — Sort breaks indices](09_sort_breaks_indices.md)) is the fix; it teaches you to keep a stable id alongside the position so external references survive reordering.
+Exercise 10 leaves you with a bug. The next section ([§9 - Sort breaks indices](09_sort_breaks_indices.md)) is the fix; it teaches you to keep a stable id alongside the position so external references survive reordering.

@@ -1,6 +1,6 @@
-# Solutions: 34 — Order is the contract
+# Solutions: 34 - Order is the contract
 
-## Exercise 1 — Build the schedule
+## Exercise 1 - Build the schedule
 
 ```rust,no_run
 fn tick(world: &mut World, dt: f32) {
@@ -29,7 +29,7 @@ fn tick(world: &mut World, dt: f32) {
 
 The three appliers run in parallel; their write-sets are made disjoint by per-thread segments. `cleanup` runs after the scope returns, never before.
 
-## Exercise 2 — Test for determinism
+## Exercise 2 - Test for determinism
 
 ```rust,no_run
 let mut w1 = init_world(0xCAFE);
@@ -43,7 +43,7 @@ assert_eq!(hash_world(&w1), hash_world(&w2));
 
 If the parallel boundaries are correct, the hashes match. The merge of `seg_eat`, `seg_starve`, and `seg_repro` happens in the same order on both runs (the `extend` calls are sequential after the scope), so `to_remove` and `to_insert` end up identical between runs.
 
-## Exercise 3 — Break the contract
+## Exercise 3 - Break the contract
 
 ```rust,ignore
 thread::scope(|s| {
@@ -54,9 +54,9 @@ thread::scope(|s| {
 });
 ```
 
-If you sidestep the borrow checker (e.g. via `unsafe` shared pointers), `cleanup` may start before the appliers have written `seg_*`. The two runs of the simulator produce different hashes — sometimes. Sometimes the same. The bug's *intermittency* is the lesson; intermittent bugs are the worst kind to debug, and the contract exists to prevent them.
+If you sidestep the borrow checker (e.g. via `unsafe` shared pointers), `cleanup` may start before the appliers have written `seg_*`. The two runs of the simulator produce different hashes - sometimes. Sometimes the same. The bug's *intermittency* is the lesson; intermittent bugs are the worst kind to debug, and the contract exists to prevent them.
 
-## Exercise 4 — Level boundaries
+## Exercise 4 - Level boundaries
 
 For the simulator:
 
@@ -71,7 +71,7 @@ For the simulator:
 
 Six levels. Within each level, parallelism. Between levels, sync. Total throughput is bounded by the slowest level's longest system.
 
-## Exercise 5 — A minimal scheduler
+## Exercise 5 - A minimal scheduler
 
 ```rust,no_run
 use std::collections::HashMap;
@@ -107,4 +107,4 @@ fn schedule<'a>(systems: &'a [SystemDecl]) -> Vec<Vec<&'a str>> {
 }
 ```
 
-Around 30 lines. Topological sort + level grouping. Real schedulers add work-stealing, priority, GPU dispatch, dynamic re-balancing — but the core *contract enforcement* is exactly this. If your scheduler produces the right `Vec<Vec<&str>>`, you have a correct parallel ECS executor.
+Around 30 lines. Topological sort + level grouping. Real schedulers add work-stealing, priority, GPU dispatch, dynamic re-balancing - but the core *contract enforcement* is exactly this. If your scheduler produces the right `Vec<Vec<&str>>`, you have a correct parallel ECS executor.

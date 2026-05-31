@@ -1,4 +1,4 @@
-//! pointer_chase — sum a Vec<u64> vs a *shuffled* linked list of Box<Node>.
+//! pointer_chase - sum a Vec<u64> vs a *shuffled* linked list of Box<Node>.
 //! Used by §1 exercise 5.
 //!
 //!     cargo run --release --bin pointer_chase
@@ -65,7 +65,7 @@ fn build_shuffled_list(n: usize) -> Box<Node> {
     head.unwrap()
 }
 
-/// Iterative drop — recursive `Box<Node>` Drop blows the stack at N=1M.
+/// Iterative drop - recursive `Box<Node>` Drop blows the stack at N=1M.
 fn drop_list(head: Box<Node>) {
     let mut cur = Some(head);
     while let Some(mut node) = cur {

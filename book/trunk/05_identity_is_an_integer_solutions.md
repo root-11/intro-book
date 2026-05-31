@@ -1,8 +1,8 @@
-# Solutions: 5 — Identity is an integer
+# Solutions: 5 - Identity is an integer
 
 Reference solutions for the exercises in [05_identity_is_an_integer.md](05_identity_is_an_integer.md). Try the exercises first.
 
-## Exercise 1 — Build the deck
+## Exercise 1 - Build the deck
 
 ```rust
 fn new_deck() -> (Vec<u8>, Vec<u8>, Vec<u8>) {
@@ -22,9 +22,9 @@ fn new_deck() -> (Vec<u8>, Vec<u8>, Vec<u8>) {
 
 The order of insertion sets the index-to-card mapping. Spades fill indices 0-12, hearts 13-25, and so on. The Ace of Spades is at index 0; the King of Clubs at index 51.
 
-`Vec::with_capacity(52)` is a small but honest gesture: the size is known up front, so we ask for exactly that much memory. No reallocation, no surprise. This is constant-quantity behaviour — node 27 will explain why it matters at a million.
+`Vec::with_capacity(52)` is a small but honest gesture: the size is known up front, so we ask for exactly that much memory. No reallocation, no surprise. This is constant-quantity behaviour - node 27 will explain why it matters at a million.
 
-## Exercise 2 — Print a card
+## Exercise 2 - Print a card
 
 ```rust
 const SUIT_CHARS: [&str; 4] = ["♠", "♥", "♦", "♣"];
@@ -45,7 +45,7 @@ fn print_deck(suits: &[u8], ranks: &[u8]) {
 
 The `as usize` casts are because `Vec` and array indexing want `usize`. Choose `u8` for the columns because we're never going to have 256 suits or ranks; the smaller width saves memory and keeps more of the deck in L1.
 
-## Exercise 3 — Shuffle
+## Exercise 3 - Shuffle
 
 A tiny LCG, then Fisher-Yates over the index order:
 
@@ -75,7 +75,7 @@ fn print_deck_shuffled(suits: &[u8], ranks: &[u8], order: &[usize]) {
 }
 ```
 
-The print function takes `suits`, `ranks`, and `order` as `&[u8]` and `&[usize]` slices — none of them are mutated. The cards stay where they are. Only the traversal changes.
+The print function takes `suits`, `ranks`, and `order` as `&[u8]` and `&[usize]` slices - none of them are mutated. The cards stay where they are. Only the traversal changes.
 
 > [!NOTE]
 >
@@ -87,7 +87,7 @@ Same shape. The pattern is:
 
 - Whatever query you want is a `for` loop over an index range, asking the columns at each index.
 - Whatever rearrangement you want is a permutation of the *order* vector, leaving the columns unchanged.
-- A "move" — dealing, discarding — is a write to `locations[i]`, never a copy of the card.
+- A "move" - dealing, discarding - is a write to `locations[i]`, never a copy of the card.
 
 If you find yourself constructing a `Card` struct to make exercise 8 cleaner, stop. The four hands together are simply a `Vec<u8>` of length 52 (the existing `locations` array) with values `0..5`. Printing each hand is `cards_held_by(&locations, p)` for `p in 1..=4`.
 
@@ -96,4 +96,4 @@ If you find yourself constructing a `Card` struct to make exercise 8 cleaner, st
 Both are bridges into the next sections.
 
 - Exercise 9 (drop the index) is a preview of nodes 6 (row is a tuple) and the natural-key idea named in the strong-form note above. The (suit, rank) pair *is* the card; you don't need an integer to refer to it. But moving it back to the deck is now harder, because you've lost the slot reference.
-- Exercise 10 (the sort hazard) is the bug that motivates [§9 — Sort breaks indices](09_sort_breaks_indices.md), which in turn motivates [§10 — Stable IDs and generations](10_stable_ids_and_generations.md). The bug shows up the moment you sort the data arrays themselves rather than the order vector. You need a stable name for a card that survives reordering — and that name is what node 10 introduces.
+- Exercise 10 (the sort hazard) is the bug that motivates [§9 - Sort breaks indices](09_sort_breaks_indices.md), which in turn motivates [§10 - Stable IDs and generations](10_stable_ids_and_generations.md). The bug shows up the moment you sort the data arrays themselves rather than the order vector. You need a stable name for a card that survives reordering - and that name is what node 10 introduces.

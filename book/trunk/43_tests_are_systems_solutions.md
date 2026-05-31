@@ -1,6 +1,6 @@
-# Solutions: 43 — Tests are systems
+# Solutions: 43 - Tests are systems
 
-## Exercise 1 — A test as a system
+## Exercise 1 - A test as a system
 
 Add `no_creature_moves_too_far` to your simulator's DAG behind a `--test` flag:
 
@@ -13,7 +13,7 @@ if cfg.test_mode {
 
 In live mode, the system is absent. In test mode, it runs every tick. Same code path; different schedule.
 
-## Exercise 2 — Property test
+## Exercise 2 - Property test
 
 ```rust,no_run
 let mut world = init_world(0xCAFE);
@@ -26,7 +26,7 @@ for _ in 0..1000 {
 
 Run twice. Both runs report identical assertion outcomes (because of [§16](16_determinism_by_order.md)). If the property fails, both runs fail at the same tick.
 
-## Exercise 3 — Replay test
+## Exercise 3 - Replay test
 
 ```rust,no_run
 let recording = run_and_record(&mut world1, 100);
@@ -40,7 +40,7 @@ assert_eq!(hash_world(&world1), hash_world(&world2));
 
 Replay and live run produce bit-identical states. The test is `assert_eq!`; the test fixture is the recorded queue.
 
-## Exercise 4 — TDD a new system
+## Exercise 4 - TDD a new system
 
 Test first:
 
@@ -59,7 +59,7 @@ fn test_growth_slows_at_high_energy() {
 
 The test states what the system should do. Then write the system. Then watch the test pass. The order matters: writing the test first forces you to *specify* the behaviour before *implementing* it.
 
-## Exercise 5 — InspectionSystem connection
+## Exercise 5 - InspectionSystem connection
 
 Both:
 
@@ -70,7 +70,7 @@ Both:
 
 The only difference: an InspectionSystem reports state to a debug consumer (`pptop`, an IDE, a log). A test reports assertion results to a test runner. Same shape; different consumer.
 
-## Exercise 6 — Test runner = simulator scheduler
+## Exercise 6 - Test runner = simulator scheduler
 
 The simulator's main:
 

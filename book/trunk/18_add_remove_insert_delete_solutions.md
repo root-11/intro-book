@@ -1,6 +1,6 @@
-# Solutions: 18 — Add/remove = insert/delete
+# Solutions: 18 - Add/remove = insert/delete
 
-## Exercise 1 — Hunger transitions
+## Exercise 1 - Hunger transitions
 
 ```rust,no_run
 fn classify_hunger(energy: &[f32], ids: &[u32], hungry: &mut Vec<u32>) {
@@ -24,13 +24,13 @@ fn classify_hunger(energy: &[f32], ids: &[u32], hungry: &mut Vec<u32>) {
 
 After each tick, a sanity check: `hungry` contains exactly the creatures whose `energy < HUNGER_THRESHOLD`. Verifying this every tick is the kind of test [§43](43_tests_are_systems.md) names as "tests are systems".
 
-## Exercise 2 — No flag, no setter
+## Exercise 2 - No flag, no setter
 
 The conversion is mechanical. Find every `is_*: bool` field on a creature struct, delete it, add a presence table for the corresponding state. Replace `creature.is_hungry = true` with `hungry.push(creature.id)` and `creature.is_hungry = false` with `swap_remove`. The setter and getter pair disappear.
 
-The diff usually shrinks the codebase. Most flag-based systems have boilerplate — assertion that flag is in correct state, log on flag change, setter that fires events — that becomes redundant once the transition is itself a structural move.
+The diff usually shrinks the codebase. Most flag-based systems have boilerplate - assertion that flag is in correct state, log on flag change, setter that fires events - that becomes redundant once the transition is itself a structural move.
 
-## Exercise 3 — A second presence state
+## Exercise 3 - A second presence state
 
 ```rust,no_run
 const SLEEPY_HIGH: f32 = 50.0;
@@ -62,7 +62,7 @@ fn invariant(hungry: &[u32], sleepy: &[u32]) {
 
 Mutually exclusive states are enforced by *whoever can transition into them*. If only the classification system can add to either, and the classification system reads energy and decides which table to add to, the invariant is maintained by construction.
 
-## Exercise 4 — Death
+## Exercise 4 - Death
 
 ```rust,no_run
 fn transition_to_dead(
@@ -79,7 +79,7 @@ fn transition_to_dead(
 
 The helper makes the multi-table cleanup explicit and centralised. Future systems that add new presence states only need to update this one helper to handle deaths correctly.
 
-## Exercise 5 — The transition log
+## Exercise 5 - The transition log
 
 ```rust,no_run
 events.push((tick, ids[i], "became_hungry"));
@@ -89,7 +89,7 @@ events.push((tick, ids[i], "stopped_being_hungry"));
 
 After 100 ticks the log is a complete history. To verify, take an initial empty world plus the log and replay. The reconstructed `hungry`, `sleepy`, `dead` should match the live tables exactly. If they don't, an event was missed (the simulator mutated state without logging) or the state was loaded from somewhere outside the log. Both are bugs, both are caught by the equality check.
 
-## Exercise 6 — Reconstruct from the log
+## Exercise 6 - Reconstruct from the log
 
 ```rust,no_run
 fn replay(initial_creatures: &[CreatureRow], events: &[(u64, u32, &str)])
