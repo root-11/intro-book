@@ -205,9 +205,9 @@ The numbers you wrote down in exercise 1 and the cliffs you found in exercise 4 
 
 <p align="center"><img src="book/illustrations/multimeter.jpg" alt="A mouse with a multimeter — numbers measured to the precision the budget allows" style="max-height: 300px; max-width: 100%;"></p>
 
-A cache line is 64 bytes. That is the unit of memory the CPU loads at a time. Everything you do with data is, in part, a question of how many things fit in 64 bytes.
+A cache line is 64 bytes on x86 and most ARM chips — the unit of memory the CPU loads at a time. (A few designs differ: some Apple Silicon cache levels use 128; §33 has the details.) This book assumes 64 throughout. Everything you do with data is, in part, a question of how many things fit in one cache line.
 
-Rust gives you several integer widths: `u8` (one byte, range 0..256), `u16` (two bytes, 0..65 536), `u32` (four bytes, around four billion), `u64` (eight bytes, around 1.8×10¹⁹). The signed versions — `i8`, `i16`, `i32`, `i64` — use one bit for the sign and the rest for magnitude. For floating-point: `f32` (four bytes, ~7 decimal digits of precision), `f64` (eight bytes, ~15 decimal digits).
+Rust gives you several integer widths: `u8` (one byte, 0 to 255), `u16` (two bytes, 0 to 65 535), `u32` (four bytes, around four billion), `u64` (eight bytes, around 1.8×10¹⁹). The signed versions — `i8`, `i16`, `i32`, `i64` — use one bit for the sign and the rest for magnitude. For floating-point: `f32` (four bytes, ~7 decimal digits of precision), `f64` (eight bytes, ~15 decimal digits).
 
 A `Vec<u8>` of length N is N bytes. A `Vec<u64>` is 8N bytes. So a `Vec<u8>` fits 64 elements per cache line; a `Vec<u64>` fits 8. If your loop touches one element per cache line, the `u64` version makes 8× as many memory loads as the `u8` version.
 
