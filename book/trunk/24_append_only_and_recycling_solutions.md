@@ -16,7 +16,7 @@ After 1 000 ticks of a 100-creature simulation with average 5 events per tick, t
 
 ## Exercise 2 — Recycling pool
 
-Allocate 1 000 → slots 0..999 (high-water mark grows). Free 500 → slots 0..499 enter `free_slots`. Allocate 500 more → slots 0..499 are reused (LIFO from `free_slots.pop()`). The high-water mark stays at 1 000; no growth.
+Allocate 1 000 → slots 0–999 (high-water mark grows). Free 500 → slots 0–499 enter `free_slots`. Allocate 500 more → slots 0–499 are reused (LIFO from `free_slots.pop()`). The high-water mark stays at 1 000; no growth.
 
 If you do not free anything, the pool grows indefinitely. If you free everything, the pool's allocations always reuse.
 
