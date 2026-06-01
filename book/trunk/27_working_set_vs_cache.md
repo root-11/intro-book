@@ -20,7 +20,7 @@ Computing the working set is mechanical. Motion's inner loop reads `pos: (f32, f
 | 1 000 000   | 20 MB       | fits L3, spills L2        |
 | 10 000 000  | 200 MB      | spills L3, hits RAM       |
 
-Each transition costs roughly 3-5× in per-element time. At 10K, ~0.5 ns/elem. At 1M, ~3 ns/elem. At 10M, ~30 ns/elem (sequential).
+Sequential streaming barely shows the cliff: the prefetcher keeps motion bandwidth-bound, so per-creature time climbs only gently into RAM - roughly 0.3 ns at 10K rising to 0.7 ns at 10M on a modern desktop, 4 ns rising to 17 ns on a Pi 4. The steep cliff is in *random* order (exercise 5): at 10M creatures, random access costs ~30 ns/creature on the desktop and ~390 ns on the Pi. The per-machine ladder is `motion_working_set` in `code/measurement`; the numbers are in `code/README.md`.
 
 This is what §4's "cliff" was about, made concrete for your simulator. The transition points are not magic - they are arithmetic over your cache sizes.
 
@@ -41,7 +41,7 @@ This is not premature optimisation. It is *layout-aware design* - making the sch
 2. **Find your cliff.** Time motion at N = 1K, 10K, 100K, 1M, 10M. Plot ns-per-element against N. The transitions should match your cache sizes.
 3. **Reduce the working set.** Apply hot/cold splits (§26) to push motion's footprint down. Repeat exercise 2. Did the cliff move?
 4. **A wider field.** Change `energy: f32` to `energy: f64`. Recompute the working set. Repeat exercise 2. The cliff should move inward (closer to smaller N).
-5. **Random vs sequential.** Repeat motion's loop with `for &i in random_indices` instead of `for i in 0..N`. The cliff drops by roughly a factor of 50-100 (random RAM access vs sequential).
+5. **Random vs sequential.** Repeat motion's loop with `for &i in random_indices` instead of `for i in 0..N`. At 10M creatures the per-element time rises by roughly 25-45× (random RAM access vs sequential). A single-pointer chase shows a wider gap; motion's is smaller because each creature amortises five columns.
 6. *(stretch)* **The L1 sweet spot.** Find the N at which motion's working set fills L1 to roughly 75 %. Run the loop in tight repetition and compare to the closest L2-only neighbour. The L1-resident loop should be ~5-10× faster.
 
 Reference notes in [27_working_set_vs_cache_solutions.md](27_working_set_vs_cache_solutions.md).
