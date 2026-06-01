@@ -65,17 +65,39 @@ For random-access cliffs (a more dramatic plot), repeat exercise 3 at sizes 1K, 
 
 ## Exercise 5 - Pointer chasing
 
+The trap in this exercise is that the obvious way to build the list does not measure what you think it measures. A list built by threading boxes as you allocate them -
+
+```rust
+// anti-pattern: bad! nodes land at sequential heap addresses
+let mut head = Box::new(Node { value: 0, next: None });
+for i in 1..n { head = Box::new(Node { value: i, next: Some(head) }); }
+```
+
+- hands every `Box` back-to-back from the allocator. The "linked list" is a `Vec` in disguise: traversal walks straight up consecutive cache lines and the prefetcher hides every read. You will measure ~2 ns/elem and conclude pointers are free. They are not; you measured a contiguous scan.
+
+To surface the real cost, build in two steps: allocate all the nodes first, then **shuffle the order in which you thread them**. Each box keeps its original address; the chain visits them scrambled, so each `next` is a jump to an unpredictable line.
+
 ```rust
 use std::time::Instant;
 
 struct Node { value: u64, next: Option<Box<Node>> }
 
-fn build(n: usize) -> Box<Node> {
-    let mut head = Box::new(Node { value: 1, next: None });
-    for _ in 1..n {
-        head = Box::new(Node { value: 1, next: Some(head) });
+fn build_shuffled(n: usize) -> Box<Node> {
+    let mut nodes: Vec<Box<Node>> = (0..n as u64)
+        .map(|i| Box::new(Node { value: i, next: None }))
+        .collect();
+
+    // Fisher-Yates with an inline LCG (no deps, Playground-friendly).
+    let mut s = 0x1234_5678_u64;
+    let mut rng = || { s = s.wrapping_mul(6364136223846793005).wrapping_add(1); s };
+    for i in (1..nodes.len()).rev() {
+        let j = (rng() % (i as u64 + 1)) as usize;
+        nodes.swap(i, j);
     }
-    head
+
+    let mut head: Option<Box<Node>> = None;
+    while let Some(mut node) = nodes.pop() { node.next = head; head = Some(node); }
+    head.unwrap()
 }
 
 fn sum(mut head: &Node) -> u64 {
@@ -89,21 +111,32 @@ fn sum(mut head: &Node) -> u64 {
     }
 }
 
+// Recursive Drop walks `next` on the stack and overflows at large N.
+// Tear the chain down iteratively.
+fn drop_list(head: Box<Node>) {
+    let mut cur = Some(head);
+    while let Some(mut node) = cur { cur = node.next.take(); }
+}
+
 fn main() {
     // Playground-scaled. Use 1_000_000 locally for the real number.
     let n = 100_000;
-    let head = build(n);
+    let head = build_shuffled(n);
     let start = Instant::now();
-    let s = sum(&head);
+    let s = std::hint::black_box(sum(&head));
     let elapsed = start.elapsed();
     println!("sum = {s}, {elapsed:?}, {:.2} ns/elem",
              elapsed.as_nanos() as f64 / n as f64);
+    drop_list(head);
 }
 ```
 
-A `Vec<u64>` sum is roughly 1 ns/elem; the linked-list walk is roughly 50-100 ns/elem. The ratio is the L1-to-RAM gap from the prose.
+A `Vec<u64>` sum runs 0.2-2 ns/elem depending on the chip; the *shuffled* linked-list walk is the same scan paying full DRAM latency on every `next`. The measured ratio is 63× on a Pi 4, ~100-120× on mid-2010s Intel, ~300× on a modern Ryzen (see `code/measurement/src/bin/pointer_chase.rs` and the cross-machine table in `code/README.md`). Without the shuffle the ratio collapses toward 1× - that is the prefetcher, not the absence of a tax.
 
-Important: building the linked list with deep recursion would blow the stack at large N. The `build` function above uses a loop precisely so it can scale. The `sum` is also iterative - a recursive walk would blow the stack on the way down.
+Three stack-overflow traps hide in this exercise, all from recursion over `next`:
+- Building by deep recursion overflows on the way down - the loop above scales.
+- A recursive `sum` overflows likewise - walk it iteratively.
+- The *implicit* `Drop` is recursive too, and fires when `head` leaves scope. At N=1M it overflows even though your code never named a recursive function. `drop_list` tears the chain down by hand.
 
 ## Exercise 6 - Reading lscpu against your benchmarks
 
