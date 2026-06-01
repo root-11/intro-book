@@ -1619,7 +1619,7 @@ This is not premature optimisation. It is *layout-aware design* - making the sch
 3. **Reduce the working set.** Apply hot/cold splits (§26) to push motion's footprint down. Repeat exercise 2. Did the cliff move?
 4. **A wider field.** Change `energy: f32` to `energy: f64`. Recompute the working set. Repeat exercise 2. The cliff should move inward (closer to smaller N).
 5. **Random vs sequential.** Repeat motion's loop with `for &i in random_indices` instead of `for i in 0..N`. At 10M creatures the per-element time rises by roughly 25-45× (random RAM access vs sequential). A single-pointer chase shows a wider gap; motion's is smaller because each creature amortises five columns.
-6. *(stretch)* **The L1 sweet spot.** Find the N at which motion's working set fills L1 to roughly 75 %. Run the loop in tight repetition and compare to the closest L2-only neighbour. The L1-resident loop should be ~5-10× faster.
+6. *(stretch)* **The L1 sweet spot.** Find the N at which motion's working set fills L1 to roughly 75 %. Run the loop in tight repetition and compare to the closest L2-only neighbour. For *sequential* motion the difference is small - measured 1.0-1.2× across the four reference machines (`l1_sweet_spot`), because the loop is bandwidth-bound at both sizes and the prefetcher hides the L1/L2 boundary. The dramatic L1 win shows up when the access is random (exercise 5), not streaming.
 
 ## What's next
 
@@ -1814,7 +1814,7 @@ The single-writer rule (§25) was the precondition. Disjoint write-sets is the r
 You will need a multi-core machine. Most desktops and laptops qualify.
 
 1. **Two parallel systems.** Wrap `motion` and `food_spawn` in `std::thread::scope`. Run a tick. Verify both completed and the world state is the expected combination.
-2. **Time the speedup.** Run the same two systems serially. Run them in parallel via `thread::scope`. Compare. Speedup should be close to 2× when both systems are individually expensive; less if one dominates.
+2. **Time the speedup.** Run the same two systems serially. Run them in parallel via `thread::scope`. Compare. Speedup should be close to 2× when both systems are individually expensive and compute-bound; less if one dominates or the work is bandwidth-bound. Measured 1.8-2.0× across the four reference machines (`scope_speedup`).
 3. **A failing case.** Try to run `motion` and `apply_eat` in parallel. Both write `creature.energy`. Rust's borrow checker rejects the code. Note the error message - that is the architecture being enforced by the compiler.
 4. **`rayon::join`.** Replace `thread::scope` with `rayon::join((|| motion(...), || food_spawn(...)))`. Confirm the same behaviour. Adding rayon to `Cargo.toml` is a §42 dependency-pricing decision in miniature: read what the crate gives you, decide consciously.
 5. **Per-thread segments.** Split `to_remove` into 8 thread-local `Vec<u32>`s. Run 8 threads of `apply_starve`, each producing its own segment. Merge at the end. Verify the merge produces the same result as a single-threaded run.
@@ -2131,7 +2131,7 @@ The §0/§1 simulator's snapshot is roughly twenty-five lines of Rust per direct
 
 1. **Snapshot the world.** Implement a `snapshot` function for your simulator. Save to `snapshot.bin`. Note the file size: it should match `bytes per column × N` for hot tables, plus headers.
 2. **Load the snapshot.** Implement the inverse. Load `snapshot.bin` into a fresh `World`. Verify by running the simulator from the loaded state and comparing the hash to the original at the same tick.
-3. **The OOP comparison.** Define a `CreatureRecord` struct and write a per-row serialiser via `serde_json` or `bincode`. Time it against the column snapshot at 1M creatures. The per-row version is typically 5-50× slower.
+3. **The OOP comparison.** Define a `CreatureRecord` struct and write a per-row serialiser via `serde_json` or `bincode`. Time it against the column snapshot at 1M creatures. The cost depends entirely on the format: measured (`row_vs_column_serialize`), a per-row *text* encoder (the `serde_json` shape) is ~30-65× slower than the column snapshot across the four reference machines; a per-row *binary* encoder (the `bincode` shape) is only ~1-2× slower. The text path is where serialisation's slow reputation comes from; the binary path's cost is mostly the per-row function call. Either way the column snapshot wins, and it carries none of the per-row translation bugs.
 4. **Schema versioning.** Add a new column (`hunger_buildup: f32`) to the simulator. Make the snapshot reader handle both old and new versions: old snapshots get the new column zero-filled; new snapshots get loaded directly. Verify both round-trip cleanly.
 5. *(stretch)* **Memory-mapped snapshot.** Use `memmap2` to map the snapshot file directly into memory. The Vec's pointer is the file's memory; loading is zero-copy. Compare load times for a 24 MB snapshot.
 
@@ -2257,7 +2257,7 @@ The simulator inside the boundary is a pure function. The storage system at the 
 
 1. **Measure your bandwidth.** On Linux: `dd if=/dev/zero of=/tmp/test bs=1M count=1024 oflag=direct` measures sequential write. Note your number.
 2. **Measure your IOPS.** Time 10 000 separate `File::write` calls of 4 KB each, with `sync_all()` after the loop. Compute IOPS as `10_000 / time_in_seconds`. Compare to the spec sheet.
-3. **Batched vs unbatched.** Write 1 000 000 rows of 32 bytes each to a file: first as 1 000 000 separate writes; then as one bulk write. Compare times. The batched version should be 50-1000× faster, depending on your filesystem.
+3. **Batched vs unbatched.** Write 1 000 000 rows of 32 bytes each to a file: first as 1 000 000 separate writes; then as one bulk write. Compare times. The batched version is much faster - measured 14-256× across the four reference machines (`batched_write`), the spread driven by filesystem and write buffering. With an `fsync` per write (a durable log) the gap widens by orders of magnitude; the exercise here measures buffered writes, which is the floor.
 4. **SQLite throughput.** Insert 1 000 000 rows into a SQLite table: first as separate `INSERT` statements; then in a single transaction; then via one `INSERT INTO ... VALUES (...)` with all rows. Note the three orders of magnitude.
 5. **Compute your tick budget.** At 30 Hz with 1 000 mutations per tick, what is the largest acceptable per-mutation I/O cost? Below NVMe latency, you are fine; above it, you must batch.
 6. *(stretch)* **A second storage system.** If you have a network filesystem handy (NFS, SSHFS), repeat exercise 3 against a remote file. Note the latency-vs-bandwidth tradeoff. The IOPS limit is your bandwidth-delay product divided by IO size.
