@@ -42,7 +42,7 @@ This is not premature optimisation. It is *layout-aware design* - making the sch
 3. **Reduce the working set.** Apply hot/cold splits (§26) to push motion's footprint down. Repeat exercise 2. Did the cliff move?
 4. **A wider field.** Change `energy: f32` to `energy: f64`. Recompute the working set. Repeat exercise 2. The cliff should move inward (closer to smaller N).
 5. **Random vs sequential.** Repeat motion's loop with `for &i in random_indices` instead of `for i in 0..N`. At 10M creatures the per-element time rises by roughly 25-45× (random RAM access vs sequential). A single-pointer chase shows a wider gap; motion's is smaller because each creature amortises five columns.
-6. *(stretch)* **The L1 sweet spot.** Find the N at which motion's working set fills L1 to roughly 75 %. Run the loop in tight repetition and compare to the closest L2-only neighbour. The L1-resident loop should be ~5-10× faster.
+6. *(stretch)* **The L1 sweet spot.** Find the N at which motion's working set fills L1 to roughly 75 %. Run the loop in tight repetition and compare to the closest L2-only neighbour. For *sequential* motion the difference is small - measured 1.0-1.2× across the four reference machines (`l1_sweet_spot`), because the loop is bandwidth-bound at both sizes and the prefetcher hides the L1/L2 boundary. The dramatic L1 win shows up when the access is random (exercise 5), not streaming.
 
 Reference notes in [27_working_set_vs_cache_solutions.md](27_working_set_vs_cache_solutions.md).
 

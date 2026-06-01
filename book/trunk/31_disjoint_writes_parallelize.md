@@ -37,7 +37,7 @@ The single-writer rule (§25) was the precondition. Disjoint write-sets is the r
 You will need a multi-core machine. Most desktops and laptops qualify.
 
 1. **Two parallel systems.** Wrap `motion` and `food_spawn` in `std::thread::scope`. Run a tick. Verify both completed and the world state is the expected combination.
-2. **Time the speedup.** Run the same two systems serially. Run them in parallel via `thread::scope`. Compare. Speedup should be close to 2× when both systems are individually expensive; less if one dominates.
+2. **Time the speedup.** Run the same two systems serially. Run them in parallel via `thread::scope`. Compare. Speedup should be close to 2× when both systems are individually expensive and compute-bound; less if one dominates or the work is bandwidth-bound. Measured 1.8-2.0× across the four reference machines (`scope_speedup`).
 3. **A failing case.** Try to run `motion` and `apply_eat` in parallel. Both write `creature.energy`. Rust's borrow checker rejects the code. Note the error message - that is the architecture being enforced by the compiler.
 4. **`rayon::join`.** Replace `thread::scope` with `rayon::join((|| motion(...), || food_spawn(...)))`. Confirm the same behaviour. Adding rayon to `Cargo.toml` is a §42 dependency-pricing decision in miniature: read what the crate gives you, decide consciously.
 5. **Per-thread segments.** Split `to_remove` into 8 thread-local `Vec<u32>`s. Run 8 threads of `apply_starve`, each producing its own segment. Merge at the end. Verify the merge produces the same result as a single-threaded run.

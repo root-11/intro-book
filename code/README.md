@@ -29,6 +29,10 @@ cargo run --release --bin swap_remove_perf   # §3.5
 cargo run --release --bin soa_vs_aos         # §7.3-7.5
 cargo run --release --bin motion_working_set # §26.4, §27 (motion loop ns/creature)
 cargo run --release --bin false_sharing      # §33 (false sharing, negative scaling)
+cargo run --release --bin scope_speedup      # §31.2 (thread::scope 2-system speedup)
+cargo run --release --bin batched_write      # §38.3 (batched vs unbatched write)
+cargo run --release --bin row_vs_column_serialize # §36.3 (per-row vs column snapshot)
+cargo run --release --bin l1_sweet_spot      # §27.6 (L1 vs L2 streaming motion)
 cargo run --release --bin power_loop -- sequential   # §4.9 (run perf in another terminal)
 ```
 
@@ -84,6 +88,18 @@ So §27's "ns/elem ladder" is a *random-access* ladder; sequential motion is an 
 | Partitioned reduction, packed vs 1 thread (§33) | 0.26× | 0.42× | 0.30× | 0.38× |
 
 The bottom rows are below 1.0 on every machine: the false-shared "parallel" run is 2.3-3.8× *slower* than a single thread. The third row is the realistic case - a naive parallel reduction over disjoint input slices, folding into a packed per-thread accumulator array - and it scales just as negatively as the `[u64;N]` microbenchmark. Padding each accumulator to its own cache line recovers near-linear scaling (1.9-7.1×). This is the negative-scaling claim in §33, measured; the "partitioned everything correctly and it still got slower" opener is the 0.26-0.42× number.
+
+The exercise-prediction binaries (§31, §36, §38, §27.6), same four hosts:
+
+| Test | Pi 4 | i7-3610QM | i3-5010U | Ryzen 9 270 |
+|---|---:|---:|---:|---:|
+| Batched vs unbatched write (§38.3) | 14× | 256× | 30× | 38× |
+| thread::scope 2-system speedup (§31.2) | 1.99× | 1.92× | 1.81× | 1.96× |
+| Per-row JSON vs column snapshot (§36.3) | 33× | 55× | 64× | 31× |
+| Per-row binary vs column snapshot (§36.3) | ~2× | ~2× | ~2× | ~1× |
+| L1 vs L2, streaming motion (§27.6) | 1.08× | 1.19× | 1.20× | 1.02× |
+
+Two of these corrected the prose: §38's "50-1000×" became the measured 14-256× (buffered writes), and §27.6's "L1-resident ~5-10× faster" became ~1.0-1.2× - sequential motion is bandwidth-bound at both sizes, so the L1/L2 boundary is invisible to it (the L1 win is a *random*-access effect). §36's "5-50×" splits by format: the text encoder lands at ~30-65×, the binary encoder at ~1-2×.
 
 ## A note on benchmark anti-patterns
 

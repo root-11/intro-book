@@ -34,7 +34,7 @@ The simulator inside the boundary is a pure function. The storage system at the 
 
 1. **Measure your bandwidth.** On Linux: `dd if=/dev/zero of=/tmp/test bs=1M count=1024 oflag=direct` measures sequential write. Note your number.
 2. **Measure your IOPS.** Time 10 000 separate `File::write` calls of 4 KB each, with `sync_all()` after the loop. Compute IOPS as `10_000 / time_in_seconds`. Compare to the spec sheet.
-3. **Batched vs unbatched.** Write 1 000 000 rows of 32 bytes each to a file: first as 1 000 000 separate writes; then as one bulk write. Compare times. The batched version should be 50-1000× faster, depending on your filesystem.
+3. **Batched vs unbatched.** Write 1 000 000 rows of 32 bytes each to a file: first as 1 000 000 separate writes; then as one bulk write. Compare times. The batched version is much faster - measured 14-256× across the four reference machines (`batched_write`), the spread driven by filesystem and write buffering. With an `fsync` per write (a durable log) the gap widens by orders of magnitude; the exercise here measures buffered writes, which is the floor.
 4. **SQLite throughput.** Insert 1 000 000 rows into a SQLite table: first as separate `INSERT` statements; then in a single transaction; then via one `INSERT INTO ... VALUES (...)` with all rows. Note the three orders of magnitude.
 5. **Compute your tick budget.** At 30 Hz with 1 000 mutations per tick, what is the largest acceptable per-mutation I/O cost? Below NVMe latency, you are fine; above it, you must batch.
 6. *(stretch)* **A second storage system.** If you have a network filesystem handy (NFS, SSHFS), repeat exercise 3 against a remote file. Note the latency-vs-bandwidth tradeoff. The IOPS limit is your bandwidth-delay product divided by IO size.
