@@ -21,10 +21,10 @@ If your "for each entity, look up something" loop has 1 000 000 entities, neithe
 
 ## Exercise 3 - The layout difference
 
-`Vec<u64>` sum: ~1 ns/elem.
-`HashMap<u32, u64>` sum: ~50-100 ns/elem.
+`Vec<u64>` sum: ~0.2-2 ns/elem.
+`HashMap<u32, u64>` sum: ~40-160 ns/elem.
 
-50-100× difference for the same total work. Most of it goes to memory: hash maps have one cache line per bucket, the buckets aren't sequential, the hash itself touches more bytes per access. Big-O is the same; constant factor decides.
+Roughly 65-165× difference for the same total work, measured across the four reference machines (`vec_vs_hashmap`; per-machine numbers in `code/README.md`). Most of it goes to memory: hash maps have one cache line per bucket, the buckets aren't sequential, the hash itself touches more bytes per access. Big-O is the same; constant factor decides.
 
 ## Exercise 4 - The cliff
 
