@@ -190,7 +190,7 @@ These exercises are calibrations. Run them on your machine and write the numbers
 5. **Pointer chasing.** Build a linked list of 1,000,000 `Box<Node>` where `Node { value: u64, next: Option<Box<Node>> }`. Time a sum that walks the list. Compare with the same sum on a `Vec<u64>` of the same length. The ratio is roughly the L1-to-RAM ratio.
 
 > [!NOTE]
-> The ratio depends on your CPU. Measured: ~63× on a Raspberry Pi 4, ~100-120× on mid-2010s Intel laptops, ~300× on a modern Ryzen-class chip. The wider gap on newer hardware reflects faster cores running ahead of an unchanged DRAM latency. The order of magnitude (60-300×) is robust; the exact factor is not. Note also: a list built by `for i in (0..N).rev() { Box::new(...) }` allocates the boxes at *sequential* heap addresses - the chase looks free. Shuffle the order in which you thread them to surface the real cost.
+> The ratio depends on your CPU. Measured: ~60× on a Raspberry Pi 4, ~90-115× on mid-2010s Intel laptops, ~270× on a Ryzen 9 270. The wider gap on newer hardware reflects faster cores running ahead of an unchanged DRAM latency. The order of magnitude (60-270×) is robust; the exact factor is not. Note also: a list built by `for i in (0..N).rev() { Box::new(...) }` allocates the boxes at *sequential* heap addresses - the chase looks free. Shuffle the order in which you thread them to surface the real cost.
 
 6. *(stretch)* **Read your `lscpu` output to your benchmarks.** With your cache sizes from exercise 1 and your timings from exercise 4, identify which level of cache each size step is leaving. The transitions are not always clean - annotate where they are noisy.
 
@@ -260,7 +260,7 @@ That is the full vocabulary you need from `Vec` for the next several phases. Eve
 4. **Indexing cost.** Time `vec[i]` on a 1M `Vec<u32>` accessed sequentially. Compare with the same access on a `HashMap<usize, u32>` of the same size. Sequential `Vec` reads should be ~10-100× faster.
 
 > [!NOTE]
-> Measured ratios: ~65× on a Raspberry Pi 4, ~75-90× on mid-2010s Intel laptops, ~175× on a modern Ryzen-class chip. All use Rust's default `HashMap` (SipHash). Modern hardware widens the gap because the `Vec` sum is auto-vectorized and well-prefetched; `HashMap::get` cannot be either. Order-of-magnitude (60-200×) is the durable claim.
+> Measured ratios: ~65× on a Raspberry Pi 4, ~90-95× on mid-2010s Intel laptops, ~160× on a Ryzen 9 270. All use Rust's default `HashMap` (SipHash). Modern hardware widens the gap because the `Vec` sum is auto-vectorized and well-prefetched; `HashMap::get` cannot be either. Order-of-magnitude (60-200×) is the durable claim.
 
 5. **`swap_remove` vs `remove`.** Build a `Vec<u32>` of 1,000,000 elements. Time removing 100 elements from the middle with `vec.remove(500_000)` (in a loop, because each `remove` shifts roughly half the vector). Time the same with `vec.swap_remove(500_000)`. Note the orders-of-magnitude difference.
 6. **Slices in function signatures.** Write `fn sum(xs: &[u32]) -> u64`. Call it with `sum(&v)` where `v: Vec<u32>`. Note that you did not have to write `&v[..]` - the conversion is automatic.
@@ -1547,7 +1547,7 @@ struct CreatureCold {
 
 Motion reads only `CreatureHot`. Cleanup reads `CreatureCold`. The two systems' cache traffic does not overlap.
 
-The bandwidth math: pre-split, motion's loop reads ~40 bytes per creature (the full row, prefetcher loads everything together). Post-split, motion reads ~24 bytes (just `pos` + `vel` + `energy`). Roughly 1.7× less bandwidth, which often translates to 1.5-2× faster wall-clock time at RAM-bound sizes.
+The bandwidth math: pre-split, motion's loop reads ~40 bytes per creature (the full row, prefetcher loads everything together). Post-split, motion reads 20 bytes (just `pos` + `vel` + `energy`). Half the bandwidth, which measured as ~2-2.5× faster wall-clock time at 1M creatures across the four reference machines (`code/README.md`).
 
 The discipline carries cost. Two tables means two id-to-slot maps (or careful sharing of one). Cleanup must update both in lockstep when slots move. The split is a real architectural commitment - once made, every system that touches creatures must know which table it is touching.
 
@@ -1567,7 +1567,7 @@ These extend the simulator's `creature` table from §0/§1.
 
 1. **Audit access patterns.** For each system in your simulator, list which fields it reads and which it writes. Fields read every tick are hot; the rest are cold.
 2. **Build the split.** Refactor `creature` into `creature_hot` and `creature_cold`. Both share the id allocator. Verify each row's fields stay aligned across the two tables.
-3. **Time motion at 1M creatures.** Pre-split: time motion. Post-split: time motion. Compare. The post-split version should be ~1.5-2× faster.
+3. **Time motion at 1M creatures.** Pre-split: time motion. Post-split: time motion. Compare. The post-split version should be ~2-2.5× faster.
 4. **Cleanup must touch both.** Modify cleanup to `swap_remove` from both `creature_hot` and `creature_cold` when a creature dies. Verify alignment after.
 5. **A bad split.** Construct a split where the wrong fields go cold (e.g. `energy` in cold). Time motion. The cost of the cache miss on `energy` should bury any savings elsewhere.
 6. *(stretch)* **The all-fields case.** Write a system that reads every field (e.g. a serialiser). Time the split version. Discuss why the split's overhead is real here, and why this is a fine tradeoff: most ticks do not run this system.
@@ -1583,9 +1583,9 @@ These extend the simulator's `creature` table from §0/§1.
 
 The *working set* of a loop is the data it touches per pass. The *cache hierarchy* (§1) is what holds that data. The two together decide the loop's speed.
 
-If the working set fits in L1 - typically 32 KB per core - the loop runs at near-arithmetic speed: ~0.1-0.5 ns per element. If it fits in L2 - typically 1-2 MB per core - it is ~0.5-2 ns. If it fits in L3 - typically 16-32 MB shared - it is ~1-5 ns. If it spills to RAM, sequential access drops to ~3-10 ns (prefetcher helping); random access drops to 50-200 ns (no prefetcher help).
+Which cache level holds the working set decides the loop's speed. The numbers below are measured on the four reference machines (`code/README.md`), not theoretical - the modern desktop sits at the low end of each range, the Pi 4 at the high end. A flat streaming sum stays under ~0.5 ns/element in L1 (`cache_cliffs`). Motion's 20-byte loop, swept sequentially, measures ~0.3-4 ns/creature in L2 (10K creatures), ~0.4-10 ns in L3 (1M), and ~0.7-17 ns once it spills to RAM (10M). Sequential access stays bandwidth-bound and cheap on every machine; the expensive regime is *random* order, ~30-390 ns/creature at 10M.
 
-These ranges are not theoretical. They are what your machine actually does, measured by §1's exercises. If you ran them, you have your numbers.
+If you ran §1's exercises and exercise 2 below, you have your own machine's numbers. Treat the spread above as the envelope between slow and fast hardware, not an absolute.
 
 Computing the working set is mechanical. Motion's inner loop reads `pos: (f32, f32) = 8 bytes`, `vel: (f32, f32) = 8 bytes`, `energy: f32 = 4 bytes`. Total: 20 bytes per creature. At N creatures, working set = 20 × N bytes.
 
@@ -1597,7 +1597,7 @@ Computing the working set is mechanical. Motion's inner loop reads `pos: (f32, f
 | 1 000 000   | 20 MB       | fits L3, spills L2        |
 | 10 000 000  | 200 MB      | spills L3, hits RAM       |
 
-Each transition costs roughly 3-5× in per-element time. At 10K, ~0.5 ns/elem. At 1M, ~3 ns/elem. At 10M, ~30 ns/elem (sequential).
+Sequential streaming barely shows the cliff: the prefetcher keeps motion bandwidth-bound, so per-creature time climbs only gently into RAM - roughly 0.3 ns at 10K rising to 0.7 ns at 10M on a modern desktop, 4 ns rising to 17 ns on a Pi 4. The steep cliff is in *random* order (exercise 5): at 10M creatures, random access costs ~30 ns/creature on the desktop and ~390 ns on the Pi. The per-machine ladder is `motion_working_set` in `code/measurement`; the numbers are in `code/README.md`.
 
 This is what §4's "cliff" was about, made concrete for your simulator. The transition points are not magic - they are arithmetic over your cache sizes.
 
@@ -1618,7 +1618,7 @@ This is not premature optimisation. It is *layout-aware design* - making the sch
 2. **Find your cliff.** Time motion at N = 1K, 10K, 100K, 1M, 10M. Plot ns-per-element against N. The transitions should match your cache sizes.
 3. **Reduce the working set.** Apply hot/cold splits (§26) to push motion's footprint down. Repeat exercise 2. Did the cliff move?
 4. **A wider field.** Change `energy: f32` to `energy: f64`. Recompute the working set. Repeat exercise 2. The cliff should move inward (closer to smaller N).
-5. **Random vs sequential.** Repeat motion's loop with `for &i in random_indices` instead of `for i in 0..N`. The cliff drops by roughly a factor of 50-100 (random RAM access vs sequential).
+5. **Random vs sequential.** Repeat motion's loop with `for &i in random_indices` instead of `for i in 0..N`. At 10M creatures the per-element time rises by roughly 25-45× (random RAM access vs sequential). A single-pointer chase shows a wider gap; motion's is smaller because each creature amortises five columns.
 6. *(stretch)* **The L1 sweet spot.** Find the N at which motion's working set fills L1 to roughly 75 %. Run the loop in tight repetition and compare to the closest L2-only neighbour. The L1-resident loop should be ~5-10× faster.
 
 ## What's next
@@ -1891,7 +1891,7 @@ The pattern is the right answer to "but I have one big table". You almost never 
 
 <p align="center"><img src="book/illustrations/multimeter.jpg" alt="A mouse with a multimeter - false sharing is a precision-of-cost-measurement problem" style="max-height: 300px; max-width: 100%;"></p>
 
-You partitioned the table. Each thread writes its own disjoint slice. The work is balanced. The speedup is... 1.2× on 8 cores. Where did the parallelism go?
+You partitioned the table. Each thread folds its own disjoint slice into its own accumulator. The work is balanced. The speedup is... 0.4× - the parallel version runs *slower* than a single thread (measured 0.26-0.42× across the four reference machines). Where did the parallelism go?
 
 Probably to *false sharing*.
 
@@ -2181,7 +2181,7 @@ The library [`science/simlog/logger.py`](book/simlog/logger.py) implements this 
 
 **The write-blocking problem → double-buffered pointer switch.** If the writer thread blocks while the disk flushes, the simulator pauses on every flush. The fix: two buffer containers, each holding a tunable number of rows (200 000 by default). When one fills, the foreground thread hands it to a background thread for flush; new events keep going to the other. When the flush completes, the containers' roles swap - a single pointer switch, often called the *revolver*. From the simulator's perspective, writing an event is one push to a list, never a wait on disk.
 
-The combined result on a representative workload: simlog's `log()` call costs roughly 0.9-1.9 µs (faster at fewer fields per row, slower at many - published benchmarks show 934 ns at 5 fields, 1906 ns at 11), producing **~440 MB per day** of densely detailed event records on a real simulation. The hot-path output is a sequence of `.npz` chunks written sequentially by the background thread (`_write_chunk`); the simulator's `log()` never waits on disk. Auxiliary methods (`to_csv`, `to_sqlite`) read the `.npz` chunks back *after* the simulation and convert them for downstream consumers - this is post-processing, not part of the live logging path. The structural identity - log = world - holds across all these formats; what changes is the storage system at the boundary ([§38](#38---storage-systems-bandwidth-and-iops)).
+The combined result on a representative workload: simlog's `log()` call costs roughly 0.9-1.9 µs, faster at fewer fields per row and slower at many. You do not have to trust that number - `uv run book/simlog/benchmark.py` times `log()` at 5 and 11 fields against the vendored [`logger.py`](book/simlog/logger.py) and prints ns per call. The author's box reports ~934 ns at 5 fields and ~1906 ns at 11; yours will differ, but the shape holds. At a representative event rate this produces on the order of **hundreds of MB per day** of densely detailed records (~440 MB on the simulation the author measured). The hot-path output is a sequence of `.npz` chunks written sequentially by the background thread (`_write_chunk`); the simulator's `log()` never waits on disk. Auxiliary methods (`to_csv`, `to_sqlite`) read the `.npz` chunks back *after* the simulation and convert them for downstream consumers - this is post-processing, not part of the live logging path. The structural identity - log = world - holds across all these formats; what changes is the storage system at the boundary ([§38](#38---storage-systems-bandwidth-and-iops)).
 
 The structural shape is what carries: triple-store + codebook + double-buffered writer. A Rust analogue - `logger.rs` - is the natural next artifact for a Rust-first simulator. Three views of the same idea are sketched in the stretch exercise below.
 

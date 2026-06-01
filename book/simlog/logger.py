@@ -488,11 +488,21 @@ class SimLogSparse:
 # Tests  (run with: pytest logger.py -v)
 # ===========================================================================
 
-if __name__ != '__pytest_main__':  # allow both pytest and direct execution
-    pass
-
 import csv
-import pytest
+try:
+    import pytest
+except ImportError:  # the logger imports cleanly without the test dependency
+    class _PytestShim:
+        """Lets `import logger` succeed when pytest is absent (e.g. benchmark.py).
+        @pytest.fixture stays a no-op decorator; anything else raises only if a
+        test actually runs, which requires pytest anyway."""
+        def fixture(self, *args, **kwargs):
+            if args and callable(args[0]):   # @pytest.fixture
+                return args[0]
+            return lambda fn: fn             # @pytest.fixture(...)
+        def __getattr__(self, name):
+            raise ImportError("pytest is required to run the tests in logger.py")
+    pytest = _PytestShim()
 
 ACTIVITIES   = ['picking', 'putaway', 'replen', 'consolidation', 'count', 'transport', 'staging']
 ENTITY_TYPES = ['bot', 'human', 'conveyor', 'station']
