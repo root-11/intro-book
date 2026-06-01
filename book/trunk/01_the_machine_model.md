@@ -33,7 +33,7 @@ These exercises are calibrations. Run them on your machine and write the numbers
 5. **Pointer chasing.** Build a linked list of 1,000,000 `Box<Node>` where `Node { value: u64, next: Option<Box<Node>> }`. Time a sum that walks the list. Compare with the same sum on a `Vec<u64>` of the same length. The ratio is roughly the L1-to-RAM ratio.
 
 > [!NOTE]
-> The ratio depends on your CPU. Measured: ~63× on a Raspberry Pi 4, ~100-120× on mid-2010s Intel laptops, ~300× on a modern Ryzen-class chip. The wider gap on newer hardware reflects faster cores running ahead of an unchanged DRAM latency. The order of magnitude (60-300×) is robust; the exact factor is not. Note also: a list built by `for i in (0..N).rev() { Box::new(...) }` allocates the boxes at *sequential* heap addresses - the chase looks free. Shuffle the order in which you thread them to surface the real cost.
+> The ratio depends on your CPU. Measured: ~60× on a Raspberry Pi 4, ~90-115× on mid-2010s Intel laptops, ~270× on a Ryzen 9 270. The wider gap on newer hardware reflects faster cores running ahead of an unchanged DRAM latency. The order of magnitude (60-270×) is robust; the exact factor is not. Note also: a list built by `for i in (0..N).rev() { Box::new(...) }` allocates the boxes at *sequential* heap addresses - the chase looks free. Shuffle the order in which you thread them to surface the real cost.
 
 6. *(stretch)* **Read your `lscpu` output to your benchmarks.** With your cache sizes from exercise 1 and your timings from exercise 4, identify which level of cache each size step is leaving. The transitions are not always clean - annotate where they are noisy.
 

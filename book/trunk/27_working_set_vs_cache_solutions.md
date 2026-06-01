@@ -52,7 +52,7 @@ Switching `energy: f32` → `energy: f64` adds 4 B per row → 24 B total. For a
 
 ## Exercise 5 - Random vs sequential
 
-Sequential RAM access: ~3-10 ns per element (prefetcher helping). Random RAM access: ~50-200 ns per element. The cliff drops by 10-50× depending on hardware. The same algorithm, two access patterns; orders of magnitude apart.
+Sequential RAM access stays bandwidth-bound: motion's loop measures ~0.7-17 ns/creature at 10M (modern desktop to Pi 4, the prefetcher helping). Random RAM access is ~30-390 ns/creature - the prefetcher cannot help. The gap is ~25-45× depending on hardware (`motion_working_set`, `code/README.md`). The same algorithm, two access patterns; an order of magnitude or more apart.
 
 ## Exercise 6 - The L1 sweet spot
 

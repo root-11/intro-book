@@ -26,7 +26,7 @@ That is the full vocabulary you need from `Vec` for the next several phases. Eve
 4. **Indexing cost.** Time `vec[i]` on a 1M `Vec<u32>` accessed sequentially. Compare with the same access on a `HashMap<usize, u32>` of the same size. Sequential `Vec` reads should be ~10-100× faster.
 
 > [!NOTE]
-> Measured ratios: ~65× on a Raspberry Pi 4, ~75-90× on mid-2010s Intel laptops, ~175× on a modern Ryzen-class chip. All use Rust's default `HashMap` (SipHash). Modern hardware widens the gap because the `Vec` sum is auto-vectorized and well-prefetched; `HashMap::get` cannot be either. Order-of-magnitude (60-200×) is the durable claim.
+> Measured ratios: ~65× on a Raspberry Pi 4, ~90-95× on mid-2010s Intel laptops, ~160× on a Ryzen 9 270. All use Rust's default `HashMap` (SipHash). Modern hardware widens the gap because the `Vec` sum is auto-vectorized and well-prefetched; `HashMap::get` cannot be either. Order-of-magnitude (60-200×) is the durable claim.
 
 5. **`swap_remove` vs `remove`.** Build a `Vec<u32>` of 1,000,000 elements. Time removing 100 elements from the middle with `vec.remove(500_000)` (in a loop, because each `remove` shifts roughly half the vector). Time the same with `vec.swap_remove(500_000)`. Note the orders-of-magnitude difference.
 6. **Slices in function signatures.** Write `fn sum(xs: &[u32]) -> u64`. Call it with `sum(&v)` where `v: Vec<u32>`. Note that you did not have to write `&v[..]` - the conversion is automatic.

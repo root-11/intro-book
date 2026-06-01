@@ -131,7 +131,7 @@ fn main() {
 }
 ```
 
-A `Vec<u64>` sum runs 0.2-2 ns/elem depending on the chip; the *shuffled* linked-list walk is the same scan paying full DRAM latency on every `next`. The measured ratio is 63× on a Pi 4, ~100-120× on mid-2010s Intel, ~300× on a modern Ryzen (see `code/measurement/src/bin/pointer_chase.rs` and the cross-machine table in `code/README.md`). Without the shuffle the ratio collapses toward 1× - that is the prefetcher, not the absence of a tax.
+A `Vec<u64>` sum runs 0.1-2 ns/elem depending on the chip; the *shuffled* linked-list walk is the same scan paying full DRAM latency on every `next`. The measured ratio is ~60× on a Pi 4, ~90-115× on mid-2010s Intel, ~270× on a Ryzen 9 270 (see `code/measurement/src/bin/pointer_chase.rs` and the cross-machine table in `code/README.md`). Without the shuffle the ratio collapses toward 1× - that is the prefetcher, not the absence of a tax.
 
 Three stack-overflow traps hide in this exercise, all from recursion over `next`:
 - Building by deep recursion overflows on the way down - the loop above scales.
