@@ -4,7 +4,7 @@
 
 <p align="center"><img src="../illustrations/multimeter.jpg" alt="A mouse with a multimeter - false sharing is a precision-of-cost-measurement problem" style="max-height: 300px; max-width: 100%;"></p>
 
-You partitioned the table. Each thread writes its own disjoint slice. The work is balanced. The speedup is... 1.2× on 8 cores. Where did the parallelism go?
+You partitioned the table. Each thread folds its own disjoint slice into its own accumulator. The work is balanced. The speedup is... 0.4× - the parallel version runs *slower* than a single thread (measured 0.26-0.42× across the four reference machines). Where did the parallelism go?
 
 Probably to *false sharing*.
 

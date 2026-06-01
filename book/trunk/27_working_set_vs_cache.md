@@ -6,9 +6,9 @@
 
 The *working set* of a loop is the data it touches per pass. The *cache hierarchy* (§1) is what holds that data. The two together decide the loop's speed.
 
-If the working set fits in L1 - typically 32 KB per core - the loop runs at near-arithmetic speed: ~0.1-0.5 ns per element. If it fits in L2 - typically 1-2 MB per core - it is ~0.5-2 ns. If it fits in L3 - typically 16-32 MB shared - it is ~1-5 ns. If it spills to RAM, sequential access drops to ~3-10 ns (prefetcher helping); random access drops to 50-200 ns (no prefetcher help).
+Which cache level holds the working set decides the loop's speed. The numbers below are measured on the four reference machines (`code/README.md`), not theoretical - the modern desktop sits at the low end of each range, the Pi 4 at the high end. A flat streaming sum stays under ~0.5 ns/element in L1 (`cache_cliffs`). Motion's 20-byte loop, swept sequentially, measures ~0.3-4 ns/creature in L2 (10K creatures), ~0.4-10 ns in L3 (1M), and ~0.7-17 ns once it spills to RAM (10M). Sequential access stays bandwidth-bound and cheap on every machine; the expensive regime is *random* order, ~30-390 ns/creature at 10M.
 
-These ranges are not theoretical. They are what your machine actually does, measured by §1's exercises. If you ran them, you have your numbers.
+If you ran §1's exercises and exercise 2 below, you have your own machine's numbers. Treat the spread above as the envelope between slow and fast hardware, not an absolute.
 
 Computing the working set is mechanical. Motion's inner loop reads `pos: (f32, f32) = 8 bytes`, `vel: (f32, f32) = 8 bytes`, `energy: f32 = 4 bytes`. Total: 20 bytes per creature. At N creatures, working set = 20 × N bytes.
 

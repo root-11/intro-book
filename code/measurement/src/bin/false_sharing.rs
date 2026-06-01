@@ -63,6 +63,52 @@ fn time_single(threads: usize) -> Duration {
     t0.elapsed()
 }
 
+// --- Naive partitioned reduction ----------------------------------------
+// The realistic version of the bug: partition one input array into disjoint
+// per-thread slices, fold each slice into a shared per-thread accumulator.
+// The slices are disjoint, the work is balanced - and the accumulators sit
+// packed in one array, so every fold writes a contended cache line.
+
+const REDUCE_N: usize = 8_000_000; // input elements per thread
+
+fn reduce_shared(threads: usize, input: &[u64]) -> Duration {
+    let acc: Vec<AtomicU64> = (0..threads).map(|_| AtomicU64::new(0)).collect();
+    let t0 = Instant::now();
+    thread::scope(|s| {
+        for (id, chunk) in input.chunks(REDUCE_N).enumerate() {
+            let slot = &acc[id];
+            s.spawn(move || {
+                for &x in chunk { slot.fetch_add(x, Ordering::Relaxed); }
+            });
+        }
+    });
+    std::hint::black_box(&acc);
+    t0.elapsed()
+}
+
+fn reduce_padded(threads: usize, input: &[u64]) -> Duration {
+    let acc: Vec<Padded> = (0..threads).map(|_| Padded(AtomicU64::new(0))).collect();
+    let t0 = Instant::now();
+    thread::scope(|s| {
+        for (id, chunk) in input.chunks(REDUCE_N).enumerate() {
+            let slot = &acc[id].0;
+            s.spawn(move || {
+                for &x in chunk { slot.fetch_add(x, Ordering::Relaxed); }
+            });
+        }
+    });
+    std::hint::black_box(&acc);
+    t0.elapsed()
+}
+
+fn reduce_single(input: &[u64]) -> Duration {
+    let acc = AtomicU64::new(0);
+    let t0 = Instant::now();
+    for &x in input { acc.fetch_add(x, Ordering::Relaxed); }
+    std::hint::black_box(&acc);
+    t0.elapsed()
+}
+
 fn main() {
     let threads = thread::available_parallelism().map(|n| n.get()).unwrap_or(8).min(8);
     println!("false sharing: {threads} threads x {ITERS} increments each\n");
@@ -85,4 +131,16 @@ fn main() {
         println!("  false-shared speedup is only {:.2}x despite {threads} cores.",
                  ms(single) / ms(shared));
     }
+
+    // Partitioned reduction: the realistic "I did everything right" version.
+    let input: Vec<u64> = (0..(threads * REDUCE_N) as u64).map(|i| i & 0xFF).collect();
+    let r_single = reduce_single(&input);
+    let r_shared = reduce_shared(threads, &input);
+    let r_padded = reduce_padded(threads, &input);
+    println!("\n  partitioned reduction ({} elements, {threads} disjoint slices):", input.len());
+    println!("    {:<26} {:>10}", "single thread", format!("{:.1} ms", ms(r_single)));
+    println!("    {:<26} {:>10}  {:>6.2}x", "packed accumulators",
+             format!("{:.1} ms", ms(r_shared)), ms(r_single) / ms(r_shared));
+    println!("    {:<26} {:>10}  {:>6.2}x", "padded accumulators",
+             format!("{:.1} ms", ms(r_padded)), ms(r_single) / ms(r_padded));
 }

@@ -26,7 +26,7 @@ struct CreatureCold {
 
 Motion reads only `CreatureHot`. Cleanup reads `CreatureCold`. The two systems' cache traffic does not overlap.
 
-The bandwidth math: pre-split, motion's loop reads ~40 bytes per creature (the full row, prefetcher loads everything together). Post-split, motion reads ~24 bytes (just `pos` + `vel` + `energy`). Roughly 1.7× less bandwidth, which often translates to 1.5-2× faster wall-clock time at RAM-bound sizes.
+The bandwidth math: pre-split, motion's loop reads ~40 bytes per creature (the full row, prefetcher loads everything together). Post-split, motion reads 20 bytes (just `pos` + `vel` + `energy`). Half the bandwidth, which measured as ~2-2.5× faster wall-clock time at 1M creatures across the four reference machines (`code/README.md`).
 
 The discipline carries cost. Two tables means two id-to-slot maps (or careful sharing of one). Cleanup must update both in lockstep when slots move. The split is a real architectural commitment - once made, every system that touches creatures must know which table it is touching.
 
@@ -46,7 +46,7 @@ These extend the simulator's `creature` table from §0/§1.
 
 1. **Audit access patterns.** For each system in your simulator, list which fields it reads and which it writes. Fields read every tick are hot; the rest are cold.
 2. **Build the split.** Refactor `creature` into `creature_hot` and `creature_cold`. Both share the id allocator. Verify each row's fields stay aligned across the two tables.
-3. **Time motion at 1M creatures.** Pre-split: time motion. Post-split: time motion. Compare. The post-split version should be ~1.5-2× faster.
+3. **Time motion at 1M creatures.** Pre-split: time motion. Post-split: time motion. Compare. The post-split version should be ~2-2.5× faster.
 4. **Cleanup must touch both.** Modify cleanup to `swap_remove` from both `creature_hot` and `creature_cold` when a creature dies. Verify alignment after.
 5. **A bad split.** Construct a split where the wrong fields go cold (e.g. `energy` in cold). Time motion. The cost of the cache miss on `energy` should bury any savings elsewhere.
 6. *(stretch)* **The all-fields case.** Write a system that reads every field (e.g. a serialiser). Time the split version. Discuss why the split's overhead is real here, and why this is a fine tradeoff: most ticks do not run this system.

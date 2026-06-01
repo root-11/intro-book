@@ -79,10 +79,11 @@ So §27's "ns/elem ladder" is a *random-access* ladder; sequential motion is an 
 
 | Test | Pi 4 (4t) | i7-3610QM (8t) | i3-5010U (4t) | Ryzen 9 270 (8t) |
 |---|---:|---:|---:|---:|
-| Padded speedup vs shared (§33) | 13.6× | 8.3× | 6.3× | 21.1× |
-| Shared parallel vs 1 thread (§33) | 0.27× | 0.43× | 0.30× | 0.37× |
+| Padded speedup vs shared, [u64;N] (§33) | 13.6× | 8.3× | 6.3× | 21.1× |
+| Shared [u64;N] parallel vs 1 thread (§33) | 0.27× | 0.43× | 0.30× | 0.37× |
+| Partitioned reduction, packed vs 1 thread (§33) | 0.26× | 0.42× | 0.30× | 0.38× |
 
-The second row is below 1.0 on every machine: the false-shared "parallel" run is 2.3-3.7× *slower* than a single thread. Padding each counter to its own cache line recovers near-linear scaling. This is the negative-scaling claim in §33, measured.
+The bottom rows are below 1.0 on every machine: the false-shared "parallel" run is 2.3-3.8× *slower* than a single thread. The third row is the realistic case - a naive parallel reduction over disjoint input slices, folding into a packed per-thread accumulator array - and it scales just as negatively as the `[u64;N]` microbenchmark. Padding each accumulator to its own cache line recovers near-linear scaling (1.9-7.1×). This is the negative-scaling claim in §33, measured; the "partitioned everything correctly and it still got slower" opener is the 0.26-0.42× number.
 
 ## A note on benchmark anti-patterns
 
