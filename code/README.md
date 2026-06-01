@@ -27,16 +27,18 @@ cargo run --release --bin vec_capacity       # §3.1, §3.2, §3.3
 cargo run --release --bin vec_vs_hashmap     # §3.4, §4.3
 cargo run --release --bin swap_remove_perf   # §3.5
 cargo run --release --bin soa_vs_aos         # §7.3-7.5
+cargo run --release --bin motion_working_set # §26.4, §27 (motion loop ns/creature)
+cargo run --release --bin false_sharing      # §33 (false sharing, negative scaling)
 cargo run --release --bin power_loop -- sequential   # §4.9 (run perf in another terminal)
 ```
 
 ## Cross-machine results
 
-Captured 2026-05-04 across four hardware profiles. The chapter prose stays light on specific numbers because they age - but the *order of magnitude* is robust, as the table shows.
+Captured 2026-05-04 across four hardware profiles. The chapter prose stays light on specific numbers because they age - but the *order of magnitude* is robust, as the table shows. The Ryzen-column Vec-sum cell was re-measured 2026-06-01 on a Ryzen 9 270 (3-run average, 0.14); a full re-run of the other binaries on all four hosts reproduced every cell to within run-to-run noise.
 
 | Test | Pi 4 (Cortex-A72, 4 GB) | i7-3610QM (2012 laptop, 8 GB) | i3-5010U (2015 NUC, 8 GB) | Modern Ryzen-class |
 |---|---:|---:|---:|---:|
-| Vec sum, ns/elem at N=100M | 2.03 | 0.44 | 0.70 | 0.20 |
+| Vec sum, ns/elem at N=100M | 2.03 | 0.44 | 0.70 | 0.14 |
 | Cache cliffs visible (§1.4) | 3 (clean staircase) | 3 (clean staircase) | 2-3 | 1 (L3→RAM only) |
 | Pointer chase ratio (§1.5) | 63× | 120× | 103× | 296× |
 | Vec vs HashMap, 1M (§3.4) | 65× | 89× | 77× | 175× |
@@ -50,6 +52,37 @@ Two findings worth keeping in mind:
 2. **The Pi shows the strongest SoA win** (5.7× when the row grows from 3 B to 20 B). With no L3 and a tight LPDDR4 channel, the Pi pays for every wasted byte the AoS row drags through cache. Modern desktops with generous L3 mute the gap to ~2×. The principle is the same; the slope of the cliff scales with the cache budget.
 
 If you reproduce these on your own hardware, treat the chapter notes as ranges (e.g. "60-200×" for Vec-vs-HashMap), not absolutes.
+
+### Motion loop and false sharing (captured 2026-06-01)
+
+The `motion_working_set` and `false_sharing` binaries back §26, §27, and §33. Same four hosts.
+
+`motion`'s SoA loop, **sequential** ns per creature per tick (reads pos+vel+energy, writes pos+energy):
+
+| creatures | Pi 4 | i7-3610QM | i3-5010U | Ryzen 9 270 |
+|---|---:|---:|---:|---:|
+| 10,000 | 4.18 | 0.75 | 1.04 | 0.27 |
+| 1,000,000 | 10.05 | 1.70 | 3.30 | 0.44 |
+| 10,000,000 | 17.38 | 1.80 | 3.15 | 0.71 |
+
+Sequential motion stays bandwidth-bound and cheap even at 10M; the cost explosion is in *random* order:
+
+| Test | Pi 4 | i7-3610QM | i3-5010U | Ryzen 9 270 |
+|---|---:|---:|---:|---:|
+| Motion random ns/creature, 10M (§27.4) | 392 | 80 | 84 | 31 |
+| Random / sequential, 10M (§27.4) | 23× | 45× | 27× | 43× |
+| Hot/cold, AoS-40B / SoA-20B, 1M (§26.4) | 2.3× | 2.3× | 2.3× | 2.9× |
+
+So §27's "ns/elem ladder" is a *random-access* ladder; sequential motion is an order of magnitude cheaper. The random/sequential gap is ~25-45×, not the 50-100× a single-pointer chase would show (motion amortises five columns per creature).
+
+`false_sharing`: eight (or `nproc`) threads each incrementing one counter, vs the same counters padded to their own 64-byte line, vs one thread doing all the work:
+
+| Test | Pi 4 (4t) | i7-3610QM (8t) | i3-5010U (4t) | Ryzen 9 270 (8t) |
+|---|---:|---:|---:|---:|
+| Padded speedup vs shared (§33) | 13.6× | 8.3× | 6.3× | 21.1× |
+| Shared parallel vs 1 thread (§33) | 0.27× | 0.43× | 0.30× | 0.37× |
+
+The second row is below 1.0 on every machine: the false-shared "parallel" run is 2.3-3.7× *slower* than a single thread. Padding each counter to its own cache line recovers near-linear scaling. This is the negative-scaling claim in §33, measured.
 
 ## A note on benchmark anti-patterns
 
