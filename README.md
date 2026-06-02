@@ -209,7 +209,7 @@ A cache line is 64 bytes on x86 and most ARM chips - the unit of memory the CPU 
 
 Rust gives you several integer widths: `u8` (one byte, 0 to 255), `u16` (two bytes, 0 to 65 535), `u32` (four bytes, around four billion), `u64` (eight bytes, around 1.8×10¹⁹). The signed versions - `i8`, `i16`, `i32`, `i64` - use one bit for the sign and the rest for magnitude. For floating-point: `f32` (four bytes, ~7 decimal digits of precision), `f64` (eight bytes, ~15 decimal digits).
 
-A `Vec<u8>` of length N is N bytes. A `Vec<u64>` is 8N bytes. So a `Vec<u8>` fits 64 elements per cache line; a `Vec<u64>` fits 8. If your loop touches one element per cache line, the `u64` version makes 8× as many memory loads as the `u8` version.
+A `Vec<u8>` of length N is N bytes. A `Vec<u64>` is 8N bytes. So a `Vec<u8>` fits 64 elements per cache line; a `Vec<u64>` fits 8. Walk the whole vector and the `u64` version pulls in 8× as many cache lines as the `u8` version: the same element count, eight times the bytes.
 
 This is the *width budget*. Picking a wider type than you need is not free; it costs cache lines, and at the scales this book targets, cache lines are the budget you spend.
 
@@ -507,7 +507,7 @@ This stands against an instinct most programmers acquire from OOP: the urge to w
 
 A useful test: when you find yourself writing a method on a struct, ask *what does this look like over an array?* If the array version is shorter, drop the method. If the array version is the same length, keep the method as a function over a slice - `fn shuffle(deck: &mut Deck)`, not `impl Deck { fn shuffle(&mut self) }`. Either way, the singleton was never the right unit of code.
 
-There is also a performance reason. A method that operates on one entity at a time forces the system that uses it to call the method N times - N function-call overheads, N branches the optimizer cannot fuse, N missed opportunities for the compiler to vectorize. A function over a slice is *one* call; the compiler sees the loop, lifts invariants out of it, and often produces SIMD code. Writing for arrays first is a request the compiler can fulfil; writing for singletons is a request it usually cannot.
+There is also a cost reason, though it does not bite at 52 cards. A method that runs on one entity at a time forces its caller to invoke it N times: N opaque calls the optimiser cannot fuse into a loop. A function over a slice is *one* call - the compiler sees the whole loop and can lift invariants, reorder, and vectorise it. Writing for the array keeps the work visible to the optimiser; writing for the singleton hides it. The bill for that hiding does not arrive until the simulator is walking a million rows a tick, and [§19](#19---ebp-dispatch) measures it there. At deck scale this is a reason to prefer the array form, not yet a speed you can feel.
 
 "Where there's one, there's many" is therefore not an architectural slogan but a daily practice. It costs nothing the first time. It costs everything the first time you forget.
 
@@ -519,8 +519,7 @@ These extend the deck again. The aim is to feel the array-first pattern in your 
 2. **Reverse the urge.** Given an OOP-style `Card::is_face_card(&self) -> bool`, rewrite it as `fn face_cards(ranks: &[u8]) -> Vec<bool>` - a function over the whole `ranks` array returning a parallel mask. Apply it to all 52 cards in one call.
 3. **The N = 0 case.** What does `highest_rank_in_hand` do for an empty `hand`? Should it panic, return `None`, or return some sentinel? Pick one and justify.
 4. **Predicate over a single value.** Suppose you want `is_red(suit: u8) -> bool` for a single card (suits 0 and 1 are hearts/diamonds). Write the array version `fn red_mask(suits: &[u8]) -> Vec<bool>` first. Then convince yourself the singleton case is `red_mask(&[suit])[0]` - the array version covers it.
-5. **Count overhead.** Time `for i in 0..52 { is_face_card(suits[i], ranks[i]); }` versus `face_cards(&ranks)`. The array version should be measurably faster at 52, much faster at 100,000. Document the ratio.
-6. *(stretch)* **From a tutorial.** Find any Rust tutorial that uses a `struct Card` with methods (`new`, `is_face`, `display`, etc.). Rewrite their full card game as three (or four) `Vec`s plus free functions. Compare line counts. Compare clarity. Compare what happens when you want to query "all face cards across the table" - one function call versus a loop over per-card method calls.
+5. *(stretch)* **From a tutorial.** Find any Rust tutorial that uses a `struct Card` with methods (`new`, `is_face`, `display`, etc.). Rewrite their full card game as three (or four) `Vec`s plus free functions. Compare line counts. Compare clarity. Compare what happens when you want to query "all face cards across the table" - one function call versus a loop over per-card method calls.
 
 ## What's next
 

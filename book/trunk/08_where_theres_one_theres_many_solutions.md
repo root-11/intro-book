@@ -53,35 +53,7 @@ let is_red_one = red_mask(&[one_suit])[0]; // true
 
 The singleton drops out as a one-element call. There is no separate `is_red(suit: u8) -> bool` function. If the call site is ergonomic enough you may write a thin wrapper for clarity, but the array version is the canonical implementation.
 
-## Exercise 5 - Count overhead
-
-```rust,no_run
-use std::time::Instant;
-
-let n = 100_000;
-let suits: Vec<u8> = (0..n).map(|i| (i % 4) as u8).collect();
-let ranks: Vec<u8> = (0..n).map(|i| (i % 13) as u8).collect();
-
-// Per-element loop
-let t = Instant::now();
-let mut count = 0u64;
-for i in 0..n {
-    if ranks[i] >= 10 { count += 1; }
-}
-println!("per-element: {:?}, count = {count}", t.elapsed());
-
-// Array version
-let t = Instant::now();
-let mask = face_cards(&ranks);
-let count: u64 = mask.iter().filter(|&&b| b).count() as u64;
-println!("array: {:?}, count = {count}", t.elapsed());
-```
-
-Both produce the same count. At 100,000 entries the array version is typically 2-5× faster - partly because the compiler vectorises `iter().map().collect()` more aggressively than an indexed loop, partly because the predicate is hoisted to the SIMD-friendly form.
-
-The point is not the exact ratio but that the array version *has* room to be optimised. The per-element version is already at its compiler ceiling.
-
-## Exercise 6 - From a tutorial
+## Exercise 5 - From a tutorial
 
 This is open-ended. The expected outcome: the rewritten array-first version is shorter, has fewer indirections, and answers cross-cutting queries (all face cards on the table; all spades in any hand) in one function call rather than a loop over methods.
 

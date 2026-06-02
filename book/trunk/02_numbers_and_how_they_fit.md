@@ -8,7 +8,7 @@ A cache line is 64 bytes on x86 and most ARM chips - the unit of memory the CPU 
 
 Rust gives you several integer widths: `u8` (one byte, 0 to 255), `u16` (two bytes, 0 to 65 535), `u32` (four bytes, around four billion), `u64` (eight bytes, around 1.8×10¹⁹). The signed versions - `i8`, `i16`, `i32`, `i64` - use one bit for the sign and the rest for magnitude. For floating-point: `f32` (four bytes, ~7 decimal digits of precision), `f64` (eight bytes, ~15 decimal digits).
 
-A `Vec<u8>` of length N is N bytes. A `Vec<u64>` is 8N bytes. So a `Vec<u8>` fits 64 elements per cache line; a `Vec<u64>` fits 8. If your loop touches one element per cache line, the `u64` version makes 8× as many memory loads as the `u8` version.
+A `Vec<u8>` of length N is N bytes. A `Vec<u64>` is 8N bytes. So a `Vec<u8>` fits 64 elements per cache line; a `Vec<u64>` fits 8. Walk the whole vector and the `u64` version pulls in 8× as many cache lines as the `u8` version: the same element count, eight times the bytes.
 
 This is the *width budget*. Picking a wider type than you need is not free; it costs cache lines, and at the scales this book targets, cache lines are the budget you spend.
 
