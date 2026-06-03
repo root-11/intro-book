@@ -425,7 +425,7 @@ Exercise 10 leaves you with a bug. The next section ([§9 - Sort breaks indices]
 
 In §5 you built a deck of 52 cards as three `Vec`s. The card at index 17 is the triple `(suits[17], ranks[17], locations[17])`. Together those three values are *the row*. There is no `Card` struct. The row exists *implicitly* in the alignment: the same index, used in every column, recovers all the data about one card.
 
-This is what we call a *row* throughout the rest of the book - a coherent set of values that belong to the same entity. In a `creature` table the row is `(pos[i], vel[i], energy[i], birth_t[i], id[i], gen[i])`. In a `food` table it is `(pos[i], value[i], id[i])`. The fields belong to the same entity by virtue of all sharing index `i`. There is no struct holding them; there is only the discipline that whatever index `i` you used to read one column, you also use to read every other column of the same table.
+This is what we call a *row* throughout the rest of the book - a coherent set of values that belong to the same entity. In a `creature` table the row is `(pos[i], vel[i], energy[i], birth_t[i], id[i], generation[i])`. In a `food` table it is `(pos[i], value[i], id[i])`. The fields belong to the same entity by virtue of all sharing index `i`. There is no struct holding them; there is only the discipline that whatever index `i` you used to read one column, you also use to read every other column of the same table.
 
 The cost of implicit binding is that you must *keep the indices aligned*. If you sort `suits` without also sorting `ranks` and `locations`, the row at every index is corrupted - the deck still has 52 entries in 52 slots, but each slot now holds the suit of one card, the rank of another, the location of a third. This is not a hypothetical bug; [§9](#9---sort-breaks-indices) will produce it deliberately so you can feel the consequences. The structural fix in this book is simple: every operation that reorders any column of a table must reorder *all* columns of that table together.
 
@@ -558,7 +558,7 @@ You should still have your `src/main.rs` from §5. These exercises extend it.
    locations.swap(3, 17);
    ```
    Print player 1's hand again. Same bug shape, different cause.
-3. **A third rearrangement.** Remove the card at slot 7 with `swap_remove(7)` on each column. Print player 1's hand. Note that the cards at slots `[17, 21, 28, 41]` are unchanged but slot 3 may now hold what was previously the last card; meanwhile slot 51 has silently been deleted.
+3. **A third rearrangement.** Remove the card at slot 3 with `swap_remove(3)` on each column. Print player 1's hand. Note that the cards at slots `[17, 21, 28, 41]` are unchanged but slot 3 may now hold what was previously the last card; meanwhile slot 51 has silently been deleted.
 4. **Quantify the breakage.** Write a function that takes the original `[3, 17, 21, 28, 41]` plus a freshly built deck, applies a Fisher-Yates shuffle to the deck columns themselves, and counts how many of the five references still point at the same `(suit, rank)` value. Run it 100 times. Roughly what fraction of references survive a random shuffle of the deck?
 5. **A reference that *can* survive.** Without writing any new code - on paper - describe what kind of reference would survive a shuffle. (Hint: you already know. The card's `(suit, rank)` is unique to that card. The reference that survives is the one that does not depend on the slot.)
 6. *(stretch)* **The cost of never rearranging.** Suppose you decide to *never* sort, swap, or remove from the deck columns, to avoid this bug forever. How would shuffling work? How would discarding a card work? Why does this not scale to ten thousand creatures?
@@ -618,17 +618,17 @@ The deck is constant-quantity. Always 52 cards, never more, never less. The simp
 
 For variable-quantity tables - creatures that are born and die, packets that arrive and are processed, sessions that come and go - slots get *reused*. A new creature is born in the slot that just held a dead one. Now imagine a player who held a reference to the dead creature: their reference points at the same slot with the same id, but the row at that location is a different creature.
 
-One more column fixes it: a `gen` (generation) counter that increments every time a slot is recycled. A reference is now a pair `(id, gen)`. To dereference it, you check that the row's stored `gen` still matches the reference's `gen`. If it does, the reference is live. If it does not, the slot has been recycled since the reference was taken, and the dereference returns `None`.
+One more column fixes it: a `generation` counter that increments every time a slot is recycled. A reference is now a pair `(id, generation)`. To dereference it, you check that the row's stored `generation` still matches the reference's `generation`. If it does, the reference is live. If it does not, the slot has been recycled since the reference was taken, and the dereference returns `None`.
 
 ```rust
 struct CreatureRef {
     id:  u32,
-    gen: u32,
+    generation: u32,
 }
 
 fn get(creatures: &Creatures, r: CreatureRef) -> Option<usize> {
     let slot = creatures.id_to_slot.get(r.id as usize).copied()?;
-    if creatures.gens[slot] == r.gen {
+    if creatures.generation[slot] == r.generation {
         Some(slot)
     } else {
         None
@@ -652,8 +652,8 @@ These extend the §5 deck once more, then take a step toward the simulator's var
 2. **Find a card by id.** Implement `slot_of(ids: &[u32], target: u32) -> Option<usize>` as in the prose. Use it to look up the card with `id = 17` after a sort.
 3. **Resolve the §9 bug.** With player 1 holding *ids* `[3, 17, 21, 28, 41]` (not slots), sort the deck. Use `slot_of` to translate ids to slots and print the hand. Confirm the cards are unchanged.
 4. **Permutation-friendly hand query.** Rewrite `cards_held_by(locations, ids, player) -> Vec<u32>` to return *ids*, not slots. The player now holds names. Test by sorting the deck after a deal and confirming `cards_held_by` still returns the same five cards.
-5. **A first generation counter.** Add `let mut gens: Vec<u32> = vec![0; 52];`. The 52-card deck does not actually recycle, but extend a small `swap_remove`-like operation: pop the last card from the deck (location 0), insert a "fresh" card at the freed slot, and bump that slot's `gens` by one. Take a `CreatureRef`-style `(id, gen)` reference *before* the operation. After the operation, look up the slot by id; check `gens[slot]` against the reference's `gen`. Confirm the dereference correctly reports stale.
-6. *(stretch)* **A tiny generational arena.** Outside the deck, build a `Creatures` struct with `pos: Vec<f32>`, `gen: Vec<u32>`, plus `free: Vec<u32>` of slots awaiting reuse. Implement `insert(pos) -> (slot, gen)`, `remove(slot)`, and `get(slot, gen) -> Option<f32>`. Convince yourself by example that stale references cannot read a fresh creature's data.
+5. **A first generation counter.** Add `let mut generation: Vec<u32> = vec![0; 52];`. The 52-card deck does not actually recycle, but extend a small `swap_remove`-like operation: pop the last card from the deck (location 0), insert a "fresh" card at the freed slot, and bump that slot's `generation` by one. Take a `CreatureRef`-style `(id, generation)` reference *before* the operation. After the operation, look up the slot by id; check `generation[slot]` against the reference's `generation`. Confirm the dereference correctly reports stale.
+6. *(stretch)* **A tiny generational arena.** Outside the deck, build a `Creatures` struct with `pos: Vec<f32>`, `generation: Vec<u32>`, plus `free: Vec<u32>` of slots awaiting reuse. Implement `insert(pos) -> (slot, generation)`, `remove(slot)`, and `get(slot, generation) -> Option<f32>`. Convince yourself by example that stale references cannot read a fresh creature's data.
 7. *(stretch)* **Compare with `slotmap`.** Read [`slotmap::SlotMap::insert` and `get`](https://docs.rs/slotmap/latest/slotmap/). Identify which of your fields and operations correspond. What does `slotmap` add that you didn't need for the simulator? Decide consciously whether to adopt it. (This is the from-scratch-then-price-the-crate move from [§41 - Compression-oriented programming](#41---compression-oriented-programming) and [§42 - You can only fix what you wrote](#42---you-can-only-fix-what-you-wrote).)
 
 Reference solutions for the deck exercises (1-5) in [10_stable_ids_and_generations_solutions.md](https://root-11.codeberg.page/intro-book/trunk/10_stable_ids_and_generations_solutions.html). The arena and `slotmap` exercises follow the same shape and are worth working without reference.
@@ -1204,7 +1204,7 @@ assert_eq!(removed, 20);
 assert_eq!(v, vec![10, 50, 30, 40]); // 50 was moved into slot 1
 ```
 
-The mechanism is small: take the last element, move it into the deleted slot, shrink the table by one. Two memory writes and a length decrement. O(1) regardless of N.
+The mechanism is small: read the last element, write it into the deleted slot, shrink the table by one. One read, one write, and a length decrement. O(1) regardless of N.
 
 **Cost.** A 1 000 000-creature table with 1 000 swap_removes per tick costs ~6 000 memory writes (one per column, six columns) - about 50 nanoseconds. The naive `remove` would cost a thousand times more.
 
@@ -1360,7 +1360,7 @@ Combined with [§10](#10---stable-ids-and-generations)'s stable ids and [§24](#
 4. **Time the difference.** Rerun the simulator at 1 M creatures, calling `is_hungry(random_id)` 100 000 times per tick. Compare the linear-scan version (§17) and the indexed version (§23). The ratio is roughly N - about a million.
 5. **The bandwidth cost.** At 1 M ids, `id_to_slot` is 4 MB. Cleanup's update of the map writes ~12 bytes per swap_remove (delete row's slot, moved row's slot, plus bookkeeping). Compute the cleanup cost in microseconds for 1 000 deletes per tick; compare to the budget at 30 Hz.
 6. **Sort-for-locality compatibility.** When `creatures` is sorted (a preview of [§28](#28---sort-for-locality)), every slot moves. Rewrite `id_to_slot` in lockstep. Verify external references (held as ids) are still correct after the sort.
-7. *(stretch)* **A from-scratch generational arena.** Combine [§10](#10---stable-ids-and-generations)'s `gen: Vec<u32>`, [§22](#22---mutations-buffer-cleanup-is-batched)'s deferred cleanup, and §23's `id_to_slot` map into a `SlotMap<T>` struct. Compare the shape with [`slotmap::SlotMap`](https://docs.rs/slotmap/) - same machinery, organised differently.
+7. *(stretch)* **A from-scratch generational arena.** Combine [§10](#10---stable-ids-and-generations)'s `generation: Vec<u32>`, [§22](#22---mutations-buffer-cleanup-is-batched)'s deferred cleanup, and §23's `id_to_slot` map into a `SlotMap<T>` struct. Compare the shape with [`slotmap::SlotMap`](https://docs.rs/slotmap/) - same machinery, organised differently.
 
 ## What's next
 
@@ -1396,7 +1396,7 @@ The cost is monotonic memory growth. A long-running simulator with append-only `
 - *Steady-state size is small even though total inserted is large.* The simulator's `creatures` table at 100 000 alive with 100 000 deaths and 100 000 births per second - net flow zero, but total ever issued grows linearly. Recycling keeps memory bounded.
 - *Memory matters.* Recycling caps the table at the high-water mark of live rows.
 
-The cost is reference-stability complications. A new row in a recycled slot has the same slot as a previous, removed row. Code holding an old slot reference would silently dereference the new row. The fix is generational ids: each slot has a generation counter that increments on every recycle. References hold `(id, gen)`; dereference checks the generation. A stale reference fails its check.
+The cost is reference-stability complications. A new row in a recycled slot has the same slot as a previous, removed row. Code holding an old slot reference would silently dereference the new row. The fix is generational ids: each slot has a generation counter that increments on every recycle. References hold `(id, generation)`; dereference checks the generation. A stale reference fails its check.
 
 A slot allocator looks like:
 
@@ -1404,7 +1404,7 @@ A slot allocator looks like:
 struct SlotPool {
     free_slots: Vec<u32>,  // freed slots awaiting reuse
     next_slot:  u32,       // high-water mark; the next never-used slot
-    gen:        Vec<u32>,  // generation per slot
+    generation:        Vec<u32>,  // generation per slot
 }
 
 impl SlotPool {
@@ -1412,15 +1412,15 @@ impl SlotPool {
         let slot = self.free_slots.pop().unwrap_or_else(|| {
             let s = self.next_slot;
             self.next_slot += 1;
-            self.gen.push(0);
+            self.generation.push(0);
             s
         });
-        let g = self.gen[slot as usize];
+        let g = self.generation[slot as usize];
         (slot, g)
     }
 
     fn free(&mut self, slot: u32) {
-        self.gen[slot as usize] += 1;
+        self.generation[slot as usize] += 1;
         self.free_slots.push(slot);
     }
 }
@@ -1446,7 +1446,7 @@ Mixing strategies in one simulator is normal. The discipline is to be explicit a
 
 1. **Two append-only logs.** Implement `eaten` and `born` as append-only `Vec`s. After 1 000 ticks, examine the log lengths and verify they grow monotonically.
 2. **A recycling pool.** Implement the `SlotPool` above. Allocate 1 000 slots, free 500, allocate 500 more, observe the slot indices. Did the pool reuse the freed slots, or grow?
-3. **Stale reference detection.** Allocate a slot with `(slot, gen=0)`. Free it. Allocate a new row in the same slot - its gen is 1. Try to dereference the old `(slot, 0)`. The check fails; the reference is recognised as stale.
+3. **Stale reference detection.** Allocate a slot with `(slot, generation=0)`. Free it. Allocate a new row in the same slot - its generation is 1. Try to dereference the old `(slot, 0)`. The check fails; the reference is recognised as stale.
 4. **Switch creatures to append-only.** Run the simulator with `creatures` as append-only (no recycling). Run for 10 000 ticks with steady birth and death. Plot the table's length over time. It grows monotonically; memory increases without bound.
 5. **Switch eaten to recycling.** Run with `eaten` recycled. After 100 ticks, all "what did this creature eat at tick 50" queries fail because the rows were reused. The history is gone.
 
@@ -1524,7 +1524,7 @@ You have closed Memory & lifecycle. The simulator's machinery is now complete: i
 
 <p align="center"><img src="book/covers/phase_scale.jpg" alt="Scale phase" style="max-height: 380px; max-width: 100%;"></p>
 
-The simulator's `creature` table has six columns: `pos`, `vel`, `energy`, `birth_t`, `id`, `gen`. The motion system reads three of the six (`pos`, `vel`, `energy`). The starvation system reads only `energy`. The cleanup system reads `id` and `gen`. The births log reads `birth_t`. *No system reads all six*.
+The simulator's `creature` table has six columns: `pos`, `vel`, `energy`, `birth_t`, `id`, `generation`. The motion system reads three of the six (`pos`, `vel`, `energy`). The starvation system reads only `energy`. The cleanup system reads `id` and `generation`. The births log reads `birth_t`. *No system reads all six*.
 
 If the columns are stored together - same memory region, same prefetcher pulls - every load brings in fields the inner loop ignores. At cache-spilling sizes, the ignored fields cost real bandwidth.
 
@@ -1540,7 +1540,7 @@ struct CreatureHot {
 struct CreatureCold {
     birth_t: Vec<f64>,           // logging only
     id:      Vec<u32>,           // cleanup, id_to_slot maintenance
-    gen:     Vec<u32>,           // cleanup
+    generation:     Vec<u32>,           // cleanup
 }
 ```
 
@@ -2073,7 +2073,7 @@ A useful test: can you run two simulators side-by-side from the same in-queue an
 
 <p align="center"><img src="book/illustrations/mathematics_describes.jpg" alt="Mathematics describes, models, implements - persistence captures the world that worked" style="max-height: 300px; max-width: 100%;"></p>
 
-The simulator pauses. The world is in memory: six columns of `creatures` (`pos`, `vel`, `energy`, `birth_t`, `id`, `gen`), a `food` table, presence tables (`hungry`, `dead`, etc.), the index map (`id_to_slot`), and the cleanup buffers. To pause durably, all of this must be written to disk; to resume, all of this must be read back.
+The simulator pauses. The world is in memory: six columns of `creatures` (`pos`, `vel`, `energy`, `birth_t`, `id`, `generation`), a `food` table, presence tables (`hungry`, `dead`, etc.), the index map (`id_to_slot`), and the cleanup buffers. To pause durably, all of this must be written to disk; to resume, all of this must be read back.
 
 The instinct the OOP world brings: design a "persistence format" with a schema, marshalling logic, version handling, and a translation layer between in-memory objects and on-disk records. This is wrong on the data-oriented side. There is no translation. There is only *transposition*.
 
@@ -2094,7 +2094,7 @@ fn snapshot(world: &World, path: &Path) -> std::io::Result<()> {
     write_column(&mut f, &world.energy)?;
     write_column(&mut f, &world.birth_t)?;
     write_column(&mut f, &world.id)?;
-    write_column(&mut f, &world.gen)?;
+    write_column(&mut f, &world.generation)?;
 
     // Presence tables: same shape, append.
     write_column(&mut f, &world.hungry)?;

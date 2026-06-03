@@ -20,17 +20,31 @@ Typical: `remove(0)` takes around 500 ms; `swap_remove(0)` takes around 5 µs. T
 
 ## Exercise 2 - Mid-table delete
 
-`remove(500_000)` shifts ~500 000 elements left by one - half the work of `remove(0)`. `swap_remove(500_000)` is unchanged: two writes, one decrement. The asymmetry is the whole point.
+`remove(500_000)` shifts ~500 000 elements left by one - half the work of `remove(0)`. `swap_remove(500_000)` is unchanged: one read, one write, one decrement. The asymmetry is the whole point.
 
 ## Exercise 3 - The iteration hazard
 
 ```rust,ignore
+// Form A: the range fixes its bound at the original length.
 for i in 0..v.len() {
     if v[i] % 2 == 0 { v.swap_remove(i); }
 }
+
+// Form B: the length is re-read every pass.
+let mut i = 0;
+while i < v.len() {
+    if v[i] % 2 == 0 { v.swap_remove(i); }
+    i += 1;
+}
 ```
 
-After `swap_remove(0)`, the slot now holds whatever was at the end; `i` advances to 1, missing the new element at slot 0. About half the deletions get correct, half are skipped. The remaining `Vec` is not "all odd values" - it is some mix.
+Both are wrong, and they fail *differently*. `swap_remove(i)` moves the last element into the hole at `i`, so the element now sitting at `i` is never inspected - and the vector got shorter.
+
+Form A builds the range `0..v.len()` once, capturing the original length. As elements are removed `v` shrinks, but `i` keeps climbing toward the original length, so `v[i]` eventually indexes past the end and **panics**.
+
+Form B re-reads `v.len()` each pass, so it never indexes out of bounds - but it advances `i` past the element that was just swapped into the hole, skipping it. No panic; a silently wrong `Vec` that is *some mix*, not "all odd values."
+
+One mistake, two failure modes: a crash or a quiet lie. Exercise 4 shows the discipline that avoids both.
 
 ## Exercise 4 - Iterate backwards
 
@@ -66,7 +80,7 @@ fn delete_creature(world: &mut World, slot: usize) {
     world.vel.swap_remove(slot);
     world.energy.swap_remove(slot);
     world.id.swap_remove(slot);
-    world.gen.swap_remove(slot);
+    world.generation.swap_remove(slot);
     world.birth_t.swap_remove(slot);
 }
 ```

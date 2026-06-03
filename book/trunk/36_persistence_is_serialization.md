@@ -4,7 +4,7 @@
 
 <p align="center"><img src="../illustrations/mathematics_describes.jpg" alt="Mathematics describes, models, implements - persistence captures the world that worked" style="max-height: 300px; max-width: 100%;"></p>
 
-The simulator pauses. The world is in memory: six columns of `creatures` (`pos`, `vel`, `energy`, `birth_t`, `id`, `gen`), a `food` table, presence tables (`hungry`, `dead`, etc.), the index map (`id_to_slot`), and the cleanup buffers. To pause durably, all of this must be written to disk; to resume, all of this must be read back.
+The simulator pauses. The world is in memory: six columns of `creatures` (`pos`, `vel`, `energy`, `birth_t`, `id`, `generation`), a `food` table, presence tables (`hungry`, `dead`, etc.), the index map (`id_to_slot`), and the cleanup buffers. To pause durably, all of this must be written to disk; to resume, all of this must be read back.
 
 The instinct the OOP world brings: design a "persistence format" with a schema, marshalling logic, version handling, and a translation layer between in-memory objects and on-disk records. This is wrong on the data-oriented side. There is no translation. There is only *transposition*.
 
@@ -25,7 +25,7 @@ fn snapshot(world: &World, path: &Path) -> std::io::Result<()> {
     write_column(&mut f, &world.energy)?;
     write_column(&mut f, &world.birth_t)?;
     write_column(&mut f, &world.id)?;
-    write_column(&mut f, &world.gen)?;
+    write_column(&mut f, &world.generation)?;
 
     // Presence tables: same shape, append.
     write_column(&mut f, &world.hungry)?;

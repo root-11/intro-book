@@ -4,7 +4,7 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 26](../../concepts/glossary.md#26--hot-cold-splits).*
 
-The simulator's `creature` table has six columns: `pos`, `vel`, `energy`, `birth_t`, `id`, `gen`. The motion system reads three of the six (`pos`, `vel`, `energy`). The starvation system reads only `energy`. The cleanup system reads `id` and `gen`. The births log reads `birth_t`. *No system reads all six*.
+The simulator's `creature` table has six columns: `pos`, `vel`, `energy`, `birth_t`, `id`, `generation`. The motion system reads three of the six (`pos`, `vel`, `energy`). The starvation system reads only `energy`. The cleanup system reads `id` and `generation`. The births log reads `birth_t`. *No system reads all six*.
 
 If the columns are stored together - same memory region, same prefetcher pulls - every load brings in fields the inner loop ignores. At cache-spilling sizes, the ignored fields cost real bandwidth.
 
@@ -20,7 +20,7 @@ struct CreatureHot {
 struct CreatureCold {
     birth_t: Vec<f64>,           // logging only
     id:      Vec<u32>,           // cleanup, id_to_slot maintenance
-    gen:     Vec<u32>,           // cleanup
+    generation:     Vec<u32>,           // cleanup
 }
 ```
 

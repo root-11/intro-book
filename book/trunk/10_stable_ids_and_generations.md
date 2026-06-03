@@ -48,17 +48,17 @@ The deck is constant-quantity. Always 52 cards, never more, never less. The simp
 
 For variable-quantity tables - creatures that are born and die, packets that arrive and are processed, sessions that come and go - slots get *reused*. A new creature is born in the slot that just held a dead one. Now imagine a player who held a reference to the dead creature: their reference points at the same slot with the same id, but the row at that location is a different creature.
 
-One more column fixes it: a `gen` (generation) counter that increments every time a slot is recycled. A reference is now a pair `(id, gen)`. To dereference it, you check that the row's stored `gen` still matches the reference's `gen`. If it does, the reference is live. If it does not, the slot has been recycled since the reference was taken, and the dereference returns `None`.
+One more column fixes it: a `generation` counter that increments every time a slot is recycled. A reference is now a pair `(id, generation)`. To dereference it, you check that the row's stored `generation` still matches the reference's `generation`. If it does, the reference is live. If it does not, the slot has been recycled since the reference was taken, and the dereference returns `None`.
 
 ```rust
 struct CreatureRef {
     id:  u32,
-    gen: u32,
+    generation: u32,
 }
 
 fn get(creatures: &Creatures, r: CreatureRef) -> Option<usize> {
     let slot = creatures.id_to_slot.get(r.id as usize).copied()?;
-    if creatures.gens[slot] == r.gen {
+    if creatures.generation[slot] == r.generation {
         Some(slot)
     } else {
         None
@@ -82,8 +82,8 @@ These extend the §5 deck once more, then take a step toward the simulator's var
 2. **Find a card by id.** Implement `slot_of(ids: &[u32], target: u32) -> Option<usize>` as in the prose. Use it to look up the card with `id = 17` after a sort.
 3. **Resolve the §9 bug.** With player 1 holding *ids* `[3, 17, 21, 28, 41]` (not slots), sort the deck. Use `slot_of` to translate ids to slots and print the hand. Confirm the cards are unchanged.
 4. **Permutation-friendly hand query.** Rewrite `cards_held_by(locations, ids, player) -> Vec<u32>` to return *ids*, not slots. The player now holds names. Test by sorting the deck after a deal and confirming `cards_held_by` still returns the same five cards.
-5. **A first generation counter.** Add `let mut gens: Vec<u32> = vec![0; 52];`. The 52-card deck does not actually recycle, but extend a small `swap_remove`-like operation: pop the last card from the deck (location 0), insert a "fresh" card at the freed slot, and bump that slot's `gens` by one. Take a `CreatureRef`-style `(id, gen)` reference *before* the operation. After the operation, look up the slot by id; check `gens[slot]` against the reference's `gen`. Confirm the dereference correctly reports stale.
-6. *(stretch)* **A tiny generational arena.** Outside the deck, build a `Creatures` struct with `pos: Vec<f32>`, `gen: Vec<u32>`, plus `free: Vec<u32>` of slots awaiting reuse. Implement `insert(pos) -> (slot, gen)`, `remove(slot)`, and `get(slot, gen) -> Option<f32>`. Convince yourself by example that stale references cannot read a fresh creature's data.
+5. **A first generation counter.** Add `let mut generation: Vec<u32> = vec![0; 52];`. The 52-card deck does not actually recycle, but extend a small `swap_remove`-like operation: pop the last card from the deck (location 0), insert a "fresh" card at the freed slot, and bump that slot's `generation` by one. Take a `CreatureRef`-style `(id, generation)` reference *before* the operation. After the operation, look up the slot by id; check `generation[slot]` against the reference's `generation`. Confirm the dereference correctly reports stale.
+6. *(stretch)* **A tiny generational arena.** Outside the deck, build a `Creatures` struct with `pos: Vec<f32>`, `generation: Vec<u32>`, plus `free: Vec<u32>` of slots awaiting reuse. Implement `insert(pos) -> (slot, generation)`, `remove(slot)`, and `get(slot, generation) -> Option<f32>`. Convince yourself by example that stale references cannot read a fresh creature's data.
 7. *(stretch)* **Compare with `slotmap`.** Read [`slotmap::SlotMap::insert` and `get`](https://docs.rs/slotmap/latest/slotmap/). Identify which of your fields and operations correspond. What does `slotmap` add that you didn't need for the simulator? Decide consciously whether to adopt it. (This is the from-scratch-then-price-the-crate move from [§41 - Compression-oriented programming](41_compression_oriented.md) and [§42 - You can only fix what you wrote](42_you_can_only_fix_what_you_wrote.md).)
 
 Reference solutions for the deck exercises (1-5) in [10_stable_ids_and_generations_solutions.md](10_stable_ids_and_generations_solutions.md). The arena and `slotmap` exercises follow the same shape and are worth working without reference.

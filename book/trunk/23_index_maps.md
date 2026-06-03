@@ -49,7 +49,7 @@ Combined with [§10](10_stable_ids_and_generations.md)'s stable ids and [§24](2
 4. **Time the difference.** Rerun the simulator at 1 M creatures, calling `is_hungry(random_id)` 100 000 times per tick. Compare the linear-scan version (§17) and the indexed version (§23). The ratio is roughly N - about a million.
 5. **The bandwidth cost.** At 1 M ids, `id_to_slot` is 4 MB. Cleanup's update of the map writes ~12 bytes per swap_remove (delete row's slot, moved row's slot, plus bookkeeping). Compute the cleanup cost in microseconds for 1 000 deletes per tick; compare to the budget at 30 Hz.
 6. **Sort-for-locality compatibility.** When `creatures` is sorted (a preview of [§28](28_sort_for_locality.md)), every slot moves. Rewrite `id_to_slot` in lockstep. Verify external references (held as ids) are still correct after the sort.
-7. *(stretch)* **A from-scratch generational arena.** Combine [§10](10_stable_ids_and_generations.md)'s `gen: Vec<u32>`, [§22](22_mutations_buffer.md)'s deferred cleanup, and §23's `id_to_slot` map into a `SlotMap<T>` struct. Compare the shape with [`slotmap::SlotMap`](https://docs.rs/slotmap/) - same machinery, organised differently.
+7. *(stretch)* **A from-scratch generational arena.** Combine [§10](10_stable_ids_and_generations.md)'s `generation: Vec<u32>`, [§22](22_mutations_buffer.md)'s deferred cleanup, and §23's `id_to_slot` map into a `SlotMap<T>` struct. Compare the shape with [`slotmap::SlotMap`](https://docs.rs/slotmap/) - same machinery, organised differently.
 
 Reference notes in [23_index_maps_solutions.md](23_index_maps_solutions.md).
 

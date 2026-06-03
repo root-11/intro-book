@@ -17,7 +17,7 @@ assert_eq!(removed, 20);
 assert_eq!(v, vec![10, 50, 30, 40]); // 50 was moved into slot 1
 ```
 
-The mechanism is small: take the last element, move it into the deleted slot, shrink the table by one. Two memory writes and a length decrement. O(1) regardless of N.
+The mechanism is small: read the last element, write it into the deleted slot, shrink the table by one. One read, one write, and a length decrement. O(1) regardless of N.
 
 **Cost.** A 1 000 000-creature table with 1 000 swap_removes per tick costs ~6 000 memory writes (one per column, six columns) - about 50 nanoseconds. The naive `remove` would cost a thousand times more.
 

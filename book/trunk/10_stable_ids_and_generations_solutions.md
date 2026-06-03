@@ -74,7 +74,7 @@ The output is the same five cards as before the sort - different slots, same car
 
 **Exercise 4.** `cards_held_by(locations, ids, player) -> Vec<u32>` walks the rows in lockstep and pushes `ids[i]` (not `i`) when `locations[i] == player`. Apply any rearrangement; the function still returns the same five ids. Using `slot_of` afterwards finds the cards.
 
-**Exercise 5.** Take a `(id, gen)` reference *before* the swap-and-bump. After the operation, find the slot by id and read `gens[slot]`. The slot is the same; `gens[slot]` is `1` instead of `0`; the reference's `gen` is `0`; the dereference reports stale. The 52-card deck does not feel motivated yet - the simulator's `creature` table in §1 is where this stops feeling ceremonial.
+**Exercise 5.** Take a `(id, generation)` reference *before* the swap-and-bump. After the operation, find the slot by id and read `generation[slot]`. The slot is the same; `generation[slot]` is `1` instead of `0`; the reference's `generation` is `0`; the dereference reports stale. The 52-card deck does not feel motivated yet - the simulator's `creature` table in §1 is where this stops feeling ceremonial.
 
 ## Exercise 6 - A tiny generational arena
 
@@ -83,15 +83,15 @@ The shape:
 ```rust
 struct Creatures {
     pos:        Vec<f32>,
-    gen:        Vec<u32>,
+    generation:        Vec<u32>,
     id_to_slot: Vec<u32>, // id i -> current slot, or u32::MAX when removed
     free:       Vec<u32>, // slots awaiting reuse
     next_id:    u32,
 }
 ```
 
-`insert(pos)` either pops a slot from `free` (bumping `gen[slot]`) or pushes a new slot. `remove(slot)` pushes the slot into `free` and bumps `gen[slot]`. `get(slot, gen)` returns `Some(pos[slot])` only if `self.gen[slot] == gen`. The exercise is worth coding; the shape above is enough scaffolding.
+`insert(pos)` either pops a slot from `free` (bumping `generation[slot]`) or pushes a new slot. `remove(slot)` pushes the slot into `free` and bumps `generation[slot]`. `get(slot, generation)` returns `Some(pos[slot])` only if `self.generation[slot] == generation`. The exercise is worth coding; the shape above is enough scaffolding.
 
 ## Exercise 7 - Comparing with `slotmap`
 
-[`slotmap::SlotMap`](https://docs.rs/slotmap/) does the same thing with prettier ergonomics: keys pack `(slot, gen)` into a `u64`, the API uses `Index`/`IndexMut`, removals return the removed value, iterators are provided. None of these are *required* for the simulator; they are nice. Whether to adopt depends on whether you trust the crate to keep working ([§42](42_you_can_only_fix_what_you_wrote.md)). The from-scratch version above is small enough that you can fix it yourself if it ever breaks - which is the only reason to choose it over `slotmap`.
+[`slotmap::SlotMap`](https://docs.rs/slotmap/) does the same thing with prettier ergonomics: keys pack `(slot, generation)` into a `u64`, the API uses `Index`/`IndexMut`, removals return the removed value, iterators are provided. None of these are *required* for the simulator; they are nice. Whether to adopt depends on whether you trust the crate to keep working ([§42](42_you_can_only_fix_what_you_wrote.md)). The from-scratch version above is small enough that you can fix it yourself if it ever breaks - which is the only reason to choose it over `slotmap`.

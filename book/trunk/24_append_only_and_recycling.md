@@ -29,7 +29,7 @@ The cost is monotonic memory growth. A long-running simulator with append-only `
 - *Steady-state size is small even though total inserted is large.* The simulator's `creatures` table at 100 000 alive with 100 000 deaths and 100 000 births per second - net flow zero, but total ever issued grows linearly. Recycling keeps memory bounded.
 - *Memory matters.* Recycling caps the table at the high-water mark of live rows.
 
-The cost is reference-stability complications. A new row in a recycled slot has the same slot as a previous, removed row. Code holding an old slot reference would silently dereference the new row. The fix is generational ids: each slot has a generation counter that increments on every recycle. References hold `(id, gen)`; dereference checks the generation. A stale reference fails its check.
+The cost is reference-stability complications. A new row in a recycled slot has the same slot as a previous, removed row. Code holding an old slot reference would silently dereference the new row. The fix is generational ids: each slot has a generation counter that increments on every recycle. References hold `(id, generation)`; dereference checks the generation. A stale reference fails its check.
 
 A slot allocator looks like:
 
@@ -37,7 +37,7 @@ A slot allocator looks like:
 struct SlotPool {
     free_slots: Vec<u32>,  // freed slots awaiting reuse
     next_slot:  u32,       // high-water mark; the next never-used slot
-    gen:        Vec<u32>,  // generation per slot
+    generation:        Vec<u32>,  // generation per slot
 }
 
 impl SlotPool {
@@ -45,15 +45,15 @@ impl SlotPool {
         let slot = self.free_slots.pop().unwrap_or_else(|| {
             let s = self.next_slot;
             self.next_slot += 1;
-            self.gen.push(0);
+            self.generation.push(0);
             s
         });
-        let g = self.gen[slot as usize];
+        let g = self.generation[slot as usize];
         (slot, g)
     }
 
     fn free(&mut self, slot: u32) {
-        self.gen[slot as usize] += 1;
+        self.generation[slot as usize] += 1;
         self.free_slots.push(slot);
     }
 }
@@ -79,7 +79,7 @@ Mixing strategies in one simulator is normal. The discipline is to be explicit a
 
 1. **Two append-only logs.** Implement `eaten` and `born` as append-only `Vec`s. After 1 000 ticks, examine the log lengths and verify they grow monotonically.
 2. **A recycling pool.** Implement the `SlotPool` above. Allocate 1 000 slots, free 500, allocate 500 more, observe the slot indices. Did the pool reuse the freed slots, or grow?
-3. **Stale reference detection.** Allocate a slot with `(slot, gen=0)`. Free it. Allocate a new row in the same slot - its gen is 1. Try to dereference the old `(slot, 0)`. The check fails; the reference is recognised as stale.
+3. **Stale reference detection.** Allocate a slot with `(slot, generation=0)`. Free it. Allocate a new row in the same slot - its generation is 1. Try to dereference the old `(slot, 0)`. The check fails; the reference is recognised as stale.
 4. **Switch creatures to append-only.** Run the simulator with `creatures` as append-only (no recycling). Run for 10 000 ticks with steady birth and death. Plot the table's length over time. It grows monotonically; memory increases without bound.
 5. **Switch eaten to recycling.** Run with `eaten` recycled. After 100 ticks, all "what did this creature eat at tick 50" queries fail because the rows were reused. The history is gone.
 

@@ -37,14 +37,13 @@ The function only reads. Mutation lives in `cleanup`, which runs once after ever
 ```rust,no_run
 fn cleanup(world: &mut World, to_remove: &mut Vec<u32>, to_insert: &mut Vec<CreatureRow>) {
     // Removals first
-    for &id in to_remove.iter() {
+    for id in to_remove.drain(..) {
         let slot = world.id_to_slot[id as usize];
         for col in world.columns_mut() {
             col.swap_remove(slot);
         }
         world.id_to_slot[id as usize] = u32::MAX; // mark dead
     }
-    to_remove.clear();
 
     // Insertions second
     for row in to_insert.drain(..) {

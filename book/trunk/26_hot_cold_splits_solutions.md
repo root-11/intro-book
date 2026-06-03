@@ -12,10 +12,10 @@ For the simulator's eight systems, the field accesses look roughly like this:
 | `apply_eat`       | `pending_event`, `food.value`        | `to_remove`, `energy`|
 | `apply_reproduce` | `pending_event`, `pos`, `energy`     | `to_insert`          |
 | `apply_starve`    | `pending_event`, `id`                | `to_remove`          |
-| `cleanup`         | `to_remove`, `to_insert`, `id`, `gen`| every column         |
+| `cleanup`         | `to_remove`, `to_insert`, `id`, `generation`| every column         |
 | `inspect`         | every column                         | (nothing)            |
 
-Hot fields (read by motion, next_event, apply_eat, apply_reproduce, apply_starve every tick): `pos`, `vel`, `energy`. Cold: `birth_t`, `id`, `gen` (cleanup and inspect only).
+Hot fields (read by motion, next_event, apply_eat, apply_reproduce, apply_starve every tick): `pos`, `vel`, `energy`. Cold: `birth_t`, `id`, `generation` (cleanup and inspect only).
 
 ## Exercise 2 - Build the split
 
@@ -29,7 +29,7 @@ struct CreatureHot {
 struct CreatureCold {
     birth_t: Vec<f64>,
     id:      Vec<u32>,
-    gen:     Vec<u32>,
+    generation:     Vec<u32>,
 }
 
 fn append(hot: &mut CreatureHot, cold: &mut CreatureCold, row: CreatureRow) {
@@ -38,7 +38,7 @@ fn append(hot: &mut CreatureHot, cold: &mut CreatureCold, row: CreatureRow) {
     hot.energy.push(row.energy);
     cold.birth_t.push(row.birth_t);
     cold.id.push(row.id);
-    cold.gen.push(row.gen);
+    cold.generation.push(row.generation);
 }
 ```
 
@@ -46,7 +46,7 @@ Both tables share the slot index. `hot.pos[17]` and `cold.id[17]` describe the s
 
 ## Exercise 3 - Time motion at 1M
 
-Pre-split: motion's per-tick cost ≈ 3 ns/elem × 1M = 3 ms. Post-split: ≈ 1.5 ns/elem × 1M = 1.5 ms. The factor of 2 is roughly the bandwidth saved by not reading `birth_t`, `id`, `gen` on each iteration.
+Pre-split: motion's per-tick cost ≈ 3 ns/elem × 1M = 3 ms. Post-split: ≈ 1.5 ns/elem × 1M = 1.5 ms. The factor of 2 is roughly the bandwidth saved by not reading `birth_t`, `id`, `generation` on each iteration.
 
 ## Exercise 4 - Cleanup must touch both
 
@@ -57,7 +57,7 @@ fn delete_creature(hot: &mut CreatureHot, cold: &mut CreatureCold, slot: usize) 
     hot.energy.swap_remove(slot);
     cold.birth_t.swap_remove(slot);
     cold.id.swap_remove(slot);
-    cold.gen.swap_remove(slot);
+    cold.generation.swap_remove(slot);
 }
 ```
 

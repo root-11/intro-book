@@ -25,13 +25,13 @@ If you do not free anything, the pool grows indefinitely. If you free everything
 ```rust,no_run
 let mut pool = SlotPool::new();
 let (slot, gen0) = pool.allocate();   // (0, 0)
-pool.free(slot);                       // gen[0] is now 1
-let (slot2, gen1) = pool.allocate();   // (0, 1) - same slot, new gen
+pool.free(slot);                       // generation[0] is now 1
+let (slot2, gen1) = pool.allocate();   // (0, 1) - same slot, new generation
 assert_eq!(slot, slot2);
 assert_ne!(gen0, gen1);
 
 // Old reference (slot, gen0) - should fail.
-let valid = pool.gen[slot as usize] == gen0;
+let valid = pool.generation[slot as usize] == gen0;
 assert!(!valid);
 ```
 

@@ -32,7 +32,7 @@ You should still have your `src/main.rs` from §5. These exercises extend it.
    locations.swap(3, 17);
    ```
    Print player 1's hand again. Same bug shape, different cause.
-3. **A third rearrangement.** Remove the card at slot 7 with `swap_remove(7)` on each column. Print player 1's hand. Note that the cards at slots `[17, 21, 28, 41]` are unchanged but slot 3 may now hold what was previously the last card; meanwhile slot 51 has silently been deleted.
+3. **A third rearrangement.** Remove the card at slot 3 with `swap_remove(3)` on each column. Print player 1's hand. Note that the cards at slots `[17, 21, 28, 41]` are unchanged but slot 3 may now hold what was previously the last card; meanwhile slot 51 has silently been deleted.
 4. **Quantify the breakage.** Write a function that takes the original `[3, 17, 21, 28, 41]` plus a freshly built deck, applies a Fisher-Yates shuffle to the deck columns themselves, and counts how many of the five references still point at the same `(suit, rank)` value. Run it 100 times. Roughly what fraction of references survive a random shuffle of the deck?
 5. **A reference that *can* survive.** Without writing any new code - on paper - describe what kind of reference would survive a shuffle. (Hint: you already know. The card's `(suit, rank)` is unique to that card. The reference that survives is the one that does not depend on the slot.)
 6. *(stretch)* **The cost of never rearranging.** Suppose you decide to *never* sort, swap, or remove from the deck columns, to avoid this bug forever. How would shuffling work? How would discarding a card work? Why does this not scale to ten thousand creatures?

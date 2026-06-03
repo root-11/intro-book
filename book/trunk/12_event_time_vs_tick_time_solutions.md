@@ -32,7 +32,7 @@ Inside the 30 Hz loop:
 
 ```rust,no_run
 let real_now = program_start.elapsed().as_secs_f64();
-while events.first().map(|e| e.0 <= real_now).unwrap_or(false) {
+while events.first().is_some_and(|e| e.0 <= real_now) {
     let (t, msg) = events.remove(0);
     println!("[event t={t:.6}] {msg}"); // applies at t, not at real_now
 }
@@ -55,7 +55,7 @@ Run the same event list through three loops at 30 Hz, 60 Hz, 1 Hz. The events fi
 ```rust,no_run
 let tick_start = Instant::now();
 let budget = Duration::from_millis(25);
-while events.first().map(|e| e.0 <= sim_now).unwrap_or(false) {
+while events.first().is_some_and(|e| e.0 <= sim_now) {
     if tick_start.elapsed() > budget { break; }
     let (t, msg) = events.remove(0);
     apply(msg);

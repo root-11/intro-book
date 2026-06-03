@@ -33,7 +33,7 @@ fn sort_creatures_for_locality(world: &mut World, cell_size: f32) {
     apply_permutation_inplace(&mut world.vel, &order);
     apply_permutation_inplace(&mut world.energy, &order);
     apply_permutation_inplace(&mut world.id, &order);
-    // also: gen, birth_t
+    // also: generation, birth_t
 
     // Rebuild id_to_slot
     for (new_slot, &id) in world.id.iter().enumerate() {

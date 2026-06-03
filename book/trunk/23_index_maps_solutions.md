@@ -98,7 +98,7 @@ Every slot moves; the map is rewritten entirely. External references to ids cont
 ```rust,no_run
 struct SlotMap<T> {
     items: Vec<T>,
-    gen:   Vec<u32>,
+    generation:   Vec<u32>,
     free:  Vec<u32>,
 }
 
@@ -106,25 +106,25 @@ impl<T: Clone + Default> SlotMap<T> {
     fn insert(&mut self, t: T) -> (u32, u32) {
         if let Some(slot) = self.free.pop() {
             self.items[slot as usize] = t;
-            (slot, self.gen[slot as usize])
+            (slot, self.generation[slot as usize])
         } else {
             let slot = self.items.len() as u32;
             self.items.push(t);
-            self.gen.push(0);
+            self.generation.push(0);
             (slot, 0)
         }
     }
 
     fn remove(&mut self, slot: u32) {
-        self.gen[slot as usize] += 1;
+        self.generation[slot as usize] += 1;
         self.free.push(slot);
         self.items[slot as usize] = Default::default(); // optional
     }
 
-    fn get(&self, slot: u32, gen: u32) -> Option<&T> {
-        if self.gen[slot as usize] == gen { Some(&self.items[slot as usize]) } else { None }
+    fn get(&self, slot: u32, generation: u32) -> Option<&T> {
+        if self.generation[slot as usize] == generation { Some(&self.items[slot as usize]) } else { None }
     }
 }
 ```
 
-Compare with [`slotmap::SlotMap`](https://docs.rs/slotmap/) - the same machinery. The crate adds a packed key (slot + gen in one `u64`), an iterator API, and a `null()` sentinel. The shape is identical.
+Compare with [`slotmap::SlotMap`](https://docs.rs/slotmap/) - the same machinery. The crate adds a packed key (slot + generation in one `u64`), an iterator API, and a `null()` sentinel. The shape is identical.
