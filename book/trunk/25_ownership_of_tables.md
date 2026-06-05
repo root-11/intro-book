@@ -8,6 +8,9 @@ Every table has exactly one writer.
 
 The rule is small. Its consequences are everything.
 
+> [!NOTE]
+> **"Ownership" here means the right to write.** Rust already gives *ownership* a precise meaning: who holds a value and is responsible for dropping it. This chapter uses the word for something narrower and related - which single system is allowed to *mutate* a table, the guarantee Rust's `&mut T` expresses at the type level. The overlap is not an accident. Both senses exist to remove ambiguity about who may change a thing, and that is the weight the word carries here: when exactly one writer can touch a table, its contents at any tick are a function of the inputs alone, not of who reached it first. That is what makes the world deterministic. Read "ownership of a table" as "write-ownership" throughout.
+
 **Why it works.** A row is a tuple ([§6](06_a_row_is_a_tuple.md)) - its fields are aligned by index. A table's columns must be modified together to maintain alignment. A single writer guarantees this: only one place in the code mutates the table, so only one place can violate alignment, so testing one place is enough.
 
 A table with two writers has two places where alignment can be violated. If they run concurrently, alignment is violated nondeterministically. If they run sequentially, the order matters and must be specified. Either way, the cost of getting it right grows superlinearly with the number of writers.

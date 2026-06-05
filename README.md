@@ -1303,7 +1303,7 @@ The pattern itself is universal. Database transactions buffer writes and commit 
 3. **Push from `apply_reproduce`.** Modify reproduction to push offspring rows to `to_insert`. Verify reproduction no longer mutates `creatures`.
 4. **Implement cleanup.** Write the cleanup system. Apply removals first, then insertions. Run a tick with both kinds of mutations; verify the world is consistent after.
 5. **The dedup question.** Two systems push id 42 to `to_remove`. Run cleanup naively (no dedup). What happens? Now add a small dedup pass at cleanup. Does the result change?
-6. **Tick-delayed visibility.** A creature inserted in tick 5 (via `to_insert`) does not appear in `creatures` during tick 5's systems - only at the end, in cleanup. Verify by adding an `age_in_ticks` column that increments at the end of each tick; the new creature's value starts at 0 in tick 6, not tick 5.
+6. **Buffers keep their capacity.** `to_remove.clear()` and `to_insert.drain(..)` empty the side tables but retain their allocated capacity. Print `to_remove.capacity()` and `to_insert.capacity()` across 100 ticks of a busy run and confirm they settle to a steady size and stop reallocating. Why does reusing the buffers each tick, rather than allocating fresh ones, matter for the tick budget ([§4](#4---cost-is-layout---and-you-have-a-budget))?
 7. *(stretch)* **A graphics pipeline analogy.** A rendering pipeline draws to a "back buffer" while the "front buffer" is being displayed. At the boundary of one frame to the next, the buffers swap. Argue why this is the same pattern as `to_remove` / `to_insert` plus `cleanup`.
 
 ## What's next
@@ -1462,6 +1462,9 @@ Mixing strategies in one simulator is normal. The discipline is to be explicit a
 Every table has exactly one writer.
 
 The rule is small. Its consequences are everything.
+
+> [!NOTE]
+> **"Ownership" here means the right to write.** Rust already gives *ownership* a precise meaning: who holds a value and is responsible for dropping it. This chapter uses the word for something narrower and related - which single system is allowed to *mutate* a table, the guarantee Rust's `&mut T` expresses at the type level. The overlap is not an accident. Both senses exist to remove ambiguity about who may change a thing, and that is the weight the word carries here: when exactly one writer can touch a table, its contents at any tick are a function of the inputs alone, not of who reached it first. That is what makes the world deterministic. Read "ownership of a table" as "write-ownership" throughout.
 
 **Why it works.** A row is a tuple ([§6](#6---a-row-is-a-tuple)) - its fields are aligned by index. A table's columns must be modified together to maintain alignment. A single writer guarantees this: only one place in the code mutates the table, so only one place can violate alignment, so testing one place is enough.
 

@@ -69,7 +69,7 @@ The pattern itself is universal. Database transactions buffer writes and commit 
 3. **Push from `apply_reproduce`.** Modify reproduction to push offspring rows to `to_insert`. Verify reproduction no longer mutates `creatures`.
 4. **Implement cleanup.** Write the cleanup system. Apply removals first, then insertions. Run a tick with both kinds of mutations; verify the world is consistent after.
 5. **The dedup question.** Two systems push id 42 to `to_remove`. Run cleanup naively (no dedup). What happens? Now add a small dedup pass at cleanup. Does the result change?
-6. **Tick-delayed visibility.** A creature inserted in tick 5 (via `to_insert`) does not appear in `creatures` during tick 5's systems - only at the end, in cleanup. Verify by adding an `age_in_ticks` column that increments at the end of each tick; the new creature's value starts at 0 in tick 6, not tick 5.
+6. **Buffers keep their capacity.** `to_remove.clear()` and `to_insert.drain(..)` empty the side tables but retain their allocated capacity. Print `to_remove.capacity()` and `to_insert.capacity()` across 100 ticks of a busy run and confirm they settle to a steady size and stop reallocating. Why does reusing the buffers each tick, rather than allocating fresh ones, matter for the tick budget ([§4](04_cost_and_budget.md))?
 7. *(stretch)* **A graphics pipeline analogy.** A rendering pipeline draws to a "back buffer" while the "front buffer" is being displayed. At the boundary of one frame to the next, the buffers swap. Argue why this is the same pattern as `to_remove` / `to_insert` plus `cleanup`.
 
 Reference notes in [22_mutations_buffer_solutions.md](22_mutations_buffer_solutions.md).

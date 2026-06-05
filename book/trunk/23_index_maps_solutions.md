@@ -29,36 +29,31 @@ The map grows lazily as new ids are issued. `INVALID` marks dead/never-used slot
 
 ## Exercise 2 - O(1) presence query
 
-```rust,no_run
-fn is_alive(world: &World, id: u32) -> bool {
-    (id as usize) < world.id_to_slot.len()
-        && world.id_to_slot[id as usize] != INVALID
-}
+`hungry_membership` runs parallel to the creature columns: one `bool` per slot, set when a creature is classified hungry and cleared when it stops. `is_hungry` reaches it through `id_to_slot`, so it is two array reads: the id-to-slot map, then the membership column.
 
-fn slot_of(world: &World, id: u32) -> Option<usize> {
-    let slot = *world.id_to_slot.get(id as usize)?;
-    if slot == INVALID { None } else { Some(slot as usize) }
+```rust,no_run
+fn is_hungry(world: &World, id: u32) -> bool {
+    let slot = world.id_to_slot[id as usize] as usize;
+    world.hungry_membership[slot]
 }
 ```
 
-`is_alive` is two array reads and a comparison - a handful of nanoseconds. Compare with the linear scan from §17, which is hundreds of microseconds at 1 M creatures.
+`is_hungry` is two array reads - a handful of nanoseconds. Compare with the linear scan over the `hungry` list from §17, which is hundreds of microseconds at 1 M creatures. Because `hungry_membership` is a per-slot column, it moves in lockstep with `creatures` on every `swap_remove` and every sort, exactly like the other columns.
 
 ## Exercise 3 - Maintain on swap_remove
 
 ```rust,no_run
 fn delete_by_id(world: &mut World, id: u32) {
     let slot = world.id_to_slot[id as usize] as usize;
+    // The last row is the one swap_remove will move into `slot`.
+    let moved_id = world.creatures.last().unwrap().id;
     world.creatures.swap_remove(slot);
-    if slot < world.creatures.len() {
-        // Some row was moved into `slot`. Update its mapping.
-        let moved_id = world.creatures[slot].id;
-        world.id_to_slot[moved_id as usize] = slot as u32;
-    }
+    world.id_to_slot[moved_id as usize] = slot as u32;
     world.id_to_slot[id as usize] = INVALID;
 }
 ```
 
-Three writes: remove from creatures, update the moved row's slot, mark the deleted id invalid. ~12 bytes per delete; ~12 GB/s of memory bandwidth means each delete is well under 10 ns of bandwidth cost.
+No branch. Grab the last row's id *before* the swap, because that is the row `swap_remove` relocates into `slot`. When the deleted row was already the last one, `moved_id == id`: the slot write is redundant and the `INVALID` write that follows corrects it. Three writes per delete; ~12 bytes; at ~12 GB/s memory bandwidth each delete is well under 10 ns of bandwidth cost.
 
 ## Exercise 4 - Time the difference
 
