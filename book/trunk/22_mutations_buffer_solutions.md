@@ -46,14 +46,13 @@ fn apply_reproduce(
 ```rust,no_run
 fn cleanup(world: &mut World) {
     // Removals first.
-    for &id in &world.to_remove {
+    for id in world.to_remove.drain(..) {
         let slot = world.id_to_slot[id as usize] as usize;
+        let moved_id = world.creatures.last().unwrap().id;
         world.creatures.swap_remove(slot);
-        let moved_id = world.creatures[slot].id;
         world.id_to_slot[moved_id as usize] = slot as u32;
         world.id_to_slot[id as usize] = INVALID;
     }
-    world.to_remove.clear();
 
     // Then insertions.
     for row in world.to_insert.drain(..) {

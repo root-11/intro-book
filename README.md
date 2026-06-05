@@ -1256,14 +1256,13 @@ At the end of the tick, one system runs:
 ```rust,no_run
 fn cleanup(world: &mut World, buffer: &mut CleanupBuffer) {
     // 1. Delete all queued removals via swap_remove.
-    for &id in &buffer.to_remove {
+    for id in buffer.to_remove.drain(..) {
         let slot = world.id_to_slot[id as usize] as usize;
         for col in world.columns_mut() {
             col.swap_remove(slot);
         }
         // (Update id_to_slot - covered in §23.)
     }
-    buffer.to_remove.clear();
 
     // 2. Append all queued inserts.
     for row in buffer.to_insert.drain(..) {
