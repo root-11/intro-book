@@ -67,7 +67,7 @@
   - [Solutions](trunk/23_index_maps_solutions.md)
 - [Append-only and recycling](trunk/24_append_only_and_recycling.md)
   - [Solutions](trunk/24_append_only_and_recycling_solutions.md)
-- [Ownership of tables](trunk/25_ownership_of_tables.md)
+- [One writer, many readers](trunk/25_ownership_of_tables.md)
   - [Solutions](trunk/25_ownership_of_tables_solutions.md)
 
 # Part 6: Scale
@@ -114,7 +114,7 @@
 
 - [Mechanism vs policy](trunk/40_mechanism_vs_policy.md)
   - [Solutions](trunk/40_mechanism_vs_policy_solutions.md)
-- [Compression-oriented programming](trunk/41_compression_oriented.md)
+- [Deferred abstraction](trunk/41_compression_oriented.md)
   - [Solutions](trunk/41_compression_oriented_solutions.md)
 - [You can only fix what you wrote](trunk/42_you_can_only_fix_what_you_wrote.md)
   - [Solutions](trunk/42_you_can_only_fix_what_you_wrote_solutions.md)

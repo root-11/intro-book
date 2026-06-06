@@ -1,10 +1,10 @@
-# 25 - Ownership of tables
+# 25 - One writer, many readers
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 25](../../concepts/glossary.md#25--ownership-of-tables).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 25](../../concepts/glossary.md#25--one-writer-many-readers).*
 
 <p align="center"><img src="../illustrations/dag_planning_checklist.jpg" alt="One plan, one writer - PLAN, ANALYZE, DESIGN, BUILD, TEST, IMPROVE" style="max-height: 300px; max-width: 100%;"></p>
 
-Every table has exactly one writer.
+Every table is written by exactly one system. One ECS system, not one function and not one thread: a single named place in the schedule that owns the right to mutate it. Many systems may read it.
 
 The rule is small. Its consequences are everything.
 

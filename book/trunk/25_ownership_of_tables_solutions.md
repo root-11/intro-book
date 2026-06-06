@@ -1,4 +1,4 @@
-# Solutions: 25 - Ownership of tables
+# Solutions: 25 - One writer, many readers
 
 ## Exercise 1 - Identify the writers
 

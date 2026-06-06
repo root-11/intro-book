@@ -51,4 +51,4 @@ Reference notes in [40_mechanism_vs_policy_solutions.md](40_mechanism_vs_policy_
 
 ## What's next
 
-[§41 - Compression-oriented programming](41_compression_oriented.md) is the discipline for writing the kernel-and-policies in the first place: write three concrete cases before extracting any abstraction.
+[§41 - Deferred abstraction](41_compression_oriented.md) is the discipline for writing the kernel-and-policies in the first place: write three concrete cases before extracting any abstraction.

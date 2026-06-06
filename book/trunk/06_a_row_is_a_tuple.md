@@ -10,7 +10,7 @@ This is what we call a *row* throughout the rest of the book - a coherent set of
 
 The cost of implicit binding is that you must *keep the indices aligned*. If you sort `suits` without also sorting `ranks` and `locations`, the row at every index is corrupted - the deck still has 52 entries in 52 slots, but each slot now holds the suit of one card, the rank of another, the location of a third. This is not a hypothetical bug; [§9](09_sort_breaks_indices.md) will produce it deliberately so you can feel the consequences. The structural fix in this book is simple: every operation that reorders any column of a table must reorder *all* columns of that table together.
 
-The discipline that makes alignment maintainable is **single-writer-per-column**. If only one system writes to `locations`, and that system writes consistently, alignment is never violated. Multiple writers to the same column race against each other and produce inconsistent rows. This is what node 25 (ownership of tables) enforces: each table has exactly one writer, and a row is a tuple precisely because that one writer kept all its columns in step.
+The discipline that makes alignment maintainable is **single-writer-per-column**. If only one system writes to `locations`, and that system writes consistently, alignment is never violated. Multiple writers to the same column race against each other and produce inconsistent rows. This is what node 25 (one writer, many readers) enforces: each table is written by exactly one system, and a row is a tuple precisely because that one writer kept all its columns in step.
 
 A row is a tuple - assembled from columns indexed by the same entity, kept aligned by discipline rather than by any container holding it together.
 

@@ -79,7 +79,7 @@ flowchart TB
         N22[22. mutations buffer; cleanup is batched]
         N23[23. index maps]
         N24[24. append-only & recycling]
-        N25[25. ownership of tables]
+        N25[25. one writer, many readers]
     end
     N18 --> N21
     N18 --> N22
@@ -148,7 +148,7 @@ flowchart TB
 
     subgraph D["Discipline (cross-cutting)"]
         N40[40. mechanism vs policy]
-        N41[41. compression-oriented]
+        N41[41. deferred abstraction]
         N42[42. you can only fix what you wrote]
         N43[43. tests are systems]
     end
@@ -224,7 +224,7 @@ flowchart TB
 
 24. **Append-only and recycling.** Two strategies for slot reuse, with opposite tradeoffs in memory and reference stability. The choice is decided by access pattern, not taste.
 
-25. **Ownership of tables.** Each table has exactly one writer; many readers are fine. This is the rule that makes parallelism possible without locks, and it is the precondition for the inspection-system pattern (read-only access to all tables, no risk of races).
+25. **One writer, many readers.** Each table is written by exactly one system; many readers are fine. This is the rule that makes parallelism possible without locks, and it is the precondition for the inspection-system pattern (read-only access to all tables, no risk of races).
 
 ### Scale (26-30)
 
@@ -266,7 +266,7 @@ flowchart TB
 
 40. **Mechanism vs policy.** The kernel of a system exposes raw verbs. Rules - what is allowed, what triggers what - live at the edges, not in the kernel. Confusing the two is how systems calcify.
 
-41. **Compression-oriented programming.** Write the concrete case three times before extracting. Don't pre-architect. The from-scratch version is also the dependency-pricing test: most crates lose the comparison.
+41. **Deferred abstraction.** Write the concrete case three times before extracting. Don't pre-architect. The from-scratch version is also the dependency-pricing test: most crates lose the comparison.
 
 42. **You can only fix what you wrote.** Foreign libraries are allowed; this is not a prohibition. But every dependency is a bet that someone else will keep it working. If the bet loses, you cannot fix it - you can only replace or fork it. The discipline is to take the bet *consciously*, knowing that the from-scratch version (node 41) is the cheapest way to find out whether the dependency is worth it.
 

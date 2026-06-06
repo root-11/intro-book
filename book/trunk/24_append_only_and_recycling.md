@@ -87,4 +87,4 @@ Reference notes in [24_append_only_and_recycling_solutions.md](24_append_only_an
 
 ## What's next
 
-[§25 - Ownership of tables](25_ownership_of_tables.md) is the rule that makes every other discipline in the phase work: each table has exactly one writer.
+[§25 - One writer, many readers](25_ownership_of_tables.md) is the rule that makes every other discipline in the phase work: each table is written by exactly one system.

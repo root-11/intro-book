@@ -85,7 +85,7 @@ Each entry has four parts:
 
 **Anti-pattern.** Keeping a `Vec<Creature>` (AoS - Array of Structs). It works, but it sacrifices the layout reasoning of nodes 4 and 7: the inner loop reads all six fields whether it needs them or not, doubling cache pressure for systems that only touch position.
 
-**See also.** 5 (id is integer), 7 (SoA), 23 (index maps), 25 (ownership of tables).
+**See also.** 5 (id is integer), 7 (SoA), 23 (index maps), 25 (one writer, many readers).
 
 ---
 
@@ -169,7 +169,7 @@ Each entry has four parts:
 
 **Anti-pattern.** A system that touches global state, mutates input parameters, or carries cross-tick state in a closure. None of these compose, none of these parallelize, and none of these can be tested without a fixture.
 
-**See also.** 8 (one to many), 14 (systems compose into a DAG), 25 (ownership of tables), 31 (disjoint writes parallelize).
+**See also.** 8 (one to many), 14 (systems compose into a DAG), 25 (one writer, many readers), 31 (disjoint writes parallelize).
 
 ---
 
@@ -181,7 +181,7 @@ Each entry has four parts:
 
 **Anti-pattern.** Calling systems in the order they were written in the file. This works for the first three systems; by the tenth, the read/write dependencies are tangled and one bad ordering corrupts state in ways that are hard to find.
 
-**See also.** 13 (system as function), 25 (ownership of tables), 34 (order is the contract), 31 (disjoint writes parallelize).
+**See also.** 13 (system as function), 25 (one writer, many readers), 34 (order is the contract), 31 (disjoint writes parallelize).
 
 ---
 
@@ -305,7 +305,7 @@ Each entry has four parts:
 
 ---
 
-## 25 - Ownership of tables
+## 25 - One writer, many readers
 
 **Definition.** Each table has exactly one writer. Many readers are fine. This is the rule that makes parallelism possible without locks, and it is the precondition for the inspection-system pattern: read-only access to all tables, no risk of races.
 
@@ -493,11 +493,11 @@ Each entry has four parts:
 
 **Anti-pattern.** Encoding policy decisions in the kernel - `if hungry && food_nearby { eat }`. Once the rule is in the kernel, every variant of the rule needs a new branch, and the kernel grows linearly with rule count.
 
-**See also.** 13 (system as function), 25 (ownership), 35 (boundary is the queue), 41 (compression-oriented).
+**See also.** 13 (system as function), 25 (one writer, many readers), 35 (boundary is the queue), 41 (deferred abstraction).
 
 ---
 
-## 41 - Compression-oriented programming
+## 41 - Deferred abstraction
 
 **Definition.** Write the concrete case three times before extracting. Don't pre-architect. The from-scratch version is also the dependency-pricing test (node 42): most crates lose the comparison because they generalise more than your case requires.
 
@@ -517,7 +517,7 @@ Each entry has four parts:
 
 **Anti-pattern.** Reaching for `cargo add` reflexively, by name recognition or because a tutorial used the crate. The dependency arrives with no measurement, no reading, and no appraisal of what its absence would have cost.
 
-**See also.** 38 (storage systems), 41 (compression-oriented programming), 43 (tests are systems).
+**See also.** 38 (storage systems), 41 (deferred abstraction), 43 (tests are systems).
 
 ---
 
@@ -529,4 +529,4 @@ Each entry has four parts:
 
 **Anti-pattern.** Testing as a separate concern bolted on at the end. The tests then live in their own world, mirroring the real code with mocks and stubs and a separate vocabulary. Testing systems-as-systems makes the tests grow with the code, not against it.
 
-**See also.** 13 (system as function), 16 (determinism by order), 37 (the log is the world), 41 (compression-oriented).
+**See also.** 13 (system as function), 16 (determinism by order), 37 (the log is the world), 41 (deferred abstraction).

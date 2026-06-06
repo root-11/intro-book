@@ -1,4 +1,4 @@
-# Solutions: 41 - Compression-oriented programming
+# Solutions: 41 - Deferred abstraction
 
 ## Exercise 1 - Too-early abstraction
 

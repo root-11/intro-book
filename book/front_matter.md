@@ -1,7 +1,7 @@
 # An Introduction to Programming *using entity-component-systems & existence-based processing in `rust`*
 
 _written by [Bjorn Madsen](mailto:drbjornmadsen@gmail.com)_
-_updated: 2026-05-09_
+_updated: 2026-06-06_
 
 > **Read online:** [Codeberg](https://root-11.codeberg.page/intro-book/) · [GitHub Pages](https://root-11.github.io/intro-book/)
 >
