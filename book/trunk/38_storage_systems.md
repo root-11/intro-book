@@ -12,7 +12,7 @@ The cost has two dimensions.
 
 A workload's cost is bounded by *both*. A 1 MB sequential read on NVMe is one IOP and ~250 µs of bandwidth time. A million 1-byte random reads is a million IOPs and ~10 seconds of latency time. Same total bytes, three orders of magnitude apart.
 
-The [§22](22_mutations_buffer.md) batched-cleanup pattern at [§30](30_streaming_wall.md)'s streaming scale gathers many small mutations into one large write. This converts a high-IOPS, low-bandwidth workload (1000 separate writes per tick) into a low-IOPS, bandwidth-friendly one (one batched write per tick). The pattern is the natural fit for storage systems where IOPS is the binding constraint.
+The [§22](22_mutations_buffer.md) batched-cleanup pattern at [§30](30_streaming_wall.md)'s streaming scale gathers many small mutations into one large write. This converts a high-IOPS, low-bandwidth workload (1000 separate writes per tick) into a low-IOPS, bandwidth-friendly one (one batched write per tick)<sup>1</sup>. The pattern is the natural fit for storage systems where IOPS is the binding constraint.
 
 <p align="center"><img src="../illustrations/power_supply_components.jpg" alt="Storage systems have bandwidth and IOPS - counted like power and current" style="max-height: 300px; max-width: 100%;"></p>
 
@@ -29,6 +29,14 @@ The lesson: when adding a storage system to the simulator, measure both bandwidt
 The §4 budget framing applies here too. A 30 Hz tick has 33 ms of budget. A 100 µs disk read costs 0.3 % of the budget. Ten of them cost 3 %. A hundred cost 30 % - already a third of the tick. Bound the I/O per tick, batch where possible, and treat every cross-boundary operation as a real cost in the same ledger as cache misses and arithmetic.
 
 The simulator inside the boundary is a pure function. The storage system at the boundary is the function's connection to durable reality. The cost of that connection is the bandwidth × IOPS budget; the discipline is the batching pattern; the architecture is the queue.
+
+## Measurements
+
+Batching many small writes into one trades a high-IOPS workload for a bandwidth-friendly one; how much it buys depends on the per-write overhead of the path (the 2012 laptop's slow per-write syscall path is the outlier). Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | batched vs unbatched write | 38x | 256x | 30x | 14x |
 
 ## Exercises
 

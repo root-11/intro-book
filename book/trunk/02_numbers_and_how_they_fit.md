@@ -8,7 +8,7 @@ A cache line is 64 bytes on x86 and most ARM chips - the unit of memory the CPU 
 
 Rust gives you several integer widths: `u8` (one byte, 0 to 255), `u16` (two bytes, 0 to 65 535), `u32` (four bytes, around four billion), `u64` (eight bytes, around 1.8×10¹⁹). The signed versions - `i8`, `i16`, `i32`, `i64` - use one bit for the sign and the rest for magnitude. For floating-point: `f32` (four bytes, ~7 decimal digits of precision), `f64` (eight bytes, ~15 decimal digits).
 
-A `Vec<u8>` of length N is N bytes. A `Vec<u64>` is 8N bytes. So a `Vec<u8>` fits 64 elements per cache line; a `Vec<u64>` fits 8. Walk the whole vector and the `u64` version pulls in 8× as many cache lines as the `u8` version: the same element count, eight times the bytes.
+A `Vec<u8>` of length N is N bytes. A `Vec<u64>` is 8N bytes. So a `Vec<u8>` fits 64 elements per cache line; a `Vec<u64>` fits 8. Walk the whole vector and the `u64` version pulls in 8× as many cache lines as the `u8` version: the same element count, eight times the bytes<sup>1</sup>.
 
 This is the *width budget*. Picking a wider type than you need is not free; it costs cache lines, and at the scales this book targets, cache lines are the budget you spend.
 
@@ -17,6 +17,14 @@ The rule is simple: pick the narrowest type that holds your range, and write dow
 Floats are the trickier case. They look like real numbers but are not. There are only about 4 billion `f32` values; there are only about 18 quintillion `f64` values; that is finite. Operations have edges: `1.0 / 0.0 = inf`, `0.0 / 0.0 = NaN`, and `NaN != NaN` - yes, equality is broken on purpose, because there is no reasonable answer. Subtracting two nearly equal floats loses most of their precision (this is *catastrophic cancellation*). Adding a tiny float to a large one quietly drops the tiny one (this is *absorption*). None of this is a problem if you know it is there; all of it is a problem if you assume floats are mathematics.
 
 Most of this book uses `u8`, `u16`, `u32`, `f32`, and `u64` for time. `i*` and `f64` appear when the range or precision genuinely demands it. The choice is documented at every column declaration.
+
+## Measurements
+
+Eight times the bytes is *less* than eight times the time - the sum is bandwidth-bound, not purely line-count-bound, and a wider type also feeds the prefetcher more to chew on. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | u8 vs u64 sum, N = 100M | 1.8x | 2.0x | 2.5x | 4.6x |
 
 ## Exercises
 

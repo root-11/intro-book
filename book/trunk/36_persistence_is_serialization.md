@@ -59,11 +59,20 @@ The pattern shows up everywhere this scale matters. Write-ahead logs in database
 
 The §0/§1 simulator's snapshot is roughly twenty-five lines of Rust per direction. The OOP equivalent - define a `CreatureRecord`, derive `Serialize`/`Deserialize`, walk the world serialising one creature at a time - is ten times the code, slower at runtime, and prone to the translation bugs the column-direct version cannot have.
 
+## Measurements
+
+Serialisation's slow reputation is the *text* path; a binary per-row encoder is barely slower than the column snapshot, and its cost is mostly the per-row function call. Either way the column-direct snapshot wins and carries no per-row translation bugs. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | per-row JSON vs column snapshot, 1M | 31x | 55x | 64x | 33x |
+| 2 | per-row binary vs column snapshot, 1M | ~1x | ~2x | ~2x | ~2x |
+
 ## Exercises
 
 1. **Snapshot the world.** Implement a `snapshot` function for your simulator. Save to `snapshot.bin`. Note the file size: it should match `bytes per column × N` for hot tables, plus headers.
 2. **Load the snapshot.** Implement the inverse. Load `snapshot.bin` into a fresh `World`. Verify by running the simulator from the loaded state and comparing the hash to the original at the same tick.
-3. **The OOP comparison.** Define a `CreatureRecord` struct and write a per-row serialiser via `serde_json` or `bincode`. Time it against the column snapshot at 1M creatures. The cost depends entirely on the format: measured (`row_vs_column_serialize`), a per-row *text* encoder (the `serde_json` shape) is ~30-65× slower than the column snapshot across the four reference machines; a per-row *binary* encoder (the `bincode` shape) is only ~1-2× slower. The text path is where serialisation's slow reputation comes from; the binary path's cost is mostly the per-row function call. Either way the column snapshot wins, and it carries none of the per-row translation bugs.
+3. **The OOP comparison.** Define a `CreatureRecord` struct and write a per-row serialiser via `serde_json` or `bincode`. Time it against the column snapshot at 1M creatures. The cost depends entirely on the format: measured (`row_vs_column_serialize`), a per-row *text* encoder (the `serde_json` shape) is ~30-65× slower than the column snapshot across the four reference machines<sup>1</sup>; a per-row *binary* encoder (the `bincode` shape) is only ~1-2× slower<sup>2</sup>. The text path is where serialisation's slow reputation comes from; the binary path's cost is mostly the per-row function call. Either way the column snapshot wins, and it carries none of the per-row translation bugs.
 4. **Schema versioning.** Add a new column (`hunger_buildup: f32`) to the simulator. Make the snapshot reader handle both old and new versions: old snapshots get the new column zero-filled; new snapshots get loaded directly. Verify both round-trip cleanly.
 5. *(stretch)* **Memory-mapped snapshot.** Use `memmap2` to map the snapshot file directly into memory. The Vec's pointer is the file's memory; loading is zero-copy. Compare load times for a 24 MB snapshot.
 

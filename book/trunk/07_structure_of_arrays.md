@@ -19,11 +19,19 @@ let cards: Vec<Card> = vec![/* 52 */];
 
 Most programmers reach for AoS by default because it groups "related" data together. The trouble is that in a real loop "related" is whatever the inner loop reads, not whatever the data model says belongs together. A system that counts cards in player 1's hand reads only `locations` - it does not need suits or ranks at all. With SoA, that loop reads exactly 52 bytes from `locations`. With AoS, the loop reads all three bytes of each `Card` (because they live next to each other in memory and arrive on the same cache line) and ignores two of them - three times the memory traffic for the same answer.
 
-At 52 cards the difference is invisible. At one million creatures with six fields each, the difference is the difference between a 30 Hz simulation and a 5 Hz one. The motion system in §1's simulator reads only `pos`, `vel`, and `energy` - three of six creature fields. With SoA it reads three sequential streams of exactly the bytes it needs. With AoS it reads all six fields of every creature, paying twice the memory bandwidth for half the data it actually wants.
+At 52 cards the difference is invisible. At one million creatures with six fields each, the difference is the difference between a 30 Hz simulation and a 5 Hz one<sup>1</sup>. The motion system in §1's simulator reads only `pos`, `vel`, and `energy` - three of six creature fields. With SoA it reads three sequential streams of exactly the bytes it needs. With AoS it reads all six fields of every creature, paying twice the memory bandwidth for half the data it actually wants.
 
 This is the bandwidth-bound regime named in §4. SoA keeps the inner loop's working set small; AoS bloats it with fields the loop ignores. At cache-spilling sizes (any working set bigger than L3) the bloat becomes the dominant cost.
 
 SoA is therefore the default in this book. AoS is sometimes the right choice - for example when every system reads every field, or when N is so small the cache line is dominated by per-row overhead either way. But this is a tradeoff to *earn* by measurement, not to assume by habit. Write SoA first; switch to AoS only when a benchmark forces you to.
+
+## Measurements
+
+How far SoA beats a padded array-of-structs grows with the cache budget: the small-cache Pi pays for every wasted byte (5.7x), a modern desktop with generous L3 mutes it (1.6x). The principle holds on every machine. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | SoA vs padded AoS, count loop at 10M (row 3 B → 20 B) | 1.6x | 2.4x | 1.9x | 5.7x |
 
 ## Exercises
 

@@ -26,11 +26,19 @@ Three things this rule does for you:
 
 **No locks.** A lock is a tax paid by every reader and writer of the locked thing. With single-writer ownership, locks are unnecessary; with disjoint write-sets, they remain unnecessary at the parallel boundary. The simulator at this scale has zero `Mutex`, zero `RwLock`, zero `Atomic*` in its inner systems.
 
-**Speedup is structural, not promised.** N threads with disjoint work give N× speedup, modulo memory-bandwidth limits. That ceiling is real - at 50 GB/s of DDR5 bandwidth, eight threads cannot all do bandwidth-bound work in parallel; one thread saturates the bus. But for compute-bound work or for cache-resident loops, the speedup is close to N.
+**Speedup is structural, not promised.** N threads with disjoint work give N× speedup, modulo memory-bandwidth limits. That ceiling is real - at 50 GB/s of DDR5 bandwidth, eight threads cannot all do bandwidth-bound work in parallel; one thread saturates the bus. But for compute-bound work or for cache-resident loops, the speedup is close to N<sup>1</sup>.
 
 **Tools without ceremony.** The Rust ecosystem's standard parallelism crate is `rayon`, which provides `par_iter` and `par_chunks_mut` for parallel iteration. With disjoint writes by construction, `rayon::join` and `par_iter_mut` work without changing the simulator's design - they are conveniences over `std::thread::scope`, not new architectures.
 
 The single-writer rule (§25) was the precondition. Disjoint write-sets is the rule applied across systems. Together, parallelism becomes a scheduling decision, not a design decision.
+
+## Measurements
+
+Two disjoint systems run under `thread::scope` hit close to the ideal 2x on every machine - the write-sets do not collide, so there is nothing to serialise. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | thread::scope two-system speedup (compute-bound) | 1.96x | 1.92x | 1.81x | 1.99x |
 
 ## Exercises
 

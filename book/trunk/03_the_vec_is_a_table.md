@@ -18,12 +18,20 @@ A `&[T]` is a *slice* - a pointer plus a length, without the capacity. It is wha
 
 That is the full vocabulary you need from `Vec` for the next several phases. Everything else (`HashMap`, `BTreeMap`, `Box<Node>`, `Rc<RefCell<T>>`, `LinkedList`) is something you will reach for only when an exercise demands it and the from-scratch test (node 40) shows it earns its weight.
 
+## Measurements
+
+Order of magnitude (60-200×) is the durable claim; the exact factor widens with the machine because the `Vec` sum vectorises and prefetches and `HashMap::get` cannot. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | Vec index vs HashMap get, 1M | 160x | 89x | 77x | 65x |
+
 ## Exercises
 
 1. **Layout.** Print `std::mem::size_of::<Vec<u32>>()`. It should be 24 on a 64-bit machine - three pointer-sized fields. Notice that the size of the *Vec value* does not depend on how many elements it holds.
 2. **Capacity vs length.** Build `let mut v: Vec<u32> = Vec::new();`. In a loop from 0 to 100, print `v.len()` and `v.capacity()` after each `v.push(i)`. Observe the capacity doubling pattern: 0, 4, 8, 16, 32, 64, 128.
 3. **Pre-size.** Build `let mut v = Vec::with_capacity(100);` and push 100 elements. Print `len` and `capacity` once at the end. There were no reallocations.
-4. **Indexing cost.** Time `vec[i]` on a 1M `Vec<u32>` accessed sequentially. Compare with the same access on a `HashMap<usize, u32>` of the same size. Sequential `Vec` reads should be ~10-100× faster.
+4. **Indexing cost.** Time `vec[i]` on a 1M `Vec<u32>` accessed sequentially. Compare with the same access on a `HashMap<usize, u32>` of the same size. Sequential `Vec` reads should be ~10-100× faster<sup>1</sup>.
 
 > [!NOTE]
 > Measured ratios: ~65× on a Raspberry Pi 4, ~90-95× on mid-2010s Intel laptops, ~160× on a Ryzen 9 270. All use Rust's default `HashMap` (SipHash). Modern hardware widens the gap because the `Vec` sum is auto-vectorized and well-prefetched; `HashMap::get` cannot be either. Order-of-magnitude (60-200×) is the durable claim.

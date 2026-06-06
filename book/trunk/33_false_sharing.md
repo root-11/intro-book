@@ -4,7 +4,7 @@
 
 <p align="center"><img src="../illustrations/multimeter.jpg" alt="A mouse with a multimeter - false sharing is a precision-of-cost-measurement problem" style="max-height: 300px; max-width: 100%;"></p>
 
-You partitioned the table. Each thread folds its own disjoint slice into its own accumulator. The work is balanced. The speedup is... 0.4× - the parallel version runs *slower* than a single thread (measured 0.26-0.42× across the four reference machines). Where did the parallelism go?
+You partitioned the table. Each thread folds its own disjoint slice into its own accumulator. The work is balanced. The speedup is... 0.4× - the parallel version runs *slower* than a single thread (measured 0.26-0.42× across the four reference machines)<sup>1</sup>. Where did the parallelism go?
 
 Probably to *false sharing*.
 
@@ -54,6 +54,16 @@ The takeaway: physical layout matters even for logically disjoint data. Two `&mu
 Cache lines have grown with the hardware: 32 bytes on pre-Pentium-4 x86 and many embedded cores, 64 across most of today's desktops and phones, 128 on Apple Silicon and POWER, 256 on IBM Z. This book assumes 64 and pads to 128 where false sharing demands it; on anything else, query the line size rather than trust the default: `getconf LEVEL1_DCACHE_LINESIZE`, `sysconf(_SC_LEVEL1_DCACHE_LINESIZE)`, or `/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size`. The coherency granule can differ from the fetch line; the coherency unit is what governs false sharing.
 
 If you have one of the unmeasured machines and run the suite, send the numbers and they go in.
+
+## Measurements
+
+Below 1.0 means the "parallel" run is slower than a single thread - real negative scaling from false sharing. The partitioned-reduction row is the realistic case (disjoint input slices, a packed per-thread accumulator); padding each accumulator to its own cache line recovers the speedup. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | shared [u64;N] parallel ÷ 1 thread | 0.37x | 0.43x | 0.30x | 0.27x |
+| 2 | partitioned reduction (packed) ÷ 1 thread | 0.38x | 0.42x | 0.30x | 0.26x |
+| 3 | padded ÷ shared (speedup recovered) | 21.1x | 8.3x | 6.3x | 13.6x |
 
 ## Exercises
 

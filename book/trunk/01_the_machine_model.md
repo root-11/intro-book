@@ -12,11 +12,21 @@ When your code reads `vec[17]`, the CPU does not pull just byte 17. It pulls a w
 
 A pointer is an address in memory. Following one - `*ptr` - is one memory read at an address the CPU does not get to predict. If the address is in cache, the read is fast; if not, you wait the full ~100 ns. A program with many objects and many pointers between them is a program with many of those waits.
 
-That asymmetry is the dominant fact about modern CPUs. The arithmetic - adding, multiplying, branching - is virtually free; the cost is *getting the data to the arithmetic*. A program that respects this is fast. A program that ignores it can be a hundred times slower than a program that does the same work, with the same number of additions, but in a layout the cache likes.
+That asymmetry is the dominant fact about modern CPUs. The arithmetic - adding, multiplying, branching - is virtually free; the cost is *getting the data to the arithmetic*. A program that respects this is fast. A program that ignores it can be a hundred times slower<sup>2</sup> than a program that does the same work, with the same number of additions, but in a layout the cache likes.
 
 This is also what makes "complexity class" misleading on its own. An O(N log N) algorithm that hits the cache hard can outrun a "faster" O(N) algorithm that scatters reads across RAM. Big-O describes how cost grows with N; layout describes the constant factor that gets multiplied in. At the scales this book targets, the constant factor often wins.
 
 You will *measure* this in the next two sections. The numbers above are nominal - the chip in front of you may be slightly faster or slightly slower, and the ratios are what matters. Once you have felt how big the gap is, the rest of the book's reasoning about layout, SoA, locality, and parallelism follows naturally.
+
+## Measurements
+
+Reference values for these calibrations - yours will differ by machine, and the spread is the point. Full per-machine output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | Vec sum, ns/element at N = 100M | 0.14 | 0.44 | 0.70 | 2.03 |
+| 2 | pointer-chase vs Vec sum, 1M (random ÷ sequential) | 270x | 120x | 103x | 63x |
+| 3 | cache cliffs visible in the ns/element staircase | 1 (L3→RAM) | 3 | 2-3 | 3 |
 
 ## Exercises
 

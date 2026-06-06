@@ -19,7 +19,7 @@ assert_eq!(v, vec![10, 50, 30, 40]); // 50 was moved into slot 1
 
 The mechanism is small: read the last element, write it into the deleted slot, shrink the table by one. One read, one write, and a length decrement. O(1) regardless of N.
 
-**Cost.** A 1 000 000-creature table with 1 000 swap_removes per tick costs ~6 000 memory writes (one per column, six columns) - about 50 nanoseconds. The naive `remove` would cost a thousand times more.
+**Cost.** A 1 000 000-creature table with 1 000 swap_removes per tick costs ~6 000 memory writes (one per column, six columns) - about 50 nanoseconds. The naive `remove` would cost a thousand times more<sup>1</sup>.
 
 **Cost paid.** Order is sacrificed. If your code depended on rows being in any particular order, swap_remove reorders them. Two specific consequences:
 
@@ -31,6 +31,14 @@ Both problems have fixes already named in the book. The iteration corruption is 
 This whole phase - Memory & lifecycle - only matters for *variable-quantity* tables. Constant-quantity tables like the 52-card deck never grow or shrink, never need swap_remove, never need any of the machinery in this phase. The card game ran for ten chapters without it. The simulator from §1 onward needs all of it, because creatures are born and die every tick.
 
 To reuse the card-game milestone framing: the *constant vs variable* distinction is what determines whether a programmer reaches into the lifecycle toolbox at all. Once you have a table whose row count varies at runtime, every tool in this phase becomes load-bearing.
+
+## Measurements
+
+`remove(0)` shifts every later row; `swap_remove(0)` moves one. So the ratio is essentially the table length and grows with N - "a thousand times" is a floor, not a ceiling. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | remove vs swap_remove, 1M Vec | ~20 000x | 95 091x | 83 603x | 201 546x |
 
 ## Exercises
 

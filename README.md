@@ -169,11 +169,21 @@ When your code reads `vec[17]`, the CPU does not pull just byte 17. It pulls a w
 
 A pointer is an address in memory. Following one - `*ptr` - is one memory read at an address the CPU does not get to predict. If the address is in cache, the read is fast; if not, you wait the full ~100 ns. A program with many objects and many pointers between them is a program with many of those waits.
 
-That asymmetry is the dominant fact about modern CPUs. The arithmetic - adding, multiplying, branching - is virtually free; the cost is *getting the data to the arithmetic*. A program that respects this is fast. A program that ignores it can be a hundred times slower than a program that does the same work, with the same number of additions, but in a layout the cache likes.
+That asymmetry is the dominant fact about modern CPUs. The arithmetic - adding, multiplying, branching - is virtually free; the cost is *getting the data to the arithmetic*. A program that respects this is fast. A program that ignores it can be a hundred times slower<sup>2</sup> than a program that does the same work, with the same number of additions, but in a layout the cache likes.
 
 This is also what makes "complexity class" misleading on its own. An O(N log N) algorithm that hits the cache hard can outrun a "faster" O(N) algorithm that scatters reads across RAM. Big-O describes how cost grows with N; layout describes the constant factor that gets multiplied in. At the scales this book targets, the constant factor often wins.
 
 You will *measure* this in the next two sections. The numbers above are nominal - the chip in front of you may be slightly faster or slightly slower, and the ratios are what matters. Once you have felt how big the gap is, the rest of the book's reasoning about layout, SoA, locality, and parallelism follows naturally.
+
+## Measurements
+
+Reference values for these calibrations - yours will differ by machine, and the spread is the point. Full per-machine output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | Vec sum, ns/element at N = 100M | 0.14 | 0.44 | 0.70 | 2.03 |
+| 2 | pointer-chase vs Vec sum, 1M (random ÷ sequential) | 270x | 120x | 103x | 63x |
+| 3 | cache cliffs visible in the ns/element staircase | 1 (L3→RAM) | 3 | 2-3 | 3 |
 
 ## Exercises
 
@@ -209,7 +219,7 @@ A cache line is 64 bytes on x86 and most ARM chips - the unit of memory the CPU 
 
 Rust gives you several integer widths: `u8` (one byte, 0 to 255), `u16` (two bytes, 0 to 65 535), `u32` (four bytes, around four billion), `u64` (eight bytes, around 1.8×10¹⁹). The signed versions - `i8`, `i16`, `i32`, `i64` - use one bit for the sign and the rest for magnitude. For floating-point: `f32` (four bytes, ~7 decimal digits of precision), `f64` (eight bytes, ~15 decimal digits).
 
-A `Vec<u8>` of length N is N bytes. A `Vec<u64>` is 8N bytes. So a `Vec<u8>` fits 64 elements per cache line; a `Vec<u64>` fits 8. Walk the whole vector and the `u64` version pulls in 8× as many cache lines as the `u8` version: the same element count, eight times the bytes.
+A `Vec<u8>` of length N is N bytes. A `Vec<u64>` is 8N bytes. So a `Vec<u8>` fits 64 elements per cache line; a `Vec<u64>` fits 8. Walk the whole vector and the `u64` version pulls in 8× as many cache lines as the `u8` version: the same element count, eight times the bytes<sup>1</sup>.
 
 This is the *width budget*. Picking a wider type than you need is not free; it costs cache lines, and at the scales this book targets, cache lines are the budget you spend.
 
@@ -218,6 +228,14 @@ The rule is simple: pick the narrowest type that holds your range, and write dow
 Floats are the trickier case. They look like real numbers but are not. There are only about 4 billion `f32` values; there are only about 18 quintillion `f64` values; that is finite. Operations have edges: `1.0 / 0.0 = inf`, `0.0 / 0.0 = NaN`, and `NaN != NaN` - yes, equality is broken on purpose, because there is no reasonable answer. Subtracting two nearly equal floats loses most of their precision (this is *catastrophic cancellation*). Adding a tiny float to a large one quietly drops the tiny one (this is *absorption*). None of this is a problem if you know it is there; all of it is a problem if you assume floats are mathematics.
 
 Most of this book uses `u8`, `u16`, `u32`, `f32`, and `u64` for time. `i*` and `f64` appear when the range or precision genuinely demands it. The choice is documented at every column declaration.
+
+## Measurements
+
+Eight times the bytes is *less* than eight times the time - the sum is bandwidth-bound, not purely line-count-bound, and a wider type also feeds the prefetcher more to chew on. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | u8 vs u64 sum, N = 100M | 1.8x | 2.0x | 2.5x | 4.6x |
 
 ## Exercises
 
@@ -252,12 +270,20 @@ A `&[T]` is a *slice* - a pointer plus a length, without the capacity. It is wha
 
 That is the full vocabulary you need from `Vec` for the next several phases. Everything else (`HashMap`, `BTreeMap`, `Box<Node>`, `Rc<RefCell<T>>`, `LinkedList`) is something you will reach for only when an exercise demands it and the from-scratch test (node 40) shows it earns its weight.
 
+## Measurements
+
+Order of magnitude (60-200×) is the durable claim; the exact factor widens with the machine because the `Vec` sum vectorises and prefetches and `HashMap::get` cannot. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | Vec index vs HashMap get, 1M | 160x | 89x | 77x | 65x |
+
 ## Exercises
 
 1. **Layout.** Print `std::mem::size_of::<Vec<u32>>()`. It should be 24 on a 64-bit machine - three pointer-sized fields. Notice that the size of the *Vec value* does not depend on how many elements it holds.
 2. **Capacity vs length.** Build `let mut v: Vec<u32> = Vec::new();`. In a loop from 0 to 100, print `v.len()` and `v.capacity()` after each `v.push(i)`. Observe the capacity doubling pattern: 0, 4, 8, 16, 32, 64, 128.
 3. **Pre-size.** Build `let mut v = Vec::with_capacity(100);` and push 100 elements. Print `len` and `capacity` once at the end. There were no reallocations.
-4. **Indexing cost.** Time `vec[i]` on a 1M `Vec<u32>` accessed sequentially. Compare with the same access on a `HashMap<usize, u32>` of the same size. Sequential `Vec` reads should be ~10-100× faster.
+4. **Indexing cost.** Time `vec[i]` on a 1M `Vec<u32>` accessed sequentially. Compare with the same access on a `HashMap<usize, u32>` of the same size. Sequential `Vec` reads should be ~10-100× faster<sup>1</sup>.
 
 > [!NOTE]
 > Measured ratios: ~65× on a Raspberry Pi 4, ~90-95× on mid-2010s Intel laptops, ~160× on a Ryzen 9 270. All use Rust's default `HashMap` (SipHash). Modern hardware widens the gap because the `Vec` sum is auto-vectorized and well-prefetched; `HashMap::get` cannot be either. Order-of-magnitude (60-200×) is the durable claim.
@@ -468,11 +494,19 @@ let cards: Vec<Card> = vec![/* 52 */];
 
 Most programmers reach for AoS by default because it groups "related" data together. The trouble is that in a real loop "related" is whatever the inner loop reads, not whatever the data model says belongs together. A system that counts cards in player 1's hand reads only `locations` - it does not need suits or ranks at all. With SoA, that loop reads exactly 52 bytes from `locations`. With AoS, the loop reads all three bytes of each `Card` (because they live next to each other in memory and arrive on the same cache line) and ignores two of them - three times the memory traffic for the same answer.
 
-At 52 cards the difference is invisible. At one million creatures with six fields each, the difference is the difference between a 30 Hz simulation and a 5 Hz one. The motion system in §1's simulator reads only `pos`, `vel`, and `energy` - three of six creature fields. With SoA it reads three sequential streams of exactly the bytes it needs. With AoS it reads all six fields of every creature, paying twice the memory bandwidth for half the data it actually wants.
+At 52 cards the difference is invisible. At one million creatures with six fields each, the difference is the difference between a 30 Hz simulation and a 5 Hz one<sup>1</sup>. The motion system in §1's simulator reads only `pos`, `vel`, and `energy` - three of six creature fields. With SoA it reads three sequential streams of exactly the bytes it needs. With AoS it reads all six fields of every creature, paying twice the memory bandwidth for half the data it actually wants.
 
 This is the bandwidth-bound regime named in §4. SoA keeps the inner loop's working set small; AoS bloats it with fields the loop ignores. At cache-spilling sizes (any working set bigger than L3) the bloat becomes the dominant cost.
 
 SoA is therefore the default in this book. AoS is sometimes the right choice - for example when every system reads every field, or when N is so small the cache line is dominated by per-row overhead either way. But this is a tradeoff to *earn* by measurement, not to assume by habit. Write SoA first; switch to AoS only when a benchmark forces you to.
+
+## Measurements
+
+How far SoA beats a padded array-of-structs grows with the cache budget: the small-cache Pi pays for every wasted byte (5.7x), a modern desktop with generous L3 mutes it (1.6x). The principle holds on every machine. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | SoA vs padded AoS, count loop at 10M (row 3 B → 20 B) | 1.6x | 2.4x | 1.9x | 5.7x |
 
 ## Exercises
 
@@ -1209,7 +1243,7 @@ assert_eq!(v, vec![10, 50, 30, 40]); // 50 was moved into slot 1
 
 The mechanism is small: read the last element, write it into the deleted slot, shrink the table by one. One read, one write, and a length decrement. O(1) regardless of N.
 
-**Cost.** A 1 000 000-creature table with 1 000 swap_removes per tick costs ~6 000 memory writes (one per column, six columns) - about 50 nanoseconds. The naive `remove` would cost a thousand times more.
+**Cost.** A 1 000 000-creature table with 1 000 swap_removes per tick costs ~6 000 memory writes (one per column, six columns) - about 50 nanoseconds. The naive `remove` would cost a thousand times more<sup>1</sup>.
 
 **Cost paid.** Order is sacrificed. If your code depended on rows being in any particular order, swap_remove reorders them. Two specific consequences:
 
@@ -1221,6 +1255,14 @@ Both problems have fixes already named in the book. The iteration corruption is 
 This whole phase - Memory & lifecycle - only matters for *variable-quantity* tables. Constant-quantity tables like the 52-card deck never grow or shrink, never need swap_remove, never need any of the machinery in this phase. The card game ran for ten chapters without it. The simulator from §1 onward needs all of it, because creatures are born and die every tick.
 
 To reuse the card-game milestone framing: the *constant vs variable* distinction is what determines whether a programmer reaches into the lifecycle toolbox at all. Once you have a table whose row count varies at runtime, every tool in this phase becomes load-bearing.
+
+## Measurements
+
+`remove(0)` shifts every later row; `swap_remove(0)` moves one. So the ratio is essentially the table length and grows with N - "a thousand times" is a floor, not a ceiling. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | remove vs swap_remove, 1M Vec | ~20 000x | 95 091x | 83 603x | 201 546x |
 
 ## Exercises
 
@@ -1622,7 +1664,7 @@ These extend the simulator's `creature` columns and the `id_to_slot` map from [�
 
 The *working set* of a loop is the data it touches per pass. The *cache hierarchy* (§1) is what holds that data. The two together decide the loop's speed.
 
-Which cache level holds the working set decides the loop's speed. The numbers below are measured on the four reference machines (`code/README.md`), not theoretical - the modern desktop sits at the low end of each range, the Pi 4 at the high end. A flat streaming sum stays under ~0.5 ns/element in L1 (`cache_cliffs`). Motion's 20-byte loop, swept sequentially, measures ~0.3-4 ns/creature in L2 (10K creatures), ~0.4-10 ns in L3 (1M), and ~0.7-17 ns once it spills to RAM (10M). Sequential access stays bandwidth-bound and cheap on every machine; the expensive regime is *random* order, ~30-390 ns/creature at 10M.
+Which cache level holds the working set decides the loop's speed. The numbers below are measured on the four reference machines (`code/README.md`), not theoretical - the modern desktop sits at the low end of each range, the Pi 4 at the high end. A flat streaming sum stays under ~0.5 ns/element in L1 (`cache_cliffs`). Motion's 20-byte loop, swept sequentially, measures ~0.3-4 ns/creature in L2 (10K creatures), ~0.4-10 ns in L3 (1M), and ~0.7-17 ns once it spills to RAM (10M)<sup>1</sup>. Sequential access stays bandwidth-bound and cheap on every machine; the expensive regime is *random* order, ~30-390 ns/creature at 10M<sup>3</sup>.
 
 If you ran §1's exercises and exercise 2 below, you have your own machine's numbers. Treat the spread above as the envelope between slow and fast hardware, not an absolute.
 
@@ -1651,6 +1693,17 @@ The implication is design discipline:
 
 This is not premature optimisation. It is *layout-aware design* - making the schema fit the machine that will run it. A schema that ignores the cache works for small N and breaks at the scales the simulator was meant for.
 
+## Measurements
+
+Sequential motion stays cheap into RAM (the prefetcher keeps it bandwidth-bound); the cliff is in *random* order. The §27 "ns/element ladder" is really a random-access ladder. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | motion sequential, ns/creature @ 1M | 0.44 | 1.70 | 3.30 | 10.05 |
+| 2 | motion sequential, ns/creature @ 10M | 0.71 | 1.80 | 3.15 | 17.38 |
+| 3 | motion random, ns/creature @ 10M | 31 | 80 | 84 | 392 |
+| 4 | L1 vs L2, streaming motion | 1.02x | 1.19x | 1.20x | 1.08x |
+
 ## Exercises
 
 1. **Compute your working sets.** For each system in your simulator, compute `bytes per row × N` for N = 1K, 10K, 100K, 1M, 10M. Note which cache level each falls into for your machine.
@@ -1658,7 +1711,7 @@ This is not premature optimisation. It is *layout-aware design* - making the sch
 3. **The unused column costs nothing.** Add a `birth_t: f64` column that motion never reads. Recompute motion's working set and repeat exercise 2. The cliff should not move: in SoA a column a loop does not read sits in its own array, untouched, so it adds zero to that loop's working set. (In an array-of-structs world it would have widened every row and moved the cliff inward - the difference SoA buys you.)
 4. **A wider field.** Change `energy: f32` to `energy: f64`. Recompute the working set. Repeat exercise 2. The cliff should move inward (closer to smaller N).
 5. **Random vs sequential.** Repeat motion's loop with `for &i in random_indices` instead of `for i in 0..N`. At 10M creatures the per-element time rises by roughly 25-45× (random RAM access vs sequential). A single-pointer chase shows a wider gap; motion's is smaller because each creature amortises five columns.
-6. *(stretch)* **The L1 sweet spot.** Find the N at which motion's working set fills L1 to roughly 75 %. Run the loop in tight repetition and compare to the closest L2-only neighbour. For *sequential* motion the difference is small - measured 1.0-1.2× across the four reference machines (`l1_sweet_spot`), because the loop is bandwidth-bound at both sizes and the prefetcher hides the L1/L2 boundary. The dramatic L1 win shows up when the access is random (exercise 5), not streaming.
+6. *(stretch)* **The L1 sweet spot.** Find the N at which motion's working set fills L1 to roughly 75 %. Run the loop in tight repetition and compare to the closest L2-only neighbour. For *sequential* motion the difference is small - measured 1.0-1.2× across the four reference machines (`l1_sweet_spot`)<sup>4</sup>, because the loop is bandwidth-bound at both sizes and the prefetcher hides the L1/L2 boundary. The dramatic L1 win shows up when the access is random (exercise 5), not streaming.
 
 ## What's next
 
@@ -1857,11 +1910,19 @@ Three things this rule does for you:
 
 **No locks.** A lock is a tax paid by every reader and writer of the locked thing. With single-writer ownership, locks are unnecessary; with disjoint write-sets, they remain unnecessary at the parallel boundary. The simulator at this scale has zero `Mutex`, zero `RwLock`, zero `Atomic*` in its inner systems.
 
-**Speedup is structural, not promised.** N threads with disjoint work give N× speedup, modulo memory-bandwidth limits. That ceiling is real - at 50 GB/s of DDR5 bandwidth, eight threads cannot all do bandwidth-bound work in parallel; one thread saturates the bus. But for compute-bound work or for cache-resident loops, the speedup is close to N.
+**Speedup is structural, not promised.** N threads with disjoint work give N× speedup, modulo memory-bandwidth limits. That ceiling is real - at 50 GB/s of DDR5 bandwidth, eight threads cannot all do bandwidth-bound work in parallel; one thread saturates the bus. But for compute-bound work or for cache-resident loops, the speedup is close to N<sup>1</sup>.
 
 **Tools without ceremony.** The Rust ecosystem's standard parallelism crate is `rayon`, which provides `par_iter` and `par_chunks_mut` for parallel iteration. With disjoint writes by construction, `rayon::join` and `par_iter_mut` work without changing the simulator's design - they are conveniences over `std::thread::scope`, not new architectures.
 
 The single-writer rule (§25) was the precondition. Disjoint write-sets is the rule applied across systems. Together, parallelism becomes a scheduling decision, not a design decision.
+
+## Measurements
+
+Two disjoint systems run under `thread::scope` hit close to the ideal 2x on every machine - the write-sets do not collide, so there is nothing to serialise. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | thread::scope two-system speedup (compute-bound) | 1.96x | 1.92x | 1.81x | 1.99x |
 
 ## Exercises
 
@@ -1945,7 +2006,7 @@ The pattern is the right answer to "but I have one big table". You almost never 
 
 <p align="center"><img src="book/illustrations/multimeter.jpg" alt="A mouse with a multimeter - false sharing is a precision-of-cost-measurement problem" style="max-height: 300px; max-width: 100%;"></p>
 
-You partitioned the table. Each thread folds its own disjoint slice into its own accumulator. The work is balanced. The speedup is... 0.4× - the parallel version runs *slower* than a single thread (measured 0.26-0.42× across the four reference machines). Where did the parallelism go?
+You partitioned the table. Each thread folds its own disjoint slice into its own accumulator. The work is balanced. The speedup is... 0.4× - the parallel version runs *slower* than a single thread (measured 0.26-0.42× across the four reference machines)<sup>1</sup>. Where did the parallelism go?
 
 Probably to *false sharing*.
 
@@ -1995,6 +2056,16 @@ The takeaway: physical layout matters even for logically disjoint data. Two `&mu
 Cache lines have grown with the hardware: 32 bytes on pre-Pentium-4 x86 and many embedded cores, 64 across most of today's desktops and phones, 128 on Apple Silicon and POWER, 256 on IBM Z. This book assumes 64 and pads to 128 where false sharing demands it; on anything else, query the line size rather than trust the default: `getconf LEVEL1_DCACHE_LINESIZE`, `sysconf(_SC_LEVEL1_DCACHE_LINESIZE)`, or `/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size`. The coherency granule can differ from the fetch line; the coherency unit is what governs false sharing.
 
 If you have one of the unmeasured machines and run the suite, send the numbers and they go in.
+
+## Measurements
+
+Below 1.0 means the "parallel" run is slower than a single thread - real negative scaling from false sharing. The partitioned-reduction row is the realistic case (disjoint input slices, a packed per-thread accumulator); padding each accumulator to its own cache line recovers the speedup. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | shared [u64;N] parallel ÷ 1 thread | 0.37x | 0.43x | 0.30x | 0.27x |
+| 2 | partitioned reduction (packed) ÷ 1 thread | 0.38x | 0.42x | 0.30x | 0.26x |
+| 3 | padded ÷ shared (speedup recovered) | 21.1x | 8.3x | 6.3x | 13.6x |
 
 ## Exercises
 
@@ -2183,11 +2254,20 @@ The pattern shows up everywhere this scale matters. Write-ahead logs in database
 
 The §0/§1 simulator's snapshot is roughly twenty-five lines of Rust per direction. The OOP equivalent - define a `CreatureRecord`, derive `Serialize`/`Deserialize`, walk the world serialising one creature at a time - is ten times the code, slower at runtime, and prone to the translation bugs the column-direct version cannot have.
 
+## Measurements
+
+Serialisation's slow reputation is the *text* path; a binary per-row encoder is barely slower than the column snapshot, and its cost is mostly the per-row function call. Either way the column-direct snapshot wins and carries no per-row translation bugs. Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | per-row JSON vs column snapshot, 1M | 31x | 55x | 64x | 33x |
+| 2 | per-row binary vs column snapshot, 1M | ~1x | ~2x | ~2x | ~2x |
+
 ## Exercises
 
 1. **Snapshot the world.** Implement a `snapshot` function for your simulator. Save to `snapshot.bin`. Note the file size: it should match `bytes per column × N` for hot tables, plus headers.
 2. **Load the snapshot.** Implement the inverse. Load `snapshot.bin` into a fresh `World`. Verify by running the simulator from the loaded state and comparing the hash to the original at the same tick.
-3. **The OOP comparison.** Define a `CreatureRecord` struct and write a per-row serialiser via `serde_json` or `bincode`. Time it against the column snapshot at 1M creatures. The cost depends entirely on the format: measured (`row_vs_column_serialize`), a per-row *text* encoder (the `serde_json` shape) is ~30-65× slower than the column snapshot across the four reference machines; a per-row *binary* encoder (the `bincode` shape) is only ~1-2× slower. The text path is where serialisation's slow reputation comes from; the binary path's cost is mostly the per-row function call. Either way the column snapshot wins, and it carries none of the per-row translation bugs.
+3. **The OOP comparison.** Define a `CreatureRecord` struct and write a per-row serialiser via `serde_json` or `bincode`. Time it against the column snapshot at 1M creatures. The cost depends entirely on the format: measured (`row_vs_column_serialize`), a per-row *text* encoder (the `serde_json` shape) is ~30-65× slower than the column snapshot across the four reference machines<sup>1</sup>; a per-row *binary* encoder (the `bincode` shape) is only ~1-2× slower<sup>2</sup>. The text path is where serialisation's slow reputation comes from; the binary path's cost is mostly the per-row function call. Either way the column snapshot wins, and it carries none of the per-row translation bugs.
 4. **Schema versioning.** Add a new column (`hunger_buildup: f32`) to the simulator. Make the snapshot reader handle both old and new versions: old snapshots get the new column zero-filled; new snapshots get loaded directly. Verify both round-trip cleanly.
 5. *(stretch)* **Memory-mapped snapshot.** Use `memmap2` to map the snapshot file directly into memory. The Vec's pointer is the file's memory; loading is zero-copy. Compare load times for a 24 MB snapshot.
 
@@ -2291,7 +2371,7 @@ The cost has two dimensions.
 
 A workload's cost is bounded by *both*. A 1 MB sequential read on NVMe is one IOP and ~250 µs of bandwidth time. A million 1-byte random reads is a million IOPs and ~10 seconds of latency time. Same total bytes, three orders of magnitude apart.
 
-The [§22](#22---mutations-buffer-cleanup-is-batched) batched-cleanup pattern at [§30](#30---moving-beyond-the-wall)'s streaming scale gathers many small mutations into one large write. This converts a high-IOPS, low-bandwidth workload (1000 separate writes per tick) into a low-IOPS, bandwidth-friendly one (one batched write per tick). The pattern is the natural fit for storage systems where IOPS is the binding constraint.
+The [§22](#22---mutations-buffer-cleanup-is-batched) batched-cleanup pattern at [§30](#30---moving-beyond-the-wall)'s streaming scale gathers many small mutations into one large write. This converts a high-IOPS, low-bandwidth workload (1000 separate writes per tick) into a low-IOPS, bandwidth-friendly one (one batched write per tick)<sup>1</sup>. The pattern is the natural fit for storage systems where IOPS is the binding constraint.
 
 <p align="center"><img src="book/illustrations/power_supply_components.jpg" alt="Storage systems have bandwidth and IOPS - counted like power and current" style="max-height: 300px; max-width: 100%;"></p>
 
@@ -2308,6 +2388,14 @@ The lesson: when adding a storage system to the simulator, measure both bandwidt
 The §4 budget framing applies here too. A 30 Hz tick has 33 ms of budget. A 100 µs disk read costs 0.3 % of the budget. Ten of them cost 3 %. A hundred cost 30 % - already a third of the tick. Bound the I/O per tick, batch where possible, and treat every cross-boundary operation as a real cost in the same ledger as cache misses and arithmetic.
 
 The simulator inside the boundary is a pure function. The storage system at the boundary is the function's connection to durable reality. The cost of that connection is the bandwidth × IOPS budget; the discipline is the batching pattern; the architecture is the queue.
+
+## Measurements
+
+Batching many small writes into one trades a high-IOPS workload for a bandwidth-friendly one; how much it buys depends on the per-write overhead of the path (the 2012 laptop's slow per-write syscall path is the outlier). Full output: `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | batched vs unbatched write | 38x | 256x | 30x | 14x |
 
 ## Exercises
 
