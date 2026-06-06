@@ -21,8 +21,8 @@ Hot fields (read by motion, next_event, apply_eat, apply_reproduce, apply_starve
 
 ```rust,no_run
 struct CreatureHot {
-    pos:    Vec<(f32, f32)>,
-    vel:    Vec<(f32, f32)>,
+    px:     Vec<f32>, py: Vec<f32>,
+    vx:     Vec<f32>, vy: Vec<f32>,
     energy: Vec<f32>,
 }
 
@@ -33,8 +33,8 @@ struct CreatureCold {
 }
 
 fn append(hot: &mut CreatureHot, cold: &mut CreatureCold, row: CreatureRow) {
-    hot.pos.push(row.pos);
-    hot.vel.push(row.vel);
+    hot.px.push(row.px); hot.py.push(row.py);
+    hot.vx.push(row.vx); hot.vy.push(row.vy);
     hot.energy.push(row.energy);
     cold.birth_t.push(row.birth_t);
     cold.id.push(row.id);
@@ -42,7 +42,7 @@ fn append(hot: &mut CreatureHot, cold: &mut CreatureCold, row: CreatureRow) {
 }
 ```
 
-Both tables share the slot index. `hot.pos[17]` and `cold.id[17]` describe the same creature.
+Both tables share the slot index. `hot.px[17]` and `cold.id[17]` describe the same creature.
 
 ## Exercise 3 - Time motion at 1M
 
@@ -52,8 +52,10 @@ Pre-split: motion's per-tick cost ≈ 3 ns/elem × 1M = 3 ms. Post-split: ≈ 1.
 
 ```rust,no_run
 fn delete_creature(hot: &mut CreatureHot, cold: &mut CreatureCold, slot: usize) {
-    hot.pos.swap_remove(slot);
-    hot.vel.swap_remove(slot);
+    hot.px.swap_remove(slot);
+    hot.py.swap_remove(slot);
+    hot.vx.swap_remove(slot);
+    hot.vy.swap_remove(slot);
     hot.energy.swap_remove(slot);
     cold.birth_t.swap_remove(slot);
     cold.id.swap_remove(slot);

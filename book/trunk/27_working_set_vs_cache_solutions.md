@@ -21,10 +21,10 @@ A pending event is only active for one tick, so the working set is `36 × pendin
 Run the loop:
 
 ```rust,no_run
-fn motion_bench(pos: &mut [(f32, f32)], vel: &[(f32, f32)], energy: &[f32], dt: f32) {
-    for i in 0..pos.len() {
-        pos[i].0 += vel[i].0 * dt;
-        pos[i].1 += vel[i].1 * dt;
+fn motion_bench(px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32], energy: &[f32], dt: f32) {
+    for i in 0..px.len() {
+        px[i] += vx[i] * dt;
+        py[i] += vy[i] * dt;
         // (dummy use of energy to keep it in the working set)
         std::hint::black_box(energy[i]);
     }

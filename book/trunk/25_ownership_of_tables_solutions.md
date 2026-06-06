@@ -76,8 +76,8 @@ fn inspect(world: &World) -> WorldSnapshot {
         creature_count: world.creatures.len(),
         food_count: world.food.len(),
         population_alive: world.id_to_slot.iter().filter(|&&s| s != INVALID).count(),
-        energy_avg: if world.energy.is_empty() { 0.0 } else {
-            world.energy.iter().sum::<f32>() / world.energy.len() as f32
+        energy_avg: if world.creatures.energy.is_empty() { 0.0 } else {
+            world.creatures.energy.iter().sum::<f32>() / world.creatures.energy.len() as f32
         },
     }
 }

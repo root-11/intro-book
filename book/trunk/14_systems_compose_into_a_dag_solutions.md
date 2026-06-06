@@ -38,8 +38,10 @@ Dependencies: A → B, A → C, B → D, C → D. B and C are at the same DAG le
 
 ```rust,no_run
 fn tick(world: &mut World, dt: f32) {
-    motion(&mut world.pos, &world.vel, dt);
-    next_event(&world.pos, &world.food, &mut world.pending_event);
+    motion(&mut world.creatures.px, &mut world.creatures.py,
+           &world.creatures.vx, &world.creatures.vy, dt);
+    next_event(&world.creatures.px, &world.creatures.py,
+               &world.food, &mut world.pending_event);
 }
 ```
 
@@ -49,9 +51,11 @@ The order is forced: `motion` writes `pos`, `next_event` reads `pos`. Reverse th
 
 ```rust,no_run
 fn tick(world: &mut World, dt: f32) {
-    motion(&mut world.pos, &world.vel, dt);
-    next_event(&world.pos, &world.food, &mut world.pending_event);
-    cleanup(&mut world.creatures, &mut world.to_remove, &mut world.to_insert);
+    motion(&mut world.creatures.px, &mut world.creatures.py,
+           &world.creatures.vx, &world.creatures.vy, dt);
+    next_event(&world.creatures.px, &world.creatures.py,
+               &world.food, &mut world.pending_event);
+    cleanup(world);
 }
 ```
 

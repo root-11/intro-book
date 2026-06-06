@@ -8,10 +8,13 @@ use std::collections::hash_map::DefaultHasher;
 
 fn hash_world(world: &World) -> u64 {
     let mut h = DefaultHasher::new();
-    world.creatures.len().hash(&mut h);
-    for &x in &world.pos { x.0.to_bits().hash(&mut h); x.1.to_bits().hash(&mut h); }
-    for &v in &world.vel { v.0.to_bits().hash(&mut h); v.1.to_bits().hash(&mut h); }
-    for &e in &world.energy { e.to_bits().hash(&mut h); }
+    let c = &world.creatures;
+    c.len().hash(&mut h);
+    for &x in &c.px { x.to_bits().hash(&mut h); }
+    for &y in &c.py { y.to_bits().hash(&mut h); }
+    for &vx in &c.vx { vx.to_bits().hash(&mut h); }
+    for &vy in &c.vy { vy.to_bits().hash(&mut h); }
+    for &e in &c.energy { e.to_bits().hash(&mut h); }
     h.finish()
 }
 ```
@@ -52,13 +55,13 @@ Once located, the source is usually obvious. The fix is to remove the source - a
 
 ```rust
 // Before
-fn motion(pos: &mut [(f32, f32)], vel: &[(f32, f32)]) {
+fn motion(px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32]) {
     let dt = some_global_clock(); // non-deterministic
     /* ... */
 }
 
 // After
-fn motion(pos: &mut [(f32, f32)], vel: &[(f32, f32)], dt: f32) {
+fn motion(px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32], dt: f32) {
     /* ... */
 }
 ```

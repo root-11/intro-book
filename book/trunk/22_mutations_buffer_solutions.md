@@ -4,9 +4,10 @@
 
 ```rust,no_run
 struct World {
-    creatures: Vec<CreatureRow>,   // simplified; really six columns
+    creatures: Creatures,   // the column set: px, py, vx, vy, energy, id (§23)
     to_remove: Vec<u32>,
     to_insert: Vec<CreatureRow>,
+    id_to_slot: Vec<u32>,
     // ...
 }
 ```
@@ -25,15 +26,16 @@ fn apply_starve(energy: &[f32], ids: &[u32], to_remove: &mut Vec<u32>) {
 
 ```rust,no_run
 fn apply_reproduce(
-    energy: &[f32], pos: &[Pos], ids: &[u32],
+    energy: &[f32], px: &[f32], py: &[f32],
     to_insert: &mut Vec<CreatureRow>,
     threshold: f32,
 ) {
     for i in 0..energy.len() {
         if energy[i] >= threshold {
             let half = energy[i] / 2.0;
-            to_insert.push(CreatureRow { id: NEW_ID, pos: pos[i], energy: half, /* ... */ });
-            to_insert.push(CreatureRow { id: NEW_ID, pos: pos[i], energy: half, /* ... */ });
+            // Offspring inherit the parent's position; real ids are assigned at append (§23/§24).
+            to_insert.push(CreatureRow { id: NEW_ID, px: px[i], py: py[i], vx: 0.0, vy: 0.0, energy: half });
+            to_insert.push(CreatureRow { id: NEW_ID, px: px[i], py: py[i], vx: 0.0, vy: 0.0, energy: half });
         }
     }
 }
@@ -45,19 +47,27 @@ fn apply_reproduce(
 
 ```rust,no_run
 fn cleanup(world: &mut World) {
-    // Removals first.
+    // Removals first: swap_remove every column in lockstep.
     for id in world.to_remove.drain(..) {
         let slot = world.id_to_slot[id as usize] as usize;
-        let moved_id = world.creatures.last().unwrap().id;
-        world.creatures.swap_remove(slot);
+        let cr = &mut world.creatures;
+        let moved_id = *cr.id.last().unwrap();
+        cr.px.swap_remove(slot); cr.py.swap_remove(slot);
+        cr.vx.swap_remove(slot); cr.vy.swap_remove(slot);
+        cr.energy.swap_remove(slot); cr.id.swap_remove(slot);
         world.id_to_slot[moved_id as usize] = slot as u32;
         world.id_to_slot[id as usize] = INVALID;
     }
 
-    // Then insertions.
-    for row in world.to_insert.drain(..) {
-        world.creatures.push(row);
-        world.id_to_slot[row.id as usize] = (world.creatures.len() - 1) as u32;
+    // Then insertions: scatter each new row into the columns.
+    for c in world.to_insert.drain(..) {
+        let slot = world.creatures.len() as u32;
+        let cr = &mut world.creatures;
+        cr.px.push(c.px); cr.py.push(c.py);
+        cr.vx.push(c.vx); cr.vy.push(c.vy);
+        cr.energy.push(c.energy);
+        cr.id.push(c.id);
+        world.id_to_slot[c.id as usize] = slot;
     }
 }
 ```
@@ -75,11 +85,17 @@ if slot == INVALID { continue; }
 
 With dedup (a `HashSet<u32>` collected before the cleanup loop), the second call is never made. Both approaches work; the no-op approach is cheaper for most simulators.
 
-## Exercise 6 - Tick-delayed visibility
+## Exercise 6 - Buffers keep their capacity
 
-Add `age_in_ticks: Vec<u32>` to creatures. Set new rows to 0 in `to_insert`. After cleanup, increment every entry's `age_in_ticks` by 1.
+```rust,no_run
+for tick in 0..100 {
+    // ... systems push to to_remove / to_insert ...
+    cleanup(&mut world); // drain(..) empties the buffers but keeps their capacity
+    println!("{tick}: cap {} {}", world.to_remove.capacity(), world.to_insert.capacity());
+}
+```
 
-A creature inserted in tick 5: enters cleanup at the end of tick 5, gets `age_in_ticks = 0`, then gets incremented to 1 by the end-of-tick increment. In tick 6 the creature has `age_in_ticks = 1`; it is the first tick where systems read it. The newborn never received tick 5's update.
+`drain(..)` empties a `Vec` without freeing its buffer, so after the first few busy ticks `to_remove.capacity()` and `to_insert.capacity()` settle at the high-water mark and stop growing. Reusing the buffers means cleanup does zero allocation in steady state; a fresh `Vec` per tick would pay an allocation, and a later free, every tick on the hot path for no benefit. This is the [§4](04_cost_and_budget.md) budget again: the cheapest allocation is the one you already made.
 
 ## Exercise 7 - Graphics pipeline analogy
 

@@ -6,7 +6,9 @@ Add `no_creature_moves_too_far` to your simulator's DAG behind a `--test` flag:
 
 ```rust,no_run
 if cfg.test_mode {
-    let suspicious = no_creature_moves_too_far(&world.pos_before, &world.pos, MAX_STEP);
+    let suspicious = no_creature_moves_too_far(
+        &world.px_before, &world.py_before,
+        &world.creatures.px, &world.creatures.py, MAX_STEP);
     assert!(suspicious.is_empty(), "{:?}", suspicious);
 }
 ```
@@ -47,9 +49,9 @@ Test first:
 ```rust,no_run
 fn test_growth_slows_at_high_energy() {
     let mut world = init_one_creature_with_energy(100.0);
-    let initial = world.creatures[0].size;
+    let initial = world.creatures.size[0];
     for _ in 0..10 { tick(&mut world, 0.033); }
-    let final_size = world.creatures[0].size;
+    let final_size = world.creatures.size[0];
     assert!(
         final_size - initial < HIGH_ENERGY_GROWTH_RATE * 10.0,
         "growth too fast at high energy"

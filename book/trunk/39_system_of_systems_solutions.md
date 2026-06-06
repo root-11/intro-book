@@ -25,8 +25,8 @@ The unmet-need column is what the chapter speaks to: any work currently being sk
 ```rust,no_run
 use std::time::Instant;
 
-fn plan_route(world: &World, start: Pos, goal: Pos, deadline: Instant) -> Route {
-    let mut best = greedy_route(world, start, goal);
+fn plan_route(world: &World, start_px: f32, start_py: f32, goal_px: f32, goal_py: f32, deadline: Instant) -> Route {
+    let mut best = greedy_route(world, start_px, start_py, goal_px, goal_py);
     let mut iter = 0;
     while Instant::now() < deadline {
         let candidate = local_search_step(&best, world);
@@ -53,7 +53,7 @@ The shape - diminishing returns over time - is generic to anytime algorithms. Th
 
 ```rust,no_run
 struct SpatialSearch {
-    target_pos: (f32, f32),
+    target_px: f32, target_py: f32,
     cursor:     usize,
     best:       Option<(u32, f32)>,
     done:       bool,
@@ -63,7 +63,8 @@ fn step_search(s: &mut SpatialSearch, world: &World, max_cells: usize) {
     let end = (s.cursor + max_cells).min(world.cells.len());
     for cell in s.cursor..end {
         for &id in &world.cells[cell] {
-            let d = distance(world.pos[id as usize], s.target_pos);
+            let i = id as usize;
+            let d = distance(world.creatures.px[i], world.creatures.py[i], s.target_px, s.target_py);
             if s.best.map_or(true, |(_, prev)| d < prev) {
                 s.best = Some((id, d));
             }
@@ -136,8 +137,10 @@ If determinism holds, the cadences compose; if not, an out-of-loop result is lea
 fn step(world: &mut World, plan_budget: Duration) {
     let deadline = Instant::now() + plan_budget;
     for creature_id in world.planning.iter() {
-        let route = plan_route(world, world.pos[*creature_id as usize], world.goal[*creature_id as usize], deadline);
-        world.routes[*creature_id as usize] = route;
+        let i = *creature_id as usize;
+        let route = plan_route(world, world.creatures.px[i], world.creatures.py[i],
+                               world.goal_px[i], world.goal_py[i], deadline);
+        world.routes[i] = route;
     }
 }
 ```

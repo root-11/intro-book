@@ -16,13 +16,13 @@ The aggregate case is real but rare in this book - most systems run row-by-row. 
 ```rust
 /// motion: advance each creature's position by its velocity over `dt` seconds.
 ///
-/// Read-set:  vel, dt
-/// Write-set: pos
-fn motion(pos: &mut [(f32, f32)], vel: &[(f32, f32)], dt: f32) {
-    assert_eq!(pos.len(), vel.len());
-    for i in 0..pos.len() {
-        pos[i].0 += vel[i].0 * dt;
-        pos[i].1 += vel[i].1 * dt;
+/// Read-set:  vx, vy, dt
+/// Write-set: px, py
+fn motion(px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32], dt: f32) {
+    assert_eq!(px.len(), vx.len());
+    for i in 0..px.len() {
+        px[i] += vx[i] * dt;
+        py[i] += vy[i] * dt;
     }
 }
 ```
@@ -67,6 +67,6 @@ For each parent above threshold, two output rows. A 1→2 emission. The pattern 
 
 **Exercise 3.** Doc comments listing read-set and write-set are the system's contract in machine-readable form. A reader of the function knows exactly what can change.
 
-**Exercise 6.** Anti-system patterns: `fn update(world: &mut World)` (no declared write-set), `fn step()` that touches a `static mut` (hidden state), `fn motion(pos: &mut [(f32, f32)])` with an `eprintln!` inside (side effect - reduces parallelism, harms determinism, makes testing harder).
+**Exercise 6.** Anti-system patterns: `fn update(world: &mut World)` (no declared write-set), `fn step()` that touches a `static mut` (hidden state), `fn motion(px: &mut [f32], py: &mut [f32], ...)` with an `eprintln!` inside (side effect - reduces parallelism, harms determinism, makes testing harder).
 
 **Exercise 7.** A "test" is a system whose write-set is empty (or a small report table). Read pos/vel, output a list of suspicious creatures. Same code path as a debug inspector.

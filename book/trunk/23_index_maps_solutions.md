@@ -5,21 +5,37 @@
 ```rust,no_run
 const INVALID: u32 = u32::MAX;
 
+// The entity table: one column per field, aligned by slot.
+struct Creatures {
+    px: Vec<f32>, py: Vec<f32>,
+    vx: Vec<f32>, vy: Vec<f32>,
+    energy: Vec<f32>,
+    id: Vec<u32>,
+}
+impl Creatures {
+    fn len(&self) -> usize { self.id.len() }
+}
+
 struct World {
-    creatures: Vec<CreatureRow>,
+    creatures: Creatures,
     id_to_slot: Vec<u32>, // length = high-water mark of ids ever issued
     next_id: u32,
 }
 
-fn append(world: &mut World, mut row: CreatureRow) -> u32 {
+// `CreatureRow` is a transient value: the fields of one new creature,
+// scattered into the columns by `append`, never stored.
+fn append(world: &mut World, c: CreatureRow) -> u32 {
     let id = world.next_id;
     world.next_id += 1;
     while world.id_to_slot.len() <= id as usize {
         world.id_to_slot.push(INVALID);
     }
-    row.id = id;
     let slot = world.creatures.len() as u32;
-    world.creatures.push(row);
+    let cr = &mut world.creatures;
+    cr.px.push(c.px); cr.py.push(c.py);
+    cr.vx.push(c.vx); cr.vy.push(c.vy);
+    cr.energy.push(c.energy);
+    cr.id.push(id);
     world.id_to_slot[id as usize] = slot;
     id
 }
@@ -45,15 +61,18 @@ fn is_hungry(world: &World, id: u32) -> bool {
 ```rust,no_run
 fn delete_by_id(world: &mut World, id: u32) {
     let slot = world.id_to_slot[id as usize] as usize;
-    // The last row is the one swap_remove will move into `slot`.
-    let moved_id = world.creatures.last().unwrap().id;
-    world.creatures.swap_remove(slot);
+    let cr = &mut world.creatures;
+    // The last row is the one swap_remove moves into `slot`; grab its id first.
+    let moved_id = *cr.id.last().unwrap();
+    cr.px.swap_remove(slot); cr.py.swap_remove(slot);
+    cr.vx.swap_remove(slot); cr.vy.swap_remove(slot);
+    cr.energy.swap_remove(slot); cr.id.swap_remove(slot);
     world.id_to_slot[moved_id as usize] = slot as u32;
     world.id_to_slot[id as usize] = INVALID;
 }
 ```
 
-No branch. Grab the last row's id *before* the swap, because that is the row `swap_remove` relocates into `slot`. When the deleted row was already the last one, `moved_id == id`: the slot write is redundant and the `INVALID` write that follows corrects it. Three writes per delete; ~12 bytes; at ~12 GB/s memory bandwidth each delete is well under 10 ns of bandwidth cost.
+No branch. Grab the last row's id *before* the swap, because that is the row `swap_remove` relocates into `slot`. When the deleted row was already the last one, `moved_id == id`: the slot write is redundant and the `INVALID` write that follows corrects it. One `swap_remove` per column (six here) plus two map writes - a few dozen bytes moved per delete, well under 10 ns at ~12 GB/s memory bandwidth.
 
 ## Exercise 4 - Time the difference
 
@@ -72,16 +91,23 @@ The factor of N (a million) shows up in real wall time.
 
 ```rust,no_run
 fn sort_creatures_for_locality(world: &mut World) {
-    let mut order: Vec<usize> = (0..world.creatures.len()).collect();
-    order.sort_by_key(|&i| spatial_cell(world.creatures[i].pos));
+    let n = world.creatures.len();
+    let mut order: Vec<usize> = (0..n).collect();
+    let cr = &world.creatures;
+    order.sort_by_key(|&i| spatial_cell(cr.px[i], cr.py[i]));
 
-    // Apply the permutation to creatures.
-    let new_creatures: Vec<_> = order.iter().map(|&i| world.creatures[i].clone()).collect();
-    world.creatures = new_creatures;
+    // Gather every column into the new order, in lockstep.
+    let px = order.iter().map(|&i| cr.px[i]).collect();
+    let py = order.iter().map(|&i| cr.py[i]).collect();
+    let vx = order.iter().map(|&i| cr.vx[i]).collect();
+    let vy = order.iter().map(|&i| cr.vy[i]).collect();
+    let energy = order.iter().map(|&i| cr.energy[i]).collect();
+    let id: Vec<u32> = order.iter().map(|&i| cr.id[i]).collect();
+    world.creatures = Creatures { px, py, vx, vy, energy, id };
 
-    // Rewrite id_to_slot.
-    for (new_slot, row) in world.creatures.iter().enumerate() {
-        world.id_to_slot[row.id as usize] = new_slot as u32;
+    // Rewrite id_to_slot: every slot moved.
+    for (new_slot, &cid) in world.creatures.id.iter().enumerate() {
+        world.id_to_slot[cid as usize] = new_slot as u32;
     }
 }
 ```

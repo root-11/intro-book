@@ -248,7 +248,7 @@ This is the only container the trunk of this book uses. There are no hash maps, 
 
 `vec.iter()` walks the slots in order. The compiler can usually turn this into a tight memory-bandwidth-bound loop with auto-vectorisation. `vec.iter_mut()` does the same, with mutation.
 
-A `&[T]` is a *slice* - a pointer plus a length, without the capacity. It is what functions usually take when they want to read a `Vec` without owning it. `&mut [T]` is the same with mutation. Most systems in this book have signatures like `fn motion(pos: &mut [Pos], vel: &[Vel])` - read this, write that, no ownership taken.
+A `&[T]` is a *slice* - a pointer plus a length, without the capacity. It is what functions usually take when they want to read a `Vec` without owning it. `&mut [T]` is the same with mutation. Most systems in this book have signatures like `fn motion(px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32])` - read these, write those, no ownership taken.
 
 That is the full vocabulary you need from `Vec` for the next several phases. Everything else (`HashMap`, `BTreeMap`, `Box<Node>`, `Rc<RefCell<T>>`, `LinkedList`) is something you will reach for only when an exercise demands it and the from-scratch test (node 40) shows it earns its weight.
 
@@ -793,15 +793,15 @@ These extend the discrete-event loop from §11 exercise 6.
 A *system* is a function that reads from one or more tables and writes to one or more tables. It declares its inputs (the *read-set*) and its outputs (the *write-set*). It has no hidden state, no global side effects, no interaction with the outside world during a tick. The signature is the contract.
 
 ```rust,no_run
-fn motion(pos: &mut [(f32, f32)], vel: &[(f32, f32)], dt: f32) {
-    for i in 0..pos.len() {
-        pos[i].0 += vel[i].0 * dt;
-        pos[i].1 += vel[i].1 * dt;
+fn motion(px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32], dt: f32) {
+    for i in 0..px.len() {
+        px[i] += vx[i] * dt;
+        py[i] += vy[i] * dt;
     }
 }
 ```
 
-Read-set: `vel`, `dt`. Write-set: `pos`. That is the entire contract. This system can run any time `vel` and `dt` are available and nothing else is writing `pos`.
+Read-set: `vx`, `vy`, `dt`. Write-set: `px`, `py`. That is the entire contract. This system can run any time the velocity columns and `dt` are available and nothing else is writing the position columns.
 
 Every system takes one of three shapes.
 
@@ -830,12 +830,12 @@ Use the deck from §5 or the §0 simulator skeleton; either provides enough tabl
    - Filtering even integers from a `Vec<u32>`.
    - Splitting each string in `Vec<String>` into words, returning all words.
    - Computing the sum of a `Vec<u32>`.
-2. **Write motion as a system.** With `pos: Vec<(f32, f32)>` and `vel: Vec<(f32, f32)>`, write `fn motion(pos: &mut [(f32, f32)], vel: &[(f32, f32)], dt: f32)`. Apply it to 100 creatures with random initial positions and velocities. Print the position of one creature across 10 ticks.
+2. **Write motion as a system.** With position columns `px, py: Vec<f32>` and velocity columns `vx, vy: Vec<f32>`, write `fn motion(px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32], dt: f32)`. Apply it to 100 creatures with random initial positions and velocities. Print the position of one creature across 10 ticks.
 3. **Declare the contract.** Add doc comments to `motion` listing its read-set and write-set explicitly. The signature plus the doc comment is the system's contract.
 4. **Write a filter.** With `energy: &[f32]`, write `fn starving(energy: &[f32]) -> Vec<usize>` returning the indices where `energy[i] <= 0`. This is the read-only first half of `apply_starve`.
 5. **Write an emission.** With `parent_energy: &[f32]`, threshold `threshold: f32`, write `fn reproduce(parent_energy: &[f32], threshold: f32) -> Vec<(usize, f32)>` returning, for each parent above threshold, two `(parent_index, offspring_energy)` entries. This is a 1→2 emission.
 6. **Observe non-systems.** Find a function in your previous work (or any tutorial) that mutates global state, writes to stdout in its body, or takes `&mut World`. Note what makes it not a system.
-7. *(stretch)* **A test as a system.** Write `fn no_creature_moved_too_far(prev_pos: &[(f32, f32)], cur_pos: &[(f32, f32)]) -> Vec<usize>`, returning indices where the move was implausibly large. The "test" is just an inspection system reading the world.
+7. *(stretch)* **A test as a system.** Write `fn no_creature_moved_too_far(prev_px: &[f32], prev_py: &[f32], cur_px: &[f32], cur_py: &[f32]) -> Vec<usize>`, returning indices where the move was implausibly large. The "test" is just an inspection system reading the world.
 
 ## What's next
 
@@ -1479,10 +1479,10 @@ A table with two writers has two places where alignment can be violated. If they
 **What the rule looks like in practice.**
 
 ```rust,no_run
-fn motion(pos: &mut [Pos], vel: &[Vel], dt: f32) { /* writes pos */ }
+fn motion(px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32], dt: f32) { /* writes px, py */ }
 
-fn next_event(pos: &[Pos], food: &[Food], pending: &mut [Event]) {
-    /* reads pos, food; writes pending_event */
+fn next_event(px: &[f32], py: &[f32], food: &[Food], pending: &mut [Event]) {
+    /* reads px, py, food; writes pending_event */
 }
 
 fn apply_eat(pending: &[Event], food: &[Food],
@@ -1493,7 +1493,7 @@ fn apply_eat(pending: &[Event], food: &[Food],
 
 For each table, exactly one writer is allowed:
 
-- `pos`: written only by `motion`.
+- `px`, `py`: written only by `motion`.
 - `pending_event`: written only by `next_event`.
 - `to_remove`, `to_insert`: written by *many* systems, but each system writes only its own queued mutations; no one reads them until cleanup.
 - `creatures`, `food`: written only by `cleanup`, which materialises every other system's queued changes.
@@ -1534,9 +1534,9 @@ The fix is a split: fields touched on the hot path go in one table; fields read 
 
 ```rust,no_run
 struct CreatureHot {
-    pos:    Vec<(f32, f32)>,    // motion, next_event, apply_eat
-    vel:    Vec<(f32, f32)>,    // motion
-    energy: Vec<f32>,            // motion, apply_eat, apply_starve
+    px:     Vec<f32>, py: Vec<f32>,  // motion, next_event, apply_eat
+    vx:     Vec<f32>, vy: Vec<f32>,  // motion
+    energy: Vec<f32>,                // motion, apply_eat, apply_starve
 }
 
 struct CreatureCold {
@@ -1548,7 +1548,7 @@ struct CreatureCold {
 
 Motion reads only `CreatureHot`. Cleanup reads `CreatureCold`. The two systems' cache traffic does not overlap.
 
-The bandwidth math: pre-split, motion's loop reads ~40 bytes per creature (the full row, prefetcher loads everything together). Post-split, motion reads 20 bytes (just `pos` + `vel` + `energy`). Half the bandwidth, which measured as ~2-2.5× faster wall-clock time at 1M creatures across the four reference machines (`code/README.md`).
+The bandwidth math: pre-split, motion's loop reads ~40 bytes per creature (the full row, prefetcher loads everything together). Post-split, motion reads 20 bytes (just `px, py` + `vx, vy` + `energy`). Half the bandwidth, which measured as ~2-2.5× faster wall-clock time at 1M creatures across the four reference machines (`code/README.md`).
 
 The discipline carries cost. Two tables means two id-to-slot maps (or careful sharing of one). Cleanup must update both in lockstep when slots move. The split is a real architectural commitment - once made, every system that touches creatures must know which table it is touching.
 
@@ -1588,7 +1588,7 @@ Which cache level holds the working set decides the loop's speed. The numbers be
 
 If you ran §1's exercises and exercise 2 below, you have your own machine's numbers. Treat the spread above as the envelope between slow and fast hardware, not an absolute.
 
-Computing the working set is mechanical. Motion's inner loop reads `pos: (f32, f32) = 8 bytes`, `vel: (f32, f32) = 8 bytes`, `energy: f32 = 4 bytes`. Total: 20 bytes per creature. At N creatures, working set = 20 × N bytes.
+Computing the working set is mechanical. Motion's inner loop reads `px, py: f32 = 8 bytes`, `vx, vy: f32 = 8 bytes`, `energy: f32 = 4 bytes`. Total: 20 bytes per creature. At N creatures, working set = 20 × N bytes.
 
 | N           | working set | regime                    |
 |-------------|-------------|---------------------------|
@@ -1638,21 +1638,22 @@ The principle is simple. Rows accessed near each other in time should sit near e
 The classic technique is a *spatial sort*. Each creature's position is hashed to a spatial cell; the creatures table is sorted by cell. Reading "all creatures in cell C" becomes a contiguous range read.
 
 ```rust,no_run
-fn spatial_cell(pos: (f32, f32), cell_size: f32) -> u32 {
-    let x = (pos.0 / cell_size).floor() as i32;
-    let y = (pos.1 / cell_size).floor() as i32;
+fn spatial_cell(px: f32, py: f32, cell_size: f32) -> u32 {
+    let x = (px / cell_size).floor() as i32;
+    let y = (py / cell_size).floor() as i32;
     // Pack (x, y) into a single u32 hash. (Z-order or Hilbert work too.)
     ((x as u32 & 0xFFFF) << 16) | (y as u32 & 0xFFFF)
 }
 
 fn sort_creatures_for_locality(world: &mut World, cell_size: f32) {
-    let mut order: Vec<usize> = (0..world.pos.len()).collect();
-    order.sort_by_key(|&i| spatial_cell(world.pos[i], cell_size));
-    apply_permutation(world, &order); // reorders columns; rewrites id_to_slot
+    let c = &world.creatures;
+    let mut order: Vec<usize> = (0..c.len()).collect();
+    order.sort_by_key(|&i| spatial_cell(c.px[i], c.py[i], cell_size));
+    apply_permutation(world, &order); // reorders every column; rewrites id_to_slot
 }
 ```
 
-Two creatures in the same spatial cell are now adjacent in `pos`. The next-event system, which checks every creature against its spatial neighbours, can stride through `pos` and read neighbours from the same cache line.
+Two creatures in the same spatial cell are now adjacent in `px` and `py`. The next-event system, which checks every creature against its spatial neighbours, can stride through the position columns and read neighbours from the same cache line.
 
 The cost is the sort itself. At 1M creatures, an O(N log N) sort of `u32` keys takes ~10 ms. Done every tick this is too expensive - but typically the sort is done every ~100 ticks (or when accumulated motion exceeds a threshold), amortising to ~0.1 ms per tick. The savings on the inner loop dwarf the cost.
 
@@ -1790,13 +1791,13 @@ Concretely: in the simulator's tick, `motion` writes `creature.pos` and `creatur
 use std::thread;
 
 thread::scope(|s| {
-    s.spawn(|| motion(&mut hot.pos, &hot.vel, &mut hot.energy, dt));
+    s.spawn(|| motion(&mut hot.px, &mut hot.py, &hot.vx, &hot.vy, &mut hot.energy, dt));
     s.spawn(|| food_spawn(&food_spawner, &mut food));
 });
 // both threads have completed before scope() returns
 ```
 
-`std::thread::scope` is the Rust idiom that proves at compile time the two threads finish before the surrounding state is touched. The borrow checker enforces the disjoint-writes rule: if you tried to spawn two threads each holding `&mut hot.pos`, the code would not compile.
+`std::thread::scope` is the Rust idiom that proves at compile time the two threads finish before the surrounding state is touched. The borrow checker enforces the disjoint-writes rule: if you tried to spawn two threads each holding `&mut hot.px`, the code would not compile.
 
 The same shape works at finer grain. The simulator's three appliers (`apply_eat`, `apply_reproduce`, `apply_starve`) all read `pending_event` and write disjoint things - `apply_eat` writes `food`, `to_remove`; `apply_reproduce` writes `to_insert`; `apply_starve` writes `to_remove`. Two of the three write the same table (`to_remove`). To parallelise them, give each its own *segment* of `to_remove` (one per thread), then merge at cleanup. The merge is `Vec::extend_from_slice` or equivalent - O(N) in the merged total, free relative to the work that produced it.
 
@@ -2091,12 +2092,14 @@ fn snapshot(world: &World, path: &Path) -> std::io::Result<()> {
     f.write_all(&SCHEMA_VERSION.to_le_bytes())?;
 
     // Each column: [length: u32][raw bytes...]
-    write_column(&mut f, &world.pos)?;
-    write_column(&mut f, &world.vel)?;
-    write_column(&mut f, &world.energy)?;
-    write_column(&mut f, &world.birth_t)?;
-    write_column(&mut f, &world.id)?;
-    write_column(&mut f, &world.generation)?;
+    write_column(&mut f, &world.creatures.px)?;
+    write_column(&mut f, &world.creatures.py)?;
+    write_column(&mut f, &world.creatures.vx)?;
+    write_column(&mut f, &world.creatures.vy)?;
+    write_column(&mut f, &world.creatures.energy)?;
+    write_column(&mut f, &world.creatures.birth_t)?;
+    write_column(&mut f, &world.creatures.id)?;
+    write_column(&mut f, &world.creatures.generation)?;
 
     // Presence tables: same shape, append.
     write_column(&mut f, &world.hungry)?;
@@ -2309,7 +2312,7 @@ Some work cannot be made anytime - there is no "best partial answer" until the w
 
 ```rust,no_run
 struct SpatialSearch {
-    target_pos: (f32, f32),
+    target_px: f32, target_py: f32,
     cursor:     usize,            // next cell to examine
     best:       Option<(u32, f32)>, // (creature_id, distance) so far
 }
@@ -2318,7 +2321,8 @@ fn step_search(s: &mut SpatialSearch, world: &World, max_cells: usize) {
     let end = (s.cursor + max_cells).min(world.cells.len());
     for cell in s.cursor..end {
         for &id in &world.cells[cell] {
-            let d = distance(world.pos[id as usize], s.target_pos);
+            let i = id as usize;
+            let d = distance(world.creatures.px[i], world.creatures.py[i], s.target_px, s.target_py);
             if s.best.map_or(true, |(_, prev)| d < prev) {
                 s.best = Some((id, d));
             }
@@ -2532,14 +2536,14 @@ A test fixture is *the world at some tick*. A test is *a system whose write-set 
 
 ```rust,no_run
 fn no_creature_moves_too_far(
-    pos_before: &[(f32, f32)],
-    pos_after:  &[(f32, f32)],
-    max_step:   f32,
+    px_before: &[f32], py_before: &[f32],
+    px_after:  &[f32], py_after:  &[f32],
+    max_step:  f32,
 ) -> Vec<(usize, f32)> {
     let mut suspicious = Vec::new();
-    for i in 0..pos_before.len() {
-        let dx = pos_after[i].0 - pos_before[i].0;
-        let dy = pos_after[i].1 - pos_before[i].1;
+    for i in 0..px_before.len() {
+        let dx = px_after[i] - px_before[i];
+        let dy = py_after[i] - py_before[i];
         let dist = (dx * dx + dy * dy).sqrt();
         if dist > max_step {
             suspicious.push((i, dist));

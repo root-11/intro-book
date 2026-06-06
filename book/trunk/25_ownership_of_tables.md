@@ -25,10 +25,10 @@ A table with two writers has two places where alignment can be violated. If they
 **What the rule looks like in practice.**
 
 ```rust,no_run
-fn motion(pos: &mut [Pos], vel: &[Vel], dt: f32) { /* writes pos */ }
+fn motion(px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32], dt: f32) { /* writes px, py */ }
 
-fn next_event(pos: &[Pos], food: &[Food], pending: &mut [Event]) {
-    /* reads pos, food; writes pending_event */
+fn next_event(px: &[f32], py: &[f32], food: &[Food], pending: &mut [Event]) {
+    /* reads px, py, food; writes pending_event */
 }
 
 fn apply_eat(pending: &[Event], food: &[Food],
@@ -39,7 +39,7 @@ fn apply_eat(pending: &[Event], food: &[Food],
 
 For each table, exactly one writer is allowed:
 
-- `pos`: written only by `motion`.
+- `px`, `py`: written only by `motion`.
 - `pending_event`: written only by `next_event`.
 - `to_remove`, `to_insert`: written by *many* systems, but each system writes only its own queued mutations; no one reads them until cleanup.
 - `creatures`, `food`: written only by `cleanup`, which materialises every other system's queued changes.

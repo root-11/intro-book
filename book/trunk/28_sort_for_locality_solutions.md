@@ -3,9 +3,9 @@
 ## Exercise 1 - Compute spatial cells
 
 ```rust
-fn spatial_cell(pos: (f32, f32), cell_size: f32) -> u32 {
-    let x = (pos.0 / cell_size).floor() as i32 as u32 & 0xFFFF;
-    let y = (pos.1 / cell_size).floor() as i32 as u32 & 0xFFFF;
+fn spatial_cell(px: f32, py: f32, cell_size: f32) -> u32 {
+    let x = (px / cell_size).floor() as i32 as u32 & 0xFFFF;
+    let y = (py / cell_size).floor() as i32 as u32 & 0xFFFF;
     (x << 16) | y
 }
 ```
@@ -14,8 +14,8 @@ For 1 000 random creatures in a 100 × 100 world with `cell_size = 10`:
 
 ```rust,no_run
 let mut hist = std::collections::BTreeMap::new();
-for &p in &pos {
-    *hist.entry(spatial_cell(p, 10.0)).or_insert(0) += 1;
+for i in 0..px.len() {
+    *hist.entry(spatial_cell(px[i], py[i], 10.0)).or_insert(0) += 1;
 }
 ```
 
@@ -25,24 +25,30 @@ Output: roughly 100 cells, each holding ~10 creatures (uniform distribution). A 
 
 ```rust,no_run
 fn sort_creatures_for_locality(world: &mut World, cell_size: f32) {
-    let n = world.pos.len();
+    let n = world.creatures.len();
     let mut order: Vec<usize> = (0..n).collect();
-    order.sort_by_key(|&i| spatial_cell(world.pos[i], cell_size));
+    {
+        let c = &world.creatures;
+        order.sort_by_key(|&i| spatial_cell(c.px[i], c.py[i], cell_size));
+    }
 
-    apply_permutation_inplace(&mut world.pos, &order);
-    apply_permutation_inplace(&mut world.vel, &order);
-    apply_permutation_inplace(&mut world.energy, &order);
-    apply_permutation_inplace(&mut world.id, &order);
+    let c = &mut world.creatures;
+    apply_permutation_inplace(&mut c.px, &order);
+    apply_permutation_inplace(&mut c.py, &order);
+    apply_permutation_inplace(&mut c.vx, &order);
+    apply_permutation_inplace(&mut c.vy, &order);
+    apply_permutation_inplace(&mut c.energy, &order);
+    apply_permutation_inplace(&mut c.id, &order);
     // also: generation, birth_t
 
     // Rebuild id_to_slot
-    for (new_slot, &id) in world.id.iter().enumerate() {
+    for (new_slot, &id) in world.creatures.id.iter().enumerate() {
         world.id_to_slot[id as usize] = new_slot as u32;
     }
 }
 ```
 
-After the sort, `pos[0..10]` are all in the same cell (or a small number of adjacent cells). Spatial neighbours are now memory neighbours.
+After the sort, `px[0..10]` and `py[0..10]` are all in the same cell (or a small number of adjacent cells). Spatial neighbours are now memory neighbours.
 
 ## Exercise 4 - Time `next_event`
 

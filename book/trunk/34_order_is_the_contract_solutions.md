@@ -4,7 +4,7 @@
 
 ```rust,no_run
 fn tick(world: &mut World, dt: f32) {
-    next_event(&world.pos, &world.food, &mut world.pending);
+    next_event(&world.creatures.px, &world.creatures.py, &world.food, &mut world.pending);
 
     // Per-thread to_remove segments to avoid the appliers' shared write.
     let mut seg_eat:    Vec<u32> = Vec::new();
@@ -13,8 +13,8 @@ fn tick(world: &mut World, dt: f32) {
 
     thread::scope(|s| {
         s.spawn(|| apply_eat(&world.pending, &world.food, &mut seg_eat, /* energy partition */));
-        s.spawn(|| apply_reproduce(&world.pending, &world.energy, &mut seg_repro));
-        s.spawn(|| apply_starve(&world.pending, &world.id, &mut seg_starve));
+        s.spawn(|| apply_reproduce(&world.pending, &world.creatures.energy, &mut seg_repro));
+        s.spawn(|| apply_starve(&world.pending, &world.creatures.id, &mut seg_starve));
     });
     // All three appliers have completed before this line.
 
@@ -48,8 +48,8 @@ If the parallel boundaries are correct, the hashes match. The merge of `seg_eat`
 ```rust,ignore
 thread::scope(|s| {
     s.spawn(|| apply_eat(&world.pending, &world.food, &mut seg_eat, /* ... */));
-    s.spawn(|| apply_reproduce(&world.pending, &world.energy, &mut seg_repro));
-    s.spawn(|| apply_starve(&world.pending, &world.id, &mut seg_starve));
+    s.spawn(|| apply_reproduce(&world.pending, &world.creatures.energy, &mut seg_repro));
+    s.spawn(|| apply_starve(&world.pending, &world.creatures.id, &mut seg_starve));
     s.spawn(|| cleanup(world)); // running concurrently with appliers
 });
 ```

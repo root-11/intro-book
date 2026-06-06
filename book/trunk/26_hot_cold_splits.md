@@ -12,9 +12,9 @@ The fix is a split: fields touched on the hot path go in one table; fields read 
 
 ```rust,no_run
 struct CreatureHot {
-    pos:    Vec<(f32, f32)>,    // motion, next_event, apply_eat
-    vel:    Vec<(f32, f32)>,    // motion
-    energy: Vec<f32>,            // motion, apply_eat, apply_starve
+    px:     Vec<f32>, py: Vec<f32>,  // motion, next_event, apply_eat
+    vx:     Vec<f32>, vy: Vec<f32>,  // motion
+    energy: Vec<f32>,                // motion, apply_eat, apply_starve
 }
 
 struct CreatureCold {
@@ -26,7 +26,7 @@ struct CreatureCold {
 
 Motion reads only `CreatureHot`. Cleanup reads `CreatureCold`. The two systems' cache traffic does not overlap.
 
-The bandwidth math: pre-split, motion's loop reads ~40 bytes per creature (the full row, prefetcher loads everything together). Post-split, motion reads 20 bytes (just `pos` + `vel` + `energy`). Half the bandwidth, which measured as ~2-2.5× faster wall-clock time at 1M creatures across the four reference machines (`code/README.md`).
+The bandwidth math: pre-split, motion's loop reads ~40 bytes per creature (the full row, prefetcher loads everything together). Post-split, motion reads 20 bytes (just `px, py` + `vx, vy` + `energy`). Half the bandwidth, which measured as ~2-2.5× faster wall-clock time at 1M creatures across the four reference machines (`code/README.md`).
 
 The discipline carries cost. Two tables means two id-to-slot maps (or careful sharing of one). Cleanup must update both in lockstep when slots move. The split is a real architectural commitment - once made, every system that touches creatures must know which table it is touching.
 

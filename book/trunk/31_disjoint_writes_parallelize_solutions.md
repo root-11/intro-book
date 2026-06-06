@@ -4,7 +4,7 @@
 
 ```rust,no_run
 std::thread::scope(|s| {
-    s.spawn(|| motion(&mut hot.pos, &hot.vel, &mut hot.energy, dt));
+    s.spawn(|| motion(&mut hot.px, &mut hot.py, &hot.vx, &hot.vy, &mut hot.energy, dt));
     s.spawn(|| food_spawn(&food_spawner, &mut food));
 });
 ```
@@ -21,7 +21,7 @@ When both systems are individually expensive (e.g. food at 1M items as well), se
 
 ```rust,ignore
 std::thread::scope(|s| {
-    s.spawn(|| motion(&mut hot.pos, &hot.vel, &mut hot.energy, dt));
+    s.spawn(|| motion(&mut hot.px, &mut hot.py, &hot.vx, &hot.vy, &mut hot.energy, dt));
     s.spawn(|| apply_eat(&pending, &food, &mut hot.energy));
 });
 ```
@@ -40,7 +40,7 @@ The architecture's safety is the language's safety. Compile-time, not run-time.
 use rayon::join;
 
 join(
-    || motion(&mut hot.pos, &hot.vel, &mut hot.energy, dt),
+    || motion(&mut hot.px, &mut hot.py, &hot.vx, &hot.vy, &mut hot.energy, dt),
     || food_spawn(&food_spawner, &mut food),
 );
 ```

@@ -10,7 +10,7 @@ Which cache level holds the working set decides the loop's speed. The numbers be
 
 If you ran §1's exercises and exercise 2 below, you have your own machine's numbers. Treat the spread above as the envelope between slow and fast hardware, not an absolute.
 
-Computing the working set is mechanical. Motion's inner loop reads `pos: (f32, f32) = 8 bytes`, `vel: (f32, f32) = 8 bytes`, `energy: f32 = 4 bytes`. Total: 20 bytes per creature. At N creatures, working set = 20 × N bytes.
+Computing the working set is mechanical. Motion's inner loop reads `px, py: f32 = 8 bytes`, `vx, vy: f32 = 8 bytes`, `energy: f32 = 4 bytes`. Total: 20 bytes per creature. At N creatures, working set = 20 × N bytes.
 
 | N           | working set | regime                    |
 |-------------|-------------|---------------------------|

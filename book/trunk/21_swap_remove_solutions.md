@@ -76,16 +76,19 @@ The collection and the mutation are separated. Iteration over `v` runs to comple
 
 ```rust,no_run
 fn delete_creature(world: &mut World, slot: usize) {
-    world.pos.swap_remove(slot);
-    world.vel.swap_remove(slot);
-    world.energy.swap_remove(slot);
-    world.id.swap_remove(slot);
-    world.generation.swap_remove(slot);
-    world.birth_t.swap_remove(slot);
+    let c = &mut world.creatures;
+    c.px.swap_remove(slot);
+    c.py.swap_remove(slot);
+    c.vx.swap_remove(slot);
+    c.vy.swap_remove(slot);
+    c.energy.swap_remove(slot);
+    c.id.swap_remove(slot);
+    c.generation.swap_remove(slot);
+    c.birth_t.swap_remove(slot);
 }
 ```
 
-All six columns swap_remove the same slot. The row that was at the end is now at `slot`, with all six fields aligned. The row that was at `slot` is gone. The `id_to_slot` map (§23) gets the same treatment.
+All eight columns swap_remove the same slot. The row that was at the end is now at `slot`, with all eight fields aligned. The row that was at `slot` is gone. The `id_to_slot` map (§23) gets the same treatment.
 
 ## Exercise 7 - The bandwidth cost
 

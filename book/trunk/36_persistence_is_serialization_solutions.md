@@ -11,10 +11,12 @@ fn snapshot(world: &World, path: &Path) -> std::io::Result<()> {
     f.write_all(&world.tick.to_le_bytes())?;
     f.write_all(&SCHEMA_VERSION.to_le_bytes())?;
 
-    let n = world.creatures.pos.len() as u32;
+    let n = world.creatures.px.len() as u32;
     f.write_all(&n.to_le_bytes())?;
-    write_slice(&mut f, &world.creatures.pos)?;
-    write_slice(&mut f, &world.creatures.vel)?;
+    write_slice(&mut f, &world.creatures.px)?;
+    write_slice(&mut f, &world.creatures.py)?;
+    write_slice(&mut f, &world.creatures.vx)?;
+    write_slice(&mut f, &world.creatures.vy)?;
     write_slice(&mut f, &world.creatures.energy)?;
     write_slice(&mut f, &world.creatures.id)?;
     Ok(())
@@ -50,8 +52,9 @@ fn load(path: &Path) -> std::io::Result<World> {
     let n = u32::from_le_bytes(n_bytes) as usize;
 
     let mut world = World::new(tick);
-    world.creatures.pos = read_vec::<(f32, f32)>(&mut f, n)?;
-    // ... other columns ...
+    world.creatures.px = read_vec::<f32>(&mut f, n)?;
+    world.creatures.py = read_vec::<f32>(&mut f, n)?;
+    // ... vx, vy, energy, id ...
     Ok(world)
 }
 ```

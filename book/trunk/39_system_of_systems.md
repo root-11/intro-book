@@ -41,7 +41,7 @@ Some work cannot be made anytime - there is no "best partial answer" until the w
 
 ```rust,no_run
 struct SpatialSearch {
-    target_pos: (f32, f32),
+    target_px: f32, target_py: f32,
     cursor:     usize,            // next cell to examine
     best:       Option<(u32, f32)>, // (creature_id, distance) so far
 }
@@ -50,7 +50,8 @@ fn step_search(s: &mut SpatialSearch, world: &World, max_cells: usize) {
     let end = (s.cursor + max_cells).min(world.cells.len());
     for cell in s.cursor..end {
         for &id in &world.cells[cell] {
-            let d = distance(world.pos[id as usize], s.target_pos);
+            let i = id as usize;
+            let d = distance(world.creatures.px[i], world.creatures.py[i], s.target_px, s.target_py);
             if s.best.map_or(true, |(_, prev)| d < prev) {
                 s.best = Some((id, d));
             }

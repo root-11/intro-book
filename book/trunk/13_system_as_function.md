@@ -7,15 +7,15 @@
 A *system* is a function that reads from one or more tables and writes to one or more tables. It declares its inputs (the *read-set*) and its outputs (the *write-set*). It has no hidden state, no global side effects, no interaction with the outside world during a tick. The signature is the contract.
 
 ```rust,no_run
-fn motion(pos: &mut [(f32, f32)], vel: &[(f32, f32)], dt: f32) {
-    for i in 0..pos.len() {
-        pos[i].0 += vel[i].0 * dt;
-        pos[i].1 += vel[i].1 * dt;
+fn motion(px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32], dt: f32) {
+    for i in 0..px.len() {
+        px[i] += vx[i] * dt;
+        py[i] += vy[i] * dt;
     }
 }
 ```
 
-Read-set: `vel`, `dt`. Write-set: `pos`. That is the entire contract. This system can run any time `vel` and `dt` are available and nothing else is writing `pos`.
+Read-set: `vx`, `vy`, `dt`. Write-set: `px`, `py`. That is the entire contract. This system can run any time the velocity columns and `dt` are available and nothing else is writing the position columns.
 
 Every system takes one of three shapes.
 
@@ -44,12 +44,12 @@ Use the deck from §5 or the §0 simulator skeleton; either provides enough tabl
    - Filtering even integers from a `Vec<u32>`.
    - Splitting each string in `Vec<String>` into words, returning all words.
    - Computing the sum of a `Vec<u32>`.
-2. **Write motion as a system.** With `pos: Vec<(f32, f32)>` and `vel: Vec<(f32, f32)>`, write `fn motion(pos: &mut [(f32, f32)], vel: &[(f32, f32)], dt: f32)`. Apply it to 100 creatures with random initial positions and velocities. Print the position of one creature across 10 ticks.
+2. **Write motion as a system.** With position columns `px, py: Vec<f32>` and velocity columns `vx, vy: Vec<f32>`, write `fn motion(px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32], dt: f32)`. Apply it to 100 creatures with random initial positions and velocities. Print the position of one creature across 10 ticks.
 3. **Declare the contract.** Add doc comments to `motion` listing its read-set and write-set explicitly. The signature plus the doc comment is the system's contract.
 4. **Write a filter.** With `energy: &[f32]`, write `fn starving(energy: &[f32]) -> Vec<usize>` returning the indices where `energy[i] <= 0`. This is the read-only first half of `apply_starve`.
 5. **Write an emission.** With `parent_energy: &[f32]`, threshold `threshold: f32`, write `fn reproduce(parent_energy: &[f32], threshold: f32) -> Vec<(usize, f32)>` returning, for each parent above threshold, two `(parent_index, offspring_energy)` entries. This is a 1→2 emission.
 6. **Observe non-systems.** Find a function in your previous work (or any tutorial) that mutates global state, writes to stdout in its body, or takes `&mut World`. Note what makes it not a system.
-7. *(stretch)* **A test as a system.** Write `fn no_creature_moved_too_far(prev_pos: &[(f32, f32)], cur_pos: &[(f32, f32)]) -> Vec<usize>`, returning indices where the move was implausibly large. The "test" is just an inspection system reading the world.
+7. *(stretch)* **A test as a system.** Write `fn no_creature_moved_too_far(prev_px: &[f32], prev_py: &[f32], cur_px: &[f32], cur_py: &[f32]) -> Vec<usize>`, returning indices where the move was implausibly large. The "test" is just an inspection system reading the world.
 
 Reference notes in [13_system_as_function_solutions.md](13_system_as_function_solutions.md).
 

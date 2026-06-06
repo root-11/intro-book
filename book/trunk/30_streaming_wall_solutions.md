@@ -20,11 +20,14 @@ The fix is the same as for cache misses at the smaller scale: amortise the cost.
 fn snapshot_world(world: &World, path: &Path) -> std::io::Result<()> {
     let mut f = std::fs::File::create(path)?;
     use std::io::Write;
-    f.write_all(&world.creatures.len().to_le_bytes())?;
-    for &p in &world.pos     { f.write_all(&p.0.to_le_bytes())?; f.write_all(&p.1.to_le_bytes())?; }
-    for &v in &world.vel     { f.write_all(&v.0.to_le_bytes())?; f.write_all(&v.1.to_le_bytes())?; }
-    for &e in &world.energy  { f.write_all(&e.to_le_bytes())?; }
-    for &i in &world.id      { f.write_all(&i.to_le_bytes())?; }
+    let c = &world.creatures;
+    f.write_all(&c.len().to_le_bytes())?;
+    for &x in &c.px     { f.write_all(&x.to_le_bytes())?; }
+    for &y in &c.py     { f.write_all(&y.to_le_bytes())?; }
+    for &x in &c.vx     { f.write_all(&x.to_le_bytes())?; }
+    for &y in &c.vy     { f.write_all(&y.to_le_bytes())?; }
+    for &e in &c.energy { f.write_all(&e.to_le_bytes())?; }
+    for &i in &c.id     { f.write_all(&i.to_le_bytes())?; }
     Ok(())
 }
 

@@ -11,21 +11,22 @@ The principle is simple. Rows accessed near each other in time should sit near e
 The classic technique is a *spatial sort*. Each creature's position is hashed to a spatial cell; the creatures table is sorted by cell. Reading "all creatures in cell C" becomes a contiguous range read.
 
 ```rust,no_run
-fn spatial_cell(pos: (f32, f32), cell_size: f32) -> u32 {
-    let x = (pos.0 / cell_size).floor() as i32;
-    let y = (pos.1 / cell_size).floor() as i32;
+fn spatial_cell(px: f32, py: f32, cell_size: f32) -> u32 {
+    let x = (px / cell_size).floor() as i32;
+    let y = (py / cell_size).floor() as i32;
     // Pack (x, y) into a single u32 hash. (Z-order or Hilbert work too.)
     ((x as u32 & 0xFFFF) << 16) | (y as u32 & 0xFFFF)
 }
 
 fn sort_creatures_for_locality(world: &mut World, cell_size: f32) {
-    let mut order: Vec<usize> = (0..world.pos.len()).collect();
-    order.sort_by_key(|&i| spatial_cell(world.pos[i], cell_size));
-    apply_permutation(world, &order); // reorders columns; rewrites id_to_slot
+    let c = &world.creatures;
+    let mut order: Vec<usize> = (0..c.len()).collect();
+    order.sort_by_key(|&i| spatial_cell(c.px[i], c.py[i], cell_size));
+    apply_permutation(world, &order); // reorders every column; rewrites id_to_slot
 }
 ```
 
-Two creatures in the same spatial cell are now adjacent in `pos`. The next-event system, which checks every creature against its spatial neighbours, can stride through `pos` and read neighbours from the same cache line.
+Two creatures in the same spatial cell are now adjacent in `px` and `py`. The next-event system, which checks every creature against its spatial neighbours, can stride through the position columns and read neighbours from the same cache line.
 
 The cost is the sort itself. At 1M creatures, an O(N log N) sort of `u32` keys takes ~10 ms. Done every tick this is too expensive - but typically the sort is done every ~100 ticks (or when accumulated motion exceeds a threshold), amortising to ~0.1 ms per tick. The savings on the inner loop dwarf the cost.
 

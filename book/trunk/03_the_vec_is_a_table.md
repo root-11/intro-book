@@ -14,7 +14,7 @@ This is the only container the trunk of this book uses. There are no hash maps, 
 
 `vec.iter()` walks the slots in order. The compiler can usually turn this into a tight memory-bandwidth-bound loop with auto-vectorisation. `vec.iter_mut()` does the same, with mutation.
 
-A `&[T]` is a *slice* - a pointer plus a length, without the capacity. It is what functions usually take when they want to read a `Vec` without owning it. `&mut [T]` is the same with mutation. Most systems in this book have signatures like `fn motion(pos: &mut [Pos], vel: &[Vel])` - read this, write that, no ownership taken.
+A `&[T]` is a *slice* - a pointer plus a length, without the capacity. It is what functions usually take when they want to read a `Vec` without owning it. `&mut [T]` is the same with mutation. Most systems in this book have signatures like `fn motion(px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32])` - read these, write those, no ownership taken.
 
 That is the full vocabulary you need from `Vec` for the next several phases. Everything else (`HashMap`, `BTreeMap`, `Box<Node>`, `Rc<RefCell<T>>`, `LinkedList`) is something you will reach for only when an exercise demands it and the from-scratch test (node 40) shows it earns its weight.
 

@@ -12,13 +12,13 @@ Concretely: in the simulator's tick, `motion` writes `creature.pos` and `creatur
 use std::thread;
 
 thread::scope(|s| {
-    s.spawn(|| motion(&mut hot.pos, &hot.vel, &mut hot.energy, dt));
+    s.spawn(|| motion(&mut hot.px, &mut hot.py, &hot.vx, &hot.vy, &mut hot.energy, dt));
     s.spawn(|| food_spawn(&food_spawner, &mut food));
 });
 // both threads have completed before scope() returns
 ```
 
-`std::thread::scope` is the Rust idiom that proves at compile time the two threads finish before the surrounding state is touched. The borrow checker enforces the disjoint-writes rule: if you tried to spawn two threads each holding `&mut hot.pos`, the code would not compile.
+`std::thread::scope` is the Rust idiom that proves at compile time the two threads finish before the surrounding state is touched. The borrow checker enforces the disjoint-writes rule: if you tried to spawn two threads each holding `&mut hot.px`, the code would not compile.
 
 The same shape works at finer grain. The simulator's three appliers (`apply_eat`, `apply_reproduce`, `apply_starve`) all read `pending_event` and write disjoint things - `apply_eat` writes `food`, `to_remove`; `apply_reproduce` writes `to_insert`; `apply_starve` writes `to_remove`. Two of the three write the same table (`to_remove`). To parallelise them, give each its own *segment* of `to_remove` (one per thread), then merge at cleanup. The merge is `Vec::extend_from_slice` or equivalent - O(N) in the merged total, free relative to the work that produced it.
 

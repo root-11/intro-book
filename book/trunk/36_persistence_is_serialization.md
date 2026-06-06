@@ -20,12 +20,14 @@ fn snapshot(world: &World, path: &Path) -> std::io::Result<()> {
     f.write_all(&SCHEMA_VERSION.to_le_bytes())?;
 
     // Each column: [length: u32][raw bytes...]
-    write_column(&mut f, &world.pos)?;
-    write_column(&mut f, &world.vel)?;
-    write_column(&mut f, &world.energy)?;
-    write_column(&mut f, &world.birth_t)?;
-    write_column(&mut f, &world.id)?;
-    write_column(&mut f, &world.generation)?;
+    write_column(&mut f, &world.creatures.px)?;
+    write_column(&mut f, &world.creatures.py)?;
+    write_column(&mut f, &world.creatures.vx)?;
+    write_column(&mut f, &world.creatures.vy)?;
+    write_column(&mut f, &world.creatures.energy)?;
+    write_column(&mut f, &world.creatures.birth_t)?;
+    write_column(&mut f, &world.creatures.id)?;
+    write_column(&mut f, &world.creatures.generation)?;
 
     // Presence tables: same shape, append.
     write_column(&mut f, &world.hungry)?;

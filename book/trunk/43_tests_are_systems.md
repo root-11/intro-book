@@ -12,14 +12,14 @@ A test fixture is *the world at some tick*. A test is *a system whose write-set 
 
 ```rust,no_run
 fn no_creature_moves_too_far(
-    pos_before: &[(f32, f32)],
-    pos_after:  &[(f32, f32)],
-    max_step:   f32,
+    px_before: &[f32], py_before: &[f32],
+    px_after:  &[f32], py_after:  &[f32],
+    max_step:  f32,
 ) -> Vec<(usize, f32)> {
     let mut suspicious = Vec::new();
-    for i in 0..pos_before.len() {
-        let dx = pos_after[i].0 - pos_before[i].0;
-        let dy = pos_after[i].1 - pos_before[i].1;
+    for i in 0..px_before.len() {
+        let dx = px_after[i] - px_before[i];
+        let dy = py_after[i] - py_before[i];
         let dist = (dx * dx + dy * dy).sqrt();
         if dist > max_step {
             suspicious.push((i, dist));
