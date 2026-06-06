@@ -11,7 +11,7 @@ This chapter is about *finding the wall*. The fixes are techniques you already h
 Constant-factor bugs that bind at 10K → 1M:
 
 - **Reallocation.** A `to_insert: Vec<CreatureRow>` that grew lazily was fine at 100 pushes per tick (10K creatures × 1% reproduction). At 10K pushes per tick (1M × 1%), the reallocations dominate. Fix: `Vec::with_capacity(estimated_max)`.
-- **Linear scans.** `hungry.iter().any(|&id| id == target_id)` was 0.1 ms at 10K, but 10 ms at 1M. Fix: the `id_to_slot` map (§23) plus parallel presence flags.
+- **Linear scans.** `hungry.iter().any(|&s| s == target)` was 0.1 ms at 10K, but 10 ms at 1M. Fix: the sparse set (§23) - O(1) membership, no per-creature flag.
 - **Cache spillover.** `creature` working set at 10K is 200 KB (L2-resident). At 1M it is 20 MB (L3-resident). Per-element time triples. Fix: narrower fields (§7) and the spatial compaction for locality (§28); for a system that touches only a subset, a subscription (§26).
 - **`HashMap` iteration order.** A `HashMap<u32, _>` iterated by systems that need deterministic order. At 10K the cost was tolerable; at 1M the bandwidth cost is high. Fix: `BTreeMap` or `Vec<(K, V)>`.
 - **Per-tick allocation.** A system that allocates a fresh `Vec` per tick was fine when the `Vec` was 1 KB. At 1M it is 100 KB; allocation latency starts to matter. Fix: reuse buffers across ticks.
@@ -39,4 +39,4 @@ Reference notes in [29_wall_10k_to_1m_solutions.md](29_wall_10k_to_1m_solutions.
 
 ## What's next
 
-[§30 - Moving beyond the wall](30_streaming_wall.md) takes the next step: when even your fastest, tightest, subscription-driven, sorted-for-locality simulator no longer fits in RAM, the architecture itself shifts.
+[§30 - Moving beyond the wall](30_streaming_wall.md) takes the next step: when even your fastest, tightest, subscription-driven, compacted-for-locality simulator no longer fits in RAM, the architecture itself shifts.

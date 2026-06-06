@@ -7,7 +7,7 @@
 The trunk so far has assumed every system runs every tick and completes within the tick budget. That covers most of what the simulator does - motion, EBP dispatch, cleanup, persistence - and the surrounding chapters earned the assumption. But the assumption is not universal. Practical simulators have at least three classes of work that do not fit it.
 
 - **Optimisation.** A scheduler choosing which tasks each warehouse robot should take next. A combat AI choosing a counter-strategy. A constraint solver finding a feasible plan. These can take seconds or minutes; they cannot fit in a 33 ms tick.
-- **Search.** The nearest-task scan for a warehouse operator. A path-finder over a large map. A neighbour query in a million-creature world. Even with [§28](28_proximity.md)'s spatial sort, some searches genuinely take longer than one tick can afford.
+- **Search.** The nearest-task scan for a warehouse operator. A path-finder over a large map. A neighbour query in a million-creature world. Even with [§28](28_proximity.md)'s spatial binning, some searches genuinely take longer than one tick can afford.
 - **Out-of-process work.** A game AI evolving its strategy on a separate thread. A pricing model running on a remote server. A precomputation handed off to a worker pool. The simulator never blocks waiting; results arrive when they arrive.
 
 This chapter names the three patterns that cover these cases without breaking any of the trunk's previous rules. They are not new architecture. They are the trunk's existing rules, applied to a wider set of cadences.

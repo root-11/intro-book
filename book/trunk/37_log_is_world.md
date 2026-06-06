@@ -19,7 +19,7 @@ The log is a sequence of such events. The world's tables can be reconstructed fr
 
 The structural fact: **the log and the world have the same shape**.
 
-A presence table `hungry: Vec<u32>` is a list of creature ids. The log of `become_hungry` and `stop_being_hungry` events is a list of (tick, creature_id) pairs that, when replayed, produces the same `Vec<u32>`.
+In memory a presence table like `hungry` is a list of *slots* ([§17](17_presence_replaces_flags.md)); in the log it is a stream of `become_hungry` and `stop_being_hungry` events keyed by the stable *creature id* - the boundary rule from [§26](26_subscription_tables.md), since a slot is meaningless once the world is reloaded into a different layout. Replaying that stream of (tick, creature_id) pairs reconstructs the membership.
 
 A column `energy: Vec<f32>` is the result of starting from an empty `Vec` plus the events that wrote each entry. The log holds these writes; the column is the cumulative effect of replaying them.
 

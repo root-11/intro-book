@@ -1114,7 +1114,9 @@ The filtered version walks 1 000 000 rows when 100 000 are hungry - 900 000 of t
 
 The EBP version walks 100 000 rows. Every iteration does work. There is no per-row branch; the dispatcher *is* the table. Memory traffic is proportional to active rows, not to population.
 
-The cost difference scales with the *sparsity* of the state. If 90 % of creatures are hungry, the two approaches are similar (both touch most of the data). If 10 % are hungry, EBP is 10× cheaper. If 0.1 % are hungry, EBP is 1000× cheaper. Most simulator states are sparse - a small fraction of creatures are eating at any given tick, a small fraction are reproducing, a small fraction are dying - so EBP's compounding advantage shows up everywhere.
+The cost difference scales with the *sparsity* of the state. If 90 % of creatures are hungry, the two approaches are similar (both touch most of the data). If 10 % are hungry, EBP does 10× less work; at 0.1 %, 1000× less. Most simulator states are sparse - a small fraction of creatures are eating at any given tick, a small fraction are reproducing, a small fraction are dying - so EBP's advantage compounds everywhere.
+
+One honest qualifier, since this book measures: that ratio is in *work and memory traffic*. In *wall time* a scattered subscription shows less of it - a tenth of the rows, but each entry a cache miss into the columns - so at 10 % active the measured speedup is nearer 1.5× than 10× until the subscription is compacted ([§26](#26---subscription-tables-keyed-by-slot)) and the gather streams. The work win is immediate; the time win follows locality. At high sparsity (1 %) the gather is rare enough that even scattered it wins outright.
 
 A useful intuition: it is the difference between a wandering shopper trying to remember what they need and a shopper with a list. The list version is shorter, faster, and correct by construction. You do not consult the list to ask "is this aisle on my list?" - you walk down the list and visit each aisle once.
 
@@ -1744,7 +1746,7 @@ This chapter is about *finding the wall*. The fixes are techniques you already h
 Constant-factor bugs that bind at 10K → 1M:
 
 - **Reallocation.** A `to_insert: Vec<CreatureRow>` that grew lazily was fine at 100 pushes per tick (10K creatures × 1% reproduction). At 10K pushes per tick (1M × 1%), the reallocations dominate. Fix: `Vec::with_capacity(estimated_max)`.
-- **Linear scans.** `hungry.iter().any(|&id| id == target_id)` was 0.1 ms at 10K, but 10 ms at 1M. Fix: the `id_to_slot` map (§23) plus parallel presence flags.
+- **Linear scans.** `hungry.iter().any(|&s| s == target)` was 0.1 ms at 10K, but 10 ms at 1M. Fix: the sparse set (§23) - O(1) membership, no per-creature flag.
 - **Cache spillover.** `creature` working set at 10K is 200 KB (L2-resident). At 1M it is 20 MB (L3-resident). Per-element time triples. Fix: narrower fields (§7) and the spatial compaction for locality (§28); for a system that touches only a subset, a subscription (§26).
 - **`HashMap` iteration order.** A `HashMap<u32, _>` iterated by systems that need deterministic order. At 10K the cost was tolerable; at 1M the bandwidth cost is high. Fix: `BTreeMap` or `Vec<(K, V)>`.
 - **Per-tick allocation.** A system that allocates a fresh `Vec` per tick was fine when the `Vec` was 1 KB. At 1M it is 100 KB; allocation latency starts to matter. Fix: reuse buffers across ticks.
@@ -1770,7 +1772,7 @@ The fix is structural. Apply the techniques: narrow fields, subscriptions, worki
 
 ## What's next
 
-[§30 - Moving beyond the wall](#30---moving-beyond-the-wall) takes the next step: when even your fastest, tightest, subscription-driven, sorted-for-locality simulator no longer fits in RAM, the architecture itself shifts.
+[§30 - Moving beyond the wall](#30---moving-beyond-the-wall) takes the next step: when even your fastest, tightest, subscription-driven, compacted-for-locality simulator no longer fits in RAM, the architecture itself shifts.
 
 
 # 30 - Moving beyond the wall
@@ -2126,7 +2128,7 @@ A useful test: can you run two simulators side-by-side from the same in-queue an
 
 <p align="center"><img src="book/illustrations/mathematics_describes.jpg" alt="Mathematics describes, models, implements - persistence captures the world that worked" style="max-height: 300px; max-width: 100%;"></p>
 
-The simulator pauses. The world is in memory: six columns of `creatures` (`pos`, `vel`, `energy`, `birth_t`, `id`, `generation`), a `food` table, presence tables (`hungry`, `dead`, etc.), the index map (`id_to_slot`), and the cleanup buffers. To pause durably, all of this must be written to disk; to resume, all of this must be read back.
+The simulator pauses. The world is in memory: the `creatures` columns (`px`, `py`, `vx`, `vy`, `energy`, `birth_t`, `id`, `generation`), a `food` table, presence tables (`hungry`, `dead`, etc.), the index map (`id_to_slot`), and the cleanup buffers. To pause durably, all of this must be written to disk; to resume, all of this must be read back.
 
 The instinct the OOP world brings: design a "persistence format" with a schema, marshalling logic, version handling, and a translation layer between in-memory objects and on-disk records. This is wrong on the data-oriented side. There is no translation. There is only *transposition*.
 
@@ -2213,7 +2215,7 @@ The log is a sequence of such events. The world's tables can be reconstructed fr
 
 The structural fact: **the log and the world have the same shape**.
 
-A presence table `hungry: Vec<u32>` is a list of creature ids. The log of `become_hungry` and `stop_being_hungry` events is a list of (tick, creature_id) pairs that, when replayed, produces the same `Vec<u32>`.
+In memory a presence table like `hungry` is a list of *slots* ([§17](#17---presence-replaces-flags)); in the log it is a stream of `become_hungry` and `stop_being_hungry` events keyed by the stable *creature id* - the boundary rule from [§26](#26---subscription-tables-keyed-by-slot), since a slot is meaningless once the world is reloaded into a different layout. Replaying that stream of (tick, creature_id) pairs reconstructs the membership.
 
 A column `energy: Vec<f32>` is the result of starting from an empty `Vec` plus the events that wrote each entry. The log holds these writes; the column is the cumulative effect of replaying them.
 
@@ -2328,7 +2330,7 @@ You have closed I/O & persistence. The simulator can now talk to durable storage
 The trunk so far has assumed every system runs every tick and completes within the tick budget. That covers most of what the simulator does - motion, EBP dispatch, cleanup, persistence - and the surrounding chapters earned the assumption. But the assumption is not universal. Practical simulators have at least three classes of work that do not fit it.
 
 - **Optimisation.** A scheduler choosing which tasks each warehouse robot should take next. A combat AI choosing a counter-strategy. A constraint solver finding a feasible plan. These can take seconds or minutes; they cannot fit in a 33 ms tick.
-- **Search.** The nearest-task scan for a warehouse operator. A path-finder over a large map. A neighbour query in a million-creature world. Even with [§28](#28---proximity-is-a-property-of-position)'s spatial sort, some searches genuinely take longer than one tick can afford.
+- **Search.** The nearest-task scan for a warehouse operator. A path-finder over a large map. A neighbour query in a million-creature world. Even with [§28](#28---proximity-is-a-property-of-position)'s spatial binning, some searches genuinely take longer than one tick can afford.
 - **Out-of-process work.** A game AI evolving its strategy on a separate thread. A pricing model running on a remote server. A precomputation handed off to a worker pool. The simulator never blocks waiting; results arrive when they arrive.
 
 This chapter names the three patterns that cover these cases without breaking any of the trunk's previous rules. They are not new architecture. They are the trunk's existing rules, applied to a wider set of cadences.

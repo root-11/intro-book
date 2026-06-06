@@ -30,7 +30,9 @@ The filtered version walks 1 000 000 rows when 100 000 are hungry - 900 000 of t
 
 The EBP version walks 100 000 rows. Every iteration does work. There is no per-row branch; the dispatcher *is* the table. Memory traffic is proportional to active rows, not to population.
 
-The cost difference scales with the *sparsity* of the state. If 90 % of creatures are hungry, the two approaches are similar (both touch most of the data). If 10 % are hungry, EBP is 10× cheaper. If 0.1 % are hungry, EBP is 1000× cheaper. Most simulator states are sparse - a small fraction of creatures are eating at any given tick, a small fraction are reproducing, a small fraction are dying - so EBP's compounding advantage shows up everywhere.
+The cost difference scales with the *sparsity* of the state. If 90 % of creatures are hungry, the two approaches are similar (both touch most of the data). If 10 % are hungry, EBP does 10× less work; at 0.1 %, 1000× less. Most simulator states are sparse - a small fraction of creatures are eating at any given tick, a small fraction are reproducing, a small fraction are dying - so EBP's advantage compounds everywhere.
+
+One honest qualifier, since this book measures: that ratio is in *work and memory traffic*. In *wall time* a scattered subscription shows less of it - a tenth of the rows, but each entry a cache miss into the columns - so at 10 % active the measured speedup is nearer 1.5× than 10× until the subscription is compacted ([§26](26_subscription_tables.md)) and the gather streams. The work win is immediate; the time win follows locality. At high sparsity (1 %) the gather is rare enough that even scattered it wins outright.
 
 A useful intuition: it is the difference between a wandering shopper trying to remember what they need and a shopper with a list. The list version is shorter, faster, and correct by construction. You do not consult the list to ask "is this aisle on my list?" - you walk down the list and visit each aisle once.
 
