@@ -33,7 +33,8 @@ cargo run --release --bin scope_speedup      # §31.2 (thread::scope 2-system sp
 cargo run --release --bin batched_write      # §38.3 (batched vs unbatched write)
 cargo run --release --bin row_vs_column_serialize # §36.3 (per-row vs column snapshot)
 cargo run --release --bin l1_sweet_spot      # §27.6 (L1 vs L2 streaming motion)
-cargo run --release --bin ebp_partition      # §24, §26, §28 (subscription vs scan, slot vs id keying, sort-for-locality, lifecycle)
+cargo run --release --bin ebp_partition      # §24, §26 (subscription vs scan, slot vs id keying, locality, lifecycle)
+cargo run --release --bin proximity          # §28 (all-pairs vs bolt-on hash vs dense binning; pack-leader cohesion)
 cargo run --release --bin power_loop -- sequential   # §4.9 (run perf in another terminal)
 ```
 
