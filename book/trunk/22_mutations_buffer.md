@@ -6,13 +6,11 @@
 
 This rule has been forward-referenced through ten chapters. Time to make it concrete.
 
-Mutations during a tick do not apply immediately; they queue, and a single cleanup pass applies them all at the tick boundary. The shape:
+Mutations during a tick do not apply immediately; they queue, and a single cleanup pass applies them all at the tick boundary. The shape is two side tables on the world, alongside the creature columns:
 
 ```rust,no_run
-struct CleanupBuffer {
-    to_remove: Vec<u32>,           // creature ids to delete
-    to_insert: Vec<CreatureRow>,   // new creature rows to add
-}
+to_remove: Vec<u32>,           // creature ids to delete
+to_insert: Vec<CreatureRow>,   // new creature rows to add
 ```
 
 During the tick, every system that wants to delete pushes to `to_remove`. Every system that wants to add pushes to `to_insert`. No system mutates the live tables.
@@ -20,9 +18,9 @@ During the tick, every system that wants to delete pushes to `to_remove`. Every 
 At the end of the tick, one system runs:
 
 ```rust,no_run
-fn cleanup(world: &mut World, buffer: &mut CleanupBuffer) {
+fn cleanup(world: &mut World) {
     // 1. Delete all queued removals via swap_remove.
-    for id in buffer.to_remove.drain(..) {
+    for id in world.to_remove.drain(..) {
         let slot = world.id_to_slot[id as usize] as usize;
         for col in world.columns_mut() {
             col.swap_remove(slot);
@@ -31,7 +29,7 @@ fn cleanup(world: &mut World, buffer: &mut CleanupBuffer) {
     }
 
     // 2. Append all queued inserts.
-    for row in buffer.to_insert.drain(..) {
+    for row in world.to_insert.drain(..) {
         world.append(row);
     }
 }
