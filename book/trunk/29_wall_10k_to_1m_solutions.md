@@ -32,7 +32,7 @@ Give a subset system (say `apply_starve`, which acts only on the hungry) a slot-
 
 ## Exercise 6 - Index maps
 
-Replace `hungry.iter().any(|&id| id == target)` with `id_to_slot[target] != INVALID && hungry_membership[target]`. A function that was `O(N)` per call is now `O(1)`.
+Replace `hungry.iter().any(|&s| s == target)` with the sparse-set test `hungry.is_member(target)` (one array read and a sentinel check, §23). A function that was `O(N)` per call is now `O(1)`, with no per-creature boolean.
 
 For a system that asks the question 100K times per tick at 1M creatures, this is the difference between 100 s and 0.005 s per tick.
 

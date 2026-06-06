@@ -19,8 +19,8 @@ for slot in 0..creatures.len() {
 **Existence-based dispatch.** Walk the `hungry` table directly; do work for every entry:
 
 ```rust,ignore
-for &id in hungry.iter() {
-    drive_hunger_behaviour(id);
+for &i in hungry.iter() {
+    drive_hunger_behaviour(i);
 }
 ```
 
@@ -37,15 +37,16 @@ A useful intuition: it is the difference between a wandering shopper trying to r
 The shape EBP produces in code is also a clue. A system that uses EBP looks like:
 
 ```rust,no_run
-fn drive_hunger(hungry: &[u32], energy: &mut [f32], ids_to_slots: &[u32], dt: f32) {
-    for &id in hungry {
-        let slot = ids_to_slots[id as usize] as usize;
-        energy[slot] -= HUNGER_BURN_RATE * dt;
+fn drive_hunger(hungry: &[u32], energy: &mut [f32], dt: f32) {
+    for &i in hungry {
+        energy[i as usize] -= HUNGER_BURN_RATE * dt;
     }
 }
 ```
 
-Read-set: `hungry`, `ids_to_slots`. Write-set: `energy` (only for the entries indexed by `hungry`). The signature is the contract - exactly the contract from [§13](13_system_as_function.md). EBP is not a separate idea; it is the natural shape that a system takes when its inputs are presence tables.
+Read-set: `hungry`. Write-set: `energy` (only the slots listed in `hungry`). The signature is the contract - exactly the contract from [§13](13_system_as_function.md). EBP is not a separate idea; it is the natural shape that a system takes when its inputs are presence tables.
+
+Because `hungry` holds slots, each entry indexes the columns directly - there is no id-to-slot lookup inside the loop. That directness is the whole point of keying the table by slot; [§26](26_subscription_tables.md) measures what it is worth (and why the table holds slots, not ids), once the lifecycle in [§24](24_append_only_and_recycling.md) makes slots stable enough to store.
 
 EBP also composes cleanly with parallelism. A million creatures with 100 000 hungry can be split across eight threads - each thread takes a 12 500-row slice of `hungry` and does its work. The threads never need to consult creatures that are not hungry; their loads do not interfere. [§31](31_disjoint_writes_parallelize.md) develops this.
 

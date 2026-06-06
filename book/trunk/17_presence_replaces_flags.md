@@ -8,7 +8,7 @@ A creature can be hungry. Two ways to model it.
 
 The instinct most programmers arrive with is a *boolean*: `is_hungry: bool` on every creature, set to `true` when energy drops below a threshold, set to `false` when energy is restored. Every system that cares about hunger checks the flag: `if creature.is_hungry { ... }`. This is everywhere; it is the natural choice; it is what most programmers reach for.
 
-The data-oriented alternative is *membership*. There is a `hungry` table - a `Vec<u32>` of creature ids, or a parallel `Vec<bool>` mask, or a `BTreeSet<u32>`. A creature is hungry if and only if its id is in `hungry`. The flag does not exist as a field; it exists as a *fact about which table the creature appears in*.
+The data-oriented alternative is *membership*. There is a `hungry` table - a `Vec<u32>` of the *slots* of hungry creatures, the rows they occupy in the columns. A creature is hungry if and only if its slot is in `hungry`. The flag does not exist as a field; it exists as a *fact about which table the creature appears in*. (Why the slot and not the stable id? Because a system that acts on the hungry wants to reach straight into the columns; the slot *is* that reach. [§23](23_index_maps.md) and [§26](26_subscription_tables.md) make the choice precise; for now, the table lists rows.)
 
 The substitution looks small: a `bool` field becomes a row in another table. The implications are not.
 
@@ -30,11 +30,11 @@ Presence is not the only valid representation. A `bool` flag is sometimes right 
 
 These extend the §0 simulator skeleton.
 
-1. **Add a `hungry` table.** Add `let mut hungry: Vec<u32> = Vec::new();` to your world. It is empty at start.
-2. **Populate it.** Write a system `fn classify_hunger(energy: &[f32], ids: &[u32], hungry: &mut Vec<u32>)`. Walk creatures; if `energy[i] < HUNGER_THRESHOLD` and `ids[i]` is not already in `hungry`, push it. (For now use linear scan to check membership; we will fix this in §23.)
+1. **Add a `hungry` table.** Add `let mut hungry: Vec<u32> = Vec::new();` to your world (it holds slots). It is empty at start.
+2. **Populate it.** Write a system `fn classify_hunger(energy: &[f32], hungry: &mut Vec<u32>)`. Walk creatures; if `energy[i] < HUNGER_THRESHOLD` and slot `i` is not already in `hungry`, push `i`. (For now use linear scan to check membership; we will fix this in §23.)
 3. **Build the flag version.** Add a parallel `is_hungry: Vec<bool>` indexed by creature slot. Write the equivalent classification system that sets/clears the bool.
 4. **Time both at 1M creatures, 10% hungry.** Build a 1 000 000-creature world with 10% energy starvation. Time `classify_hunger` (presence) and the flag-setting version. Note the ratio of *bytes touched*: the flag version writes 1 MB, the presence version writes ~100 KB plus the cost of the membership check.
-5. **The membership query.** Write `fn is_hungry_p(hungry: &[u32], id: u32) -> bool` (presence) and `fn is_hungry_f(is_hungry: &[bool], slot: usize) -> bool` (flag). Time both at 1M creatures. Note: presence is O(N) without an index map; the flag is O(1). [§23 - Index maps](23_index_maps.md) is the fix that makes presence O(1) too.
+5. **The membership query.** Write `fn is_hungry_p(hungry: &[u32], slot: u32) -> bool` (presence: scan the table) and `fn is_hungry_f(is_hungry: &[bool], slot: usize) -> bool` (flag). Time both at 1M creatures. Note: presence is O(N) scanned naively; the flag is O(1). [§23 - Index maps](23_index_maps.md) is the fix that makes presence O(1) too, without a per-creature boolean - a sparse set.
 6. **The "how many are hungry" query.** Write it both ways. Presence: `hungry.len()`. Flag: `is_hungry.iter().filter(|&&b| b).count()`. Compare. The presence version is constant-time; the flag version walks all 1M.
 7. *(stretch)* **Persist both.** Serialise both representations to a file. Note the disk size for 1M creatures with 10% hungry. The presence version stores ~100 KB; the flag version stores ~1 MB even though most flags are `false`.
 

@@ -40,7 +40,7 @@ fn slot_of(ids: &[u32], target: u32) -> Option<usize> {
 }
 ```
 
-That is O(N), which is fine for a 52-card deck and slow for a million creatures. The fix - an `id_to_index` map maintained on every rearrangement - is [§23 - Index maps](23_index_maps.md). For now the linear scan is honest pedagogy.
+That is O(N), which is fine for a 52-card deck and slow for a million creatures. The fix - an `id_to_slot` map maintained on every rearrangement - is [§23 - Index maps](23_index_maps.md). For now the linear scan is honest pedagogy.
 
 ## Generations: when slots are reused
 
@@ -90,4 +90,4 @@ Reference solutions for the deck exercises (1-5) in [10_stable_ids_and_generatio
 
 ## What's next
 
-You now have stable references. The next thing the simulator will need is to look up a row by id in O(1) rather than O(N) - an `id_to_index` map maintained on every reordering. That is [§23 - Index maps](23_index_maps.md). It is one extra `Vec<u32>`, updated whenever the columns move.
+You now have stable references. The next thing the simulator will need is to look up a row by id in O(1) rather than O(N) - an `id_to_slot` map maintained on every reordering. That is [§23 - Index maps](23_index_maps.md). It is one extra `Vec<u32>`, updated whenever the columns move.

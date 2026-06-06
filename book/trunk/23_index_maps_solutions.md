@@ -43,36 +43,72 @@ fn append(world: &mut World, c: CreatureRow) -> u32 {
 
 The map grows lazily as new ids are issued. `INVALID` marks dead/never-used slots.
 
-## Exercise 2 - O(1) presence query
+## Exercise 2 - Build the sparse set
 
-`hungry_membership` runs parallel to the creature columns: one `bool` per slot, set when a creature is classified hungry and cleared when it stops. `is_hungry` reaches it through `id_to_slot`, so it is two array reads: the id-to-slot map, then the membership column.
+The membership table is a *sparse set*: a `dense` list of the present slots (what the hot loop walks) plus a `sparse` index from slot to its position in `dense`, or `INVALID`. No per-creature boolean.
 
 ```rust,no_run
-fn is_hungry(world: &World, id: u32) -> bool {
-    let slot = world.id_to_slot[id as usize] as usize;
-    world.hungry_membership[slot]
+struct Subscription {
+    dense:  Vec<u32>,   // present slots
+    sparse: Vec<u32>,   // slot -> position in dense, or INVALID
+}
+
+impl Subscription {
+    fn is_member(&self, i: u32) -> bool {
+        let p = self.sparse[i as usize];
+        p != INVALID && self.dense[p as usize] == i
+    }
+    fn subscribe(&mut self, i: u32) {
+        if self.is_member(i) { return; }
+        self.sparse[i as usize] = self.dense.len() as u32;
+        self.dense.push(i);
+    }
+    fn unsubscribe(&mut self, i: u32) {
+        let p = self.sparse[i as usize];
+        if p == INVALID { return; }
+        let moved = *self.dense.last().unwrap();
+        self.dense.swap_remove(p as usize);
+        self.sparse[moved as usize] = p;
+        self.sparse[i as usize] = INVALID;
+    }
 }
 ```
 
-`is_hungry` is two array reads - a handful of nanoseconds. Compare with the linear scan over the `hungry` list from §17, which is hundreds of microseconds at 1 M creatures. Because `hungry_membership` is a per-slot column, it moves in lockstep with `creatures` on every `swap_remove` and every sort, exactly like the other columns.
+`is_member` is O(1) - two array reads - against the §17 linear scan's hundreds of microseconds at 1 M. And unlike a `Vec<bool>` flag, the sparse index hands back the dense *position*, which is what makes `unsubscribe` O(1) too. It is the same index-map shape as `id_to_slot`, pointing into the membership table instead of into the columns.
 
 ## Exercise 3 - Maintain on swap_remove
 
 ```rust,no_run
+// reindex one slot-keyed table after a row moves from `old` to `new`.
+fn reindex_move(sub: &mut Subscription, old: u32, new: u32) {
+    let p = sub.sparse[old as usize];
+    if p == INVALID { return; }          // the moved creature was not a member
+    sub.dense[p as usize] = new;
+    sub.sparse[new as usize] = p;
+    sub.sparse[old as usize] = INVALID;
+}
+
 fn delete_by_id(world: &mut World, id: u32) {
+    // The dead creature was already unsubscribed from every table at death (§18).
     let slot = world.id_to_slot[id as usize] as usize;
     let cr = &mut world.creatures;
-    // The last row is the one swap_remove moves into `slot`; grab its id first.
-    let moved_id = *cr.id.last().unwrap();
+    let moved_id = *cr.id.last().unwrap(); // the row swap_remove relocates into `slot`
     cr.px.swap_remove(slot); cr.py.swap_remove(slot);
     cr.vx.swap_remove(slot); cr.vy.swap_remove(slot);
     cr.energy.swap_remove(slot); cr.id.swap_remove(slot);
+    let moved_old_slot = world.creatures.len() as u32; // length AFTER the removes
+
+    // id_to_slot: re-find the moved entity; retire the dead one.
     world.id_to_slot[moved_id as usize] = slot as u32;
     world.id_to_slot[id as usize] = INVALID;
+
+    // every slot-keyed table: the survivor moved from `moved_old_slot` to `slot`.
+    reindex_move(&mut world.hungry, moved_old_slot, slot as u32);
+    // ... and any other subscription the survivor might be in.
 }
 ```
 
-No branch. Grab the last row's id *before* the swap, because that is the row `swap_remove` relocates into `slot`. When the deleted row was already the last one, `moved_id == id`: the slot write is redundant and the `INVALID` write that follows corrects it. One `swap_remove` per column (six here) plus two map writes - a few dozen bytes moved per delete, well under 10 ns at ~12 GB/s memory bandwidth.
+Two repairs per move, both O(1): `id_to_slot` re-finds the entity that relocated, and `reindex_move` rewrites that creature's slot wherever a subscription listed it. When the deleted row was already the last one, `moved_old_slot == slot` and `reindex_move` is a harmless no-op (the dead creature is no member). One `swap_remove` per column plus a handful of map writes - a few dozen bytes per delete, well under 10 ns at ~12 GB/s. This is the cost [§24](24_append_only_and_recycling.md) avoids entirely by not moving slots on death.
 
 ## Exercise 4 - Time the difference
 
@@ -109,10 +145,27 @@ fn sort_creatures_for_locality(world: &mut World) {
     for (new_slot, &cid) in world.creatures.id.iter().enumerate() {
         world.id_to_slot[cid as usize] = new_slot as u32;
     }
+
+    // Reindex every slot-keyed table through the same permutation.
+    // order[new] = old, so invert it to map old slot -> new slot.
+    let mut new_pos = vec![0u32; n];
+    for (new, &old) in order.iter().enumerate() {
+        new_pos[old] = new as u32;
+    }
+    reindex_subscription(&mut world.hungry, &new_pos);
+    // ... and every other subscription.
+}
+
+fn reindex_subscription(sub: &mut Subscription, new_pos: &[u32]) {
+    for s in sub.dense.iter_mut() { *s = new_pos[*s as usize]; }
+    for p in sub.sparse.iter_mut() { *p = INVALID; }
+    for (pos, &slot) in sub.dense.iter().enumerate() {
+        sub.sparse[slot as usize] = pos as u32;
+    }
 }
 ```
 
-Every slot moves; the map is rewritten entirely. External references to ids continue to work; references to slots would not (which is why nobody holds slots - they hold ids).
+Every slot moves, so *both* maps are rewritten: `id_to_slot`, so id-held references (a save, the network, the UI - [§26](26_subscription_tables.md)) still resolve; and each subscription's `dense`/`sparse`, so the slot-keyed memberships still point at the right creatures. Id references and slot references are each repaired by the sort, through their own map. Nothing holds a *bare* slot across the sort and expects it to survive - it survives only because cleanup rewrites it.
 
 ## Exercise 7 - From-scratch generational arena
 

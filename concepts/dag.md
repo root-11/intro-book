@@ -220,7 +220,7 @@ flowchart TB
 
 22. **Mutations buffer; cleanup is batched.** Adds and removes during a tick are not applied immediately; they are recorded as dirty markers in side tables (`to_insert`, `to_remove`). At the tick boundary, a single sweep applies them all. This is the implementation of node 15: structural changes happen *between* passes, not during them. Without it, naive mutation inside a system causes O(N) reallocations per tick and breaks the iteration the system is in the middle of.
 
-23. **Index maps.** When external references must survive reordering, an `id_to_index` map maintains the mapping. It is updated on every move - whether by `swap_remove` or by the buffered-cleanup sweep.
+23. **Index maps.** A parallel array from a key to a position, with a sentinel for absent, in two instances: `id_to_slot` maps a stable entity to its current slot (so id-held references survive reordering), and a sparse set maps a slot to its position in a membership table (O(1) test and unsubscribe, no per-creature boolean). Updated on every move - `swap_remove`, sort, the buffered-cleanup sweep.
 
 24. **Append-only and recycling.** Two strategies for slot reuse, with opposite tradeoffs in memory and reference stability. The choice is decided by access pattern, not taste.
 

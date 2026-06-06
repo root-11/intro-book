@@ -4,7 +4,7 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 21](../../concepts/glossary.md#21--swap_remove).*
 
-The presence-replaces-flags substitution from [§17](17_presence_replaces_flags.md) raised a problem we deferred. When a creature stops being hungry, you remove its id from `hungry`. When a creature dies, you remove its row from every table. *Removing rows from a `Vec` is expensive* - `vec.remove(i)` shifts every later row left by one, costing O(N).
+The presence-replaces-flags substitution from [§17](17_presence_replaces_flags.md) raised a problem we deferred. When a creature stops being hungry, you remove its slot from `hungry`. When a creature dies, you remove its row from every column. *Removing rows from a `Vec` is expensive* - `vec.remove(i)` shifts every later row left by one, costing O(N).
 
 For a 1 000 000-creature simulator with 1 000 deaths per tick, naive `remove` costs roughly 10⁹ moves per tick - a thousand times the budget of a 30 Hz simulation.
 
@@ -24,9 +24,9 @@ The mechanism is small: read the last element, write it into the deleted slot, s
 **Cost paid.** Order is sacrificed. If your code depended on rows being in any particular order, swap_remove reorders them. Two specific consequences:
 
 - **Iteration corrupted.** If you iterate the table and call swap_remove during iteration, the slot you just visited now holds a different row, but your loop counter has moved past it. Half the rows after a swap_remove get skipped or revisited inconsistently.
-- **External references break.** Any code holding a slot index into the table now refers to a different row. This is the same bug as [§9](09_sort_breaks_indices.md): rearrangement breaks slot-based references.
+- **Slot references break.** The row that backfilled the hole used to live at the end; now it sits at slot `i` under an index nobody was told about. Every slot-keyed table from [§17](17_presence_replaces_flags.md) - `hungry`, `sleepy`, the rest - now lists a slot that points at the wrong creature. This is the same bug as [§9](09_sort_breaks_indices.md): rearrangement breaks slot-based references, and a slot-keyed `hungry` is nothing but slot-based references.
 
-Both problems have fixes already named in the book. The iteration corruption is fixed by [§22 - Mutations buffer](22_mutations_buffer.md): swap_remove never runs during iteration; it runs during cleanup at the tick boundary, when no system is iterating. The external-reference problem is fixed by [§23 - Index maps](23_index_maps.md): an `id_to_slot` map is updated whenever a row moves, so id-based references survive.
+Both problems have fixes already named in the book. The iteration corruption is fixed by [§22 - Mutations buffer](22_mutations_buffer.md): swap_remove never runs during iteration; it runs during cleanup at the tick boundary, when no system is iterating. The moved-slot problem is fixed in two steps by [§23 - Index maps](23_index_maps.md): the cleanup rewrites the moved slot wherever a slot-keyed table holds it (a reindex), and an `id_to_slot` map lets anything holding a stable id re-find the creature after the move. Then [§24](24_append_only_and_recycling.md) asks the sharper question: if moving a slot is this much trouble, why move it at all? Mark the creature dead, recycle its slot later, and every reference stays standing. swap_remove on death is the honest first cut - the wrong way that earns the right one.
 
 This whole phase - Memory & lifecycle - only matters for *variable-quantity* tables. Constant-quantity tables like the 52-card deck never grow or shrink, never need swap_remove, never need any of the machinery in this phase. The card game ran for ten chapters without it. The simulator from §1 onward needs all of it, because creatures are born and die every tick.
 

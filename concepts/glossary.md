@@ -213,7 +213,7 @@ Each entry has four parts:
 
 **Definition.** "Is hungry" is membership in a `Hungry` table, not a `bool` field on `Creature`. State is structural - a row exists or it does not - rather than a flag stored alongside other data. The change reads as small in code and turns out large in consequence: dispatch, parallelism, and persistence all simplify. Or in Fabian's framing: instead of asking each room about its doors, ask the doors-table which doors belong to this room. The question is reversed; the lookup is reversed; the work shrinks.
 
-**Example.** In the through-line simulator, a creature becomes hungry by having a row inserted into the `Hungry` table at its entity id. The system that drives hunger-related behaviour iterates `Hungry` directly; it does not scan `Creatures` checking a flag. The same pattern appears in `ppdn`'s daemon: `is_admitted(peer) = established_contacts.contains_key(peer)` - O(1), no I/O, no enum.
+**Example.** In the through-line simulator, a creature becomes hungry by having its slot inserted into the `Hungry` table. The system that drives hunger-related behaviour iterates `Hungry` directly, indexing the columns by slot; it does not scan `Creatures` checking a flag. The same pattern appears in `ppdn`'s daemon: `is_admitted(peer) = established_contacts.contains_key(peer)` - O(1), no I/O, no enum.
 
 **Anti-pattern.** `if creature.is_hungry { ... }`. The flag forces every system that cares about hunger to filter the entire creature table; the table grows linearly with population whether or not anyone is hungry; and concurrent writes to the flag race against concurrent reads of unrelated fields in the same row.
 
@@ -283,13 +283,13 @@ Each entry has four parts:
 
 ## 23 - Index maps
 
-**Definition.** When external references must survive reordering, an `id_to_index` map maintains the mapping. It is updated on every move - whether by `swap_remove`, by sort-for-locality, or by the buffered-cleanup sweep. Looking up a creature by id is O(1) through the map; no scanning required.
+**Definition.** An *index map* is a parallel array from a key to a position, with a sentinel for "absent". It appears twice. `id_to_slot` maps a stable entity to its current column slot, so a reference held as an id survives reordering; it is updated on every move - `swap_remove`, sort-for-locality, the buffered-cleanup sweep. A *sparse set* maps a slot to its position in a membership table's dense list, giving O(1) membership-test and O(1) unsubscribe without a per-creature boolean. Both are O(1) lookups; neither scans.
 
-**Example.** A player holds creature id 42. The `creature` columns get sorted for locality (node 28). The `id_to_index` map is also rewritten in lockstep: `id_to_index[42]` now returns the new slot. The player's reference still works.
+**Example.** A player holds creature id 42. The `creature` columns get sorted for locality (node 28). `id_to_slot` is rewritten in lockstep, so `id_to_slot[42]` returns the new slot and the player's reference still works; every slot-keyed membership table is reindexed through the same permutation in the same sweep.
 
-**Anti-pattern.** Scanning the id column to find a row by id. This is O(N) per lookup, which is fine at §0 and slow at §1. The map is O(1).
+**Anti-pattern.** Scanning the id column to find a row by id (O(N) per lookup), or keying membership with a per-creature `bool` flag - the very flag node 17 abolished. The sparse set gives O(1) membership without the flag.
 
-**See also.** 5 (id is integer), 9 (sort breaks indices), 10 (stable IDs and generations), 28 (sort for locality).
+**See also.** 5 (id is integer), 9 (sort breaks indices), 10 (stable IDs and generations), 17 (presence replaces flags), 26 (subscription tables), 28 (sort for locality).
 
 ---
 

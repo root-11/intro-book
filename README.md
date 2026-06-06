@@ -610,7 +610,7 @@ fn slot_of(ids: &[u32], target: u32) -> Option<usize> {
 }
 ```
 
-That is O(N), which is fine for a 52-card deck and slow for a million creatures. The fix - an `id_to_index` map maintained on every rearrangement - is [§23 - Index maps](#23---index-maps). For now the linear scan is honest pedagogy.
+That is O(N), which is fine for a 52-card deck and slow for a million creatures. The fix - an `id_to_slot` map maintained on every rearrangement - is [§23 - Index maps](#23---index-maps). For now the linear scan is honest pedagogy.
 
 ## Generations: when slots are reused
 
@@ -660,7 +660,7 @@ Reference solutions for the deck exercises (1-5) in [10_stable_ids_and_generatio
 
 ## What's next
 
-You now have stable references. The next thing the simulator will need is to look up a row by id in O(1) rather than O(N) - an `id_to_index` map maintained on every reordering. That is [§23 - Index maps](#23---index-maps). It is one extra `Vec<u32>`, updated whenever the columns move.
+You now have stable references. The next thing the simulator will need is to look up a row by id in O(1) rather than O(N) - an `id_to_slot` map maintained on every reordering. That is [§23 - Index maps](#23---index-maps). It is one extra `Vec<u32>`, updated whenever the columns move.
 
 
 # 11 - The tick
@@ -992,7 +992,7 @@ A creature can be hungry. Two ways to model it.
 
 The instinct most programmers arrive with is a *boolean*: `is_hungry: bool` on every creature, set to `true` when energy drops below a threshold, set to `false` when energy is restored. Every system that cares about hunger checks the flag: `if creature.is_hungry { ... }`. This is everywhere; it is the natural choice; it is what most programmers reach for.
 
-The data-oriented alternative is *membership*. There is a `hungry` table - a `Vec<u32>` of creature ids, or a parallel `Vec<bool>` mask, or a `BTreeSet<u32>`. A creature is hungry if and only if its id is in `hungry`. The flag does not exist as a field; it exists as a *fact about which table the creature appears in*.
+The data-oriented alternative is *membership*. There is a `hungry` table - a `Vec<u32>` of the *slots* of hungry creatures, the rows they occupy in the columns. A creature is hungry if and only if its slot is in `hungry`. The flag does not exist as a field; it exists as a *fact about which table the creature appears in*. (Why the slot and not the stable id? Because a system that acts on the hungry wants to reach straight into the columns; the slot *is* that reach. [§23](#23---index-maps) and [§26](#26---subscription-tables-keyed-by-slot) make the choice precise; for now, the table lists rows.)
 
 The substitution looks small: a `bool` field becomes a row in another table. The implications are not.
 
@@ -1014,11 +1014,11 @@ Presence is not the only valid representation. A `bool` flag is sometimes right 
 
 These extend the §0 simulator skeleton.
 
-1. **Add a `hungry` table.** Add `let mut hungry: Vec<u32> = Vec::new();` to your world. It is empty at start.
-2. **Populate it.** Write a system `fn classify_hunger(energy: &[f32], ids: &[u32], hungry: &mut Vec<u32>)`. Walk creatures; if `energy[i] < HUNGER_THRESHOLD` and `ids[i]` is not already in `hungry`, push it. (For now use linear scan to check membership; we will fix this in §23.)
+1. **Add a `hungry` table.** Add `let mut hungry: Vec<u32> = Vec::new();` to your world (it holds slots). It is empty at start.
+2. **Populate it.** Write a system `fn classify_hunger(energy: &[f32], hungry: &mut Vec<u32>)`. Walk creatures; if `energy[i] < HUNGER_THRESHOLD` and slot `i` is not already in `hungry`, push `i`. (For now use linear scan to check membership; we will fix this in §23.)
 3. **Build the flag version.** Add a parallel `is_hungry: Vec<bool>` indexed by creature slot. Write the equivalent classification system that sets/clears the bool.
 4. **Time both at 1M creatures, 10% hungry.** Build a 1 000 000-creature world with 10% energy starvation. Time `classify_hunger` (presence) and the flag-setting version. Note the ratio of *bytes touched*: the flag version writes 1 MB, the presence version writes ~100 KB plus the cost of the membership check.
-5. **The membership query.** Write `fn is_hungry_p(hungry: &[u32], id: u32) -> bool` (presence) and `fn is_hungry_f(is_hungry: &[bool], slot: usize) -> bool` (flag). Time both at 1M creatures. Note: presence is O(N) without an index map; the flag is O(1). [§23 - Index maps](#23---index-maps) is the fix that makes presence O(1) too.
+5. **The membership query.** Write `fn is_hungry_p(hungry: &[u32], slot: u32) -> bool` (presence: scan the table) and `fn is_hungry_f(is_hungry: &[bool], slot: usize) -> bool` (flag). Time both at 1M creatures. Note: presence is O(N) scanned naively; the flag is O(1). [§23 - Index maps](#23---index-maps) is the fix that makes presence O(1) too, without a per-creature boolean - a sparse set.
 6. **The "how many are hungry" query.** Write it both ways. Presence: `hungry.len()`. Flag: `is_hungry.iter().filter(|&&b| b).count()`. Compare. The presence version is constant-time; the flag version walks all 1M.
 7. *(stretch)* **Persist both.** Serialise both representations to a file. Note the disk size for 1M creatures with 10% hungry. The presence version stores ~100 KB; the flag version stores ~1 MB even though most flags are `false`.
 
@@ -1039,18 +1039,18 @@ Code-wise, the difference is small:
 
 ```rust,ignore
 // flag
-fn become_hungry_flag(is_hungry: &mut [bool], slot: usize) {
-    is_hungry[slot] = true;
+fn become_hungry_flag(is_hungry: &mut [bool], i: usize) {
+    is_hungry[i] = true;
 }
 
 // presence
-fn become_hungry_presence(hungry: &mut Vec<u32>, id: u32) {
-    hungry.push(id);
+fn become_hungry_presence(hungry: &mut Vec<u32>, i: u32) {
+    hungry.push(i);
 }
 
-fn stop_being_hungry_presence(hungry: &mut Vec<u32>, id: u32) {
-    if let Some(pos) = hungry.iter().position(|&x| x == id) {
-        hungry.swap_remove(pos);
+fn stop_being_hungry_presence(hungry: &mut Vec<u32>, i: u32) {
+    if let Some(pos) = hungry.iter().position(|&s| s == i) {
+        hungry.swap_remove(pos); // O(N) scan for now; §23's sparse set makes it O(1)
     }
 }
 ```
@@ -1066,7 +1066,7 @@ A useful test: can you describe the transition without naming a `bool`? *"This c
 > [!NOTE]
 > *"Hungry" generalises further than this chapter uses it.* In an MMORPG, the presence table for "creatures the player needs to know about" is the ones inside the player's render radius - and the radius itself can shrink dynamically when CPU is tight, trading visible-creature count against the tick-budget headroom from [§4](#4---cost-is-layout---and-you-have-a-budget). **The presence table is a query, not a metaphysical state**; its entries change when the system asks a different question. *"Alive," "hungry," "in-scope," "subscribed," "active-this-frame"* - same shape, different question, same discipline of inserts and removes between tables.
 
-The same pattern handles richer transitions. Imagine a creature that can be hungry, sleepy, or dead. Three tables: `hungry`, `sleepy`, `dead`. A creature transitions by moving between them. Becoming sleepy while hungry adds a row to `sleepy` (it can be in both). Dying removes the creature from `hungry` and `sleepy` (cleanup affects all relevant presence tables) and adds to `dead`. The transition is a multi-table operation, but each table is still just a list of ids.
+The same pattern handles richer transitions. Imagine a creature that can be hungry, sleepy, or dead. Three tables: `hungry`, `sleepy`, `dead`. A creature transitions by moving between them. Becoming sleepy while hungry adds a row to `sleepy` (it can be in both). Dying removes the creature from `hungry` and `sleepy` (cleanup affects all relevant presence tables) and adds to `dead`. The transition is a multi-table operation, but each table is still just a list of slots.
 
 This shape - state changes as inserts and removes - is the precondition for everything else EBP gives you. The dispatch in [§19](#19---ebp-dispatch) iterates *over the table directly*, so the table's contents *being* the canonical state of the world is structurally necessary. There is no flag to consult; there is only what is in the table right now.
 
@@ -1075,8 +1075,8 @@ This shape - state changes as inserts and removes - is the precondition for ever
 1. **Hunger transitions.** Use your `hungry` table from [§17](#17---presence-replaces-flags). Each tick: read `energy`; for any creature that crossed below the threshold, push to `hungry`; for any that crossed back above, swap-remove. Run for 100 ticks with energy varying randomly; verify `hungry` always contains exactly the creatures whose current energy is below threshold.
 2. **No flag, no setter.** Search your code for any boolean field on a creature. Replace it with a presence table. The setter and getter both disappear.
 3. **A second presence state.** Add a `sleepy` table. A creature is sleepy if its energy is *high enough that it does not need to eat right now*. A creature can be in both `sleepy` and `hungry`? No - by definition the conditions are mutually exclusive. (Or: design them so they are.) Verify the invariant by checking after each tick that no creature appears in both tables.
-4. **Death.** Add a `dead` table. When a creature's energy drops below zero, push to `dead` *and* remove from `hungry` (and from `sleepy` if present). The cleanup logic is now multi-table; introduce a small `transition_to_dead(id)` helper that handles all the affected presence tables.
-5. **The transition log.** Add `events: Vec<(u64, u32, &'static str)>` (tick number, creature id, event name). Every insert/remove emits a row. After 100 ticks, the events log is the *canonical history* - every state change recorded. This is a preview of [§37 - The log is the world](#37---the-log-is-the-world).
+4. **Death.** Add a `dead` table. When a creature's energy drops below zero, push to `dead` *and* remove from `hungry` (and from `sleepy` if present). The cleanup logic is now multi-table; introduce a small `transition_to_dead(i)` helper that handles all the affected presence tables.
+5. **The transition log.** Add `events: Vec<(u64, u32, &'static str)>` (tick number, creature *id*, event name). Every insert/remove emits a row. Note the field is the entity id, not the slot: the membership tables move by slot, but the log is a boundary artifact read back later ([§37](#37---the-log-is-the-world)), when slot positions no longer apply, so it records *identity*. After 100 ticks, the events log is the *canonical history* - every state change recorded.
 6. *(stretch)* **Reconstruct from the log.** Given only the events log and the initial `creatures` table, reconstruct the final `hungry`, `sleepy`, and `dead` tables. The reconstruction is a one-shot replay; if it produces the same tables as the live simulation, your transitions are correctly captured.
 
 ## What's next
@@ -1103,8 +1103,8 @@ for slot in 0..creatures.len() {
 **Existence-based dispatch.** Walk the `hungry` table directly; do work for every entry:
 
 ```rust,ignore
-for &id in hungry.iter() {
-    drive_hunger_behaviour(id);
+for &i in hungry.iter() {
+    drive_hunger_behaviour(i);
 }
 ```
 
@@ -1121,15 +1121,16 @@ A useful intuition: it is the difference between a wandering shopper trying to r
 The shape EBP produces in code is also a clue. A system that uses EBP looks like:
 
 ```rust,no_run
-fn drive_hunger(hungry: &[u32], energy: &mut [f32], ids_to_slots: &[u32], dt: f32) {
-    for &id in hungry {
-        let slot = ids_to_slots[id as usize] as usize;
-        energy[slot] -= HUNGER_BURN_RATE * dt;
+fn drive_hunger(hungry: &[u32], energy: &mut [f32], dt: f32) {
+    for &i in hungry {
+        energy[i as usize] -= HUNGER_BURN_RATE * dt;
     }
 }
 ```
 
-Read-set: `hungry`, `ids_to_slots`. Write-set: `energy` (only for the entries indexed by `hungry`). The signature is the contract - exactly the contract from [§13](#13---a-system-is-a-function-over-tables). EBP is not a separate idea; it is the natural shape that a system takes when its inputs are presence tables.
+Read-set: `hungry`. Write-set: `energy` (only the slots listed in `hungry`). The signature is the contract - exactly the contract from [§13](#13---a-system-is-a-function-over-tables). EBP is not a separate idea; it is the natural shape that a system takes when its inputs are presence tables.
+
+Because `hungry` holds slots, each entry indexes the columns directly - there is no id-to-slot lookup inside the loop. That directness is the whole point of keying the table by slot; [§26](#26---subscription-tables-keyed-by-slot) measures what it is worth (and why the table holds slots, not ids), once the lifecycle in [§24](#24---append-only-and-recycling) makes slots stable enough to store.
 
 EBP also composes cleanly with parallelism. A million creatures with 100 000 hungry can be split across eight threads - each thread takes a 12 500-row slice of `hungry` and does its work. The threads never need to consult creatures that are not hungry; their loads do not interfere. [§31](#31---disjoint-write-sets-parallelize-freely) develops this.
 
@@ -1191,7 +1192,7 @@ You have closed Existence-based processing. The next phase is *Memory & lifecycl
 
 <p align="center"><img src="book/covers/phase_memory_lifecycle.jpg" alt="Memory & lifecycle phase" style="max-height: 380px; max-width: 100%;"></p>
 
-The presence-replaces-flags substitution from [§17](#17---presence-replaces-flags) raised a problem we deferred. When a creature stops being hungry, you remove its id from `hungry`. When a creature dies, you remove its row from every table. *Removing rows from a `Vec` is expensive* - `vec.remove(i)` shifts every later row left by one, costing O(N).
+The presence-replaces-flags substitution from [§17](#17---presence-replaces-flags) raised a problem we deferred. When a creature stops being hungry, you remove its slot from `hungry`. When a creature dies, you remove its row from every column. *Removing rows from a `Vec` is expensive* - `vec.remove(i)` shifts every later row left by one, costing O(N).
 
 For a 1 000 000-creature simulator with 1 000 deaths per tick, naive `remove` costs roughly 10⁹ moves per tick - a thousand times the budget of a 30 Hz simulation.
 
@@ -1211,9 +1212,9 @@ The mechanism is small: read the last element, write it into the deleted slot, s
 **Cost paid.** Order is sacrificed. If your code depended on rows being in any particular order, swap_remove reorders them. Two specific consequences:
 
 - **Iteration corrupted.** If you iterate the table and call swap_remove during iteration, the slot you just visited now holds a different row, but your loop counter has moved past it. Half the rows after a swap_remove get skipped or revisited inconsistently.
-- **External references break.** Any code holding a slot index into the table now refers to a different row. This is the same bug as [§9](#9---sort-breaks-indices): rearrangement breaks slot-based references.
+- **Slot references break.** The row that backfilled the hole used to live at the end; now it sits at slot `i` under an index nobody was told about. Every slot-keyed table from [§17](#17---presence-replaces-flags) - `hungry`, `sleepy`, the rest - now lists a slot that points at the wrong creature. This is the same bug as [§9](#9---sort-breaks-indices): rearrangement breaks slot-based references, and a slot-keyed `hungry` is nothing but slot-based references.
 
-Both problems have fixes already named in the book. The iteration corruption is fixed by [§22 - Mutations buffer](#22---mutations-buffer-cleanup-is-batched): swap_remove never runs during iteration; it runs during cleanup at the tick boundary, when no system is iterating. The external-reference problem is fixed by [§23 - Index maps](#23---index-maps): an `id_to_slot` map is updated whenever a row moves, so id-based references survive.
+Both problems have fixes already named in the book. The iteration corruption is fixed by [§22 - Mutations buffer](#22---mutations-buffer-cleanup-is-batched): swap_remove never runs during iteration; it runs during cleanup at the tick boundary, when no system is iterating. The moved-slot problem is fixed in two steps by [§23 - Index maps](#23---index-maps): the cleanup rewrites the moved slot wherever a slot-keyed table holds it (a reindex), and an `id_to_slot` map lets anything holding a stable id re-find the creature after the move. Then [§24](#24---append-only-and-recycling) asks the sharper question: if moving a slot is this much trouble, why move it at all? Mark the creature dead, recycle its slot later, and every reference stays standing. swap_remove on death is the honest first cut - the wrong way that earns the right one.
 
 This whole phase - Memory & lifecycle - only matters for *variable-quantity* tables. Constant-quantity tables like the 52-card deck never grow or shrink, never need swap_remove, never need any of the machinery in this phase. The card game ran for ten chapters without it. The simulator from §1 onward needs all of it, because creatures are born and die every tick.
 
@@ -1312,28 +1313,49 @@ The pattern itself is universal. Database transactions buffer writes and commit 
 
 <p align="center"><img src="book/illustrations/linear_algebra.jpg" alt="Linear algebra: Ax = b - a lookup is a matrix-vector product" style="max-height: 300px; max-width: 100%;"></p>
 
-The presence-replaces-flags substitution from [§17](#17---presence-replaces-flags) had a sting in its tail. A presence query - "is creature 42 hungry?" - costs O(N) when implemented naively as `hungry.iter().any(|&x| x == 42)`. At 1 000 000 creatures, that is too slow for any system that needs to ask the question many times per tick.
+The slot-keyed tables from [§17](#17---presence-replaces-flags) and [§19](#19---ebp-dispatch) left two questions open, and [§21](#21---swap_remove) added a third.
 
-The fix is a parallel data structure: an *index map* `id_to_slot: Vec<u32>` that maps every id to its current slot in the table. Lookup is now O(1):
+1. **Point membership.** "Is slot `i` in `hungry`?" costs O(N) when answered by scanning the table (`hungry.iter().any(|&s| s == i)`).
+2. **Unsubscribe.** To `swap_remove` slot `i` out of `hungry` you first need its *position in the table* - the same O(N) scan.
+3. **The moved slot.** When swap_remove relocates a row ([§21](#21---swap_remove)), every slot-keyed table that listed the old position now points at the wrong creature.
+
+All three are solved by one idea: an *index map* - a parallel array from a key to a position, with a sentinel for "absent". It appears twice in the simulator, the same shape pointing at two different things.
+
+**Instance one: `id_to_slot`.** Maps a stable [entity](#10---stable-ids-and-generations) to its current column slot. This is what re-finds a creature after a move, and what anything outside the columns (a save, the network, the UI - [§26](#26---subscription-tables-keyed-by-slot)) uses to turn an id back into a slot.
 
 ```rust,no_run
 const INVALID: u32 = u32::MAX;
 
-fn slot_of(id_to_slot: &[u32], id: u32) -> Option<usize> {
-    let slot = id_to_slot[id as usize];
+fn slot_of(id_to_slot: &[u32], entity: u32) -> Option<usize> {
+    let slot = id_to_slot[entity as usize];
     if slot == INVALID { None } else { Some(slot as usize) }
 }
 ```
 
-A sentinel value (`u32::MAX`) marks "no slot - this id does not have a current row". The `Option` return makes the missing case explicit.
+A sentinel (`u32::MAX`) marks "no slot - this entity has no current row". The `Option` makes the missing case explicit.
 
-**Maintenance.** The map must be updated whenever a row moves. The events that move rows:
+**Instance two: the sparse set.** A membership table needs O(1) "is slot `i` present?" and O(1) unsubscribe, without a per-creature boolean - a boolean would be exactly the flag [§17](#17---presence-replaces-flags) abolished, one byte per creature whether set or not. The structure is two arrays: a `dense: Vec<u32>` of the present slots (what the hot loop walks), and a `sparse: Vec<u32>` indexed by slot, holding each present slot's *position in `dense`*, or `INVALID`.
 
-- **`swap_remove`.** When slot `i` is removed by swapping the last row in, the row that was at `last` is now at `i`. Update `id_to_slot[that_row.id] = i`. Set `id_to_slot[deleted_row.id] = INVALID`.
-- **Append.** When a new row is appended at slot `n`, set `id_to_slot[new_row.id] = n`.
-- **Sort or shuffle.** When the table is reordered (for locality, [§28](#28---sort-for-locality)), every slot moves. The full map is rewritten in lockstep with the sort.
+```rust,no_run
+// is slot i present?   sparse[i] != INVALID
+// subscribe(i):        sparse[i] = dense.len() as u32; dense.push(i);
+// unsubscribe(i):      let p = sparse[i] as usize;
+//                      let moved = *dense.last().unwrap();
+//                      dense.swap_remove(p);
+//                      sparse[moved as usize] = p as u32;
+//                      sparse[i] = INVALID;
+```
 
-The cleanup system from [§22](#22---mutations-buffer-cleanup-is-batched) is the natural home for these updates. Every removal and every insertion goes through cleanup; cleanup keeps the map in step.
+`sparse` stores positions and a sentinel, not booleans - it is the index-map pattern again, pointing into the membership table instead of into the columns. It answers "present?" *and* "where, so I can remove it in O(1)?", which a boolean could not. This pair, a dense list plus a sparse index, is the *sparse set* - the membership structure every ECS ships.
+
+**Maintenance.** Both maps must be kept current whenever a row moves. Take the move that hurts most, swap_remove ([§21](#21---swap_remove)): the last row, at slot `last`, backfills the freed slot `i`.
+
+- **`id_to_slot`.** Set `id_to_slot[moved_entity] = i`; set `id_to_slot[deleted_entity] = INVALID`.
+- **Every slot-keyed table.** Wherever a `dense` array listed slot `last`, rewrite it to `i` - a reindex through the move. With the sparse set this is O(1): the moved creature's position is `sparse[last]`, so `dense[sparse[last]] = i`, then `sparse[i] = sparse[last]; sparse[last] = INVALID` (when the moved creature was a member).
+- **Append.** A new row at slot `n` sets `id_to_slot[new_entity] = n`.
+- **Sort or shuffle.** Reordering for locality ([§28](#28---sort-for-locality)) moves every slot; both maps are rewritten in lockstep with the new order.
+
+The cleanup system from [§22](#22---mutations-buffer-cleanup-is-batched) is the natural home for all of this. Every move goes through cleanup; cleanup keeps the maps in step. This is also why [§24](#24---append-only-and-recycling) prefers not to move slots on death at all: every avoided move is a reindex never paid.
 
 **Cost.** The map adds one `u32` per id ever issued, including ids that are currently dead but whose slots have not been recycled. For a simulator that issues a million ids over its lifetime but has 100 000 alive at any moment, the map is 4 MB. That is a real cost - bigger than the alive table itself if the table has narrow columns. Mitigations include:
 
@@ -1343,6 +1365,8 @@ The cleanup system from [§22](#22---mutations-buffer-cleanup-is-batched) is the
 
 For most simulators, the dense `Vec<u32>` is the right shape. It is one cache line per 16 ids; cleanup streams sequentially through it.
 
+Each *maintained* membership table carries its own `sparse` array of the same magnitude (one `u32` per slot). So the cost is paid once for `id_to_slot` and once more per slot-keyed table kept incrementally. A table you instead *rebuild from scratch* each tick needs no sparse index at all - only its dense list, cleared and refilled. Rebuild when the membership churns almost completely each tick; maintain incrementally when it is stable and only a few entries change per tick. It is the same cost-versus-churn judgment as everywhere else in the book.
+
 **The pattern in the wild.** Every ECS engine ships an index map. Bevy's `Entity` is a 64-bit handle whose unpacking is essentially a slot lookup with a generation check. `slotmap`'s `SlotMap` keeps an internal map. Database engines maintain index maps as B-trees over primary keys. The shape - id-to-slot lookup, maintained on every move - is universal.
 
 Combined with [§10](#10---stable-ids-and-generations)'s stable ids and [§24](#24---append-only-and-recycling)'s slot recycling, the index map is the third piece of the *generational arena* - the canonical handle-based data structure in modern systems software.
@@ -1350,13 +1374,13 @@ Combined with [§10](#10---stable-ids-and-generations)'s stable ids and [§24](#
 ## Exercises
 
 1. **Build the map.** Add `id_to_slot: Vec<u32>` to your simulator. Initialise to `INVALID` for all ids. When a creature is appended at slot N, set `id_to_slot[id] = N`.
-2. **O(1) presence query.** Add a parallel `hungry_membership: Vec<bool>` set to `true` when an id is in `hungry`. Now `is_hungry(id)` is two array lookups, both O(1).
-3. **Maintain on swap_remove.** Modify your cleanup so that after `creatures.swap_remove(slot)`:
-   - `id_to_slot[deleted_id] = INVALID`
-   - `id_to_slot[moved_id] = slot` (the last row, now at `slot`)
-4. **Time the difference.** Rerun the simulator at 1 M creatures, calling `is_hungry(random_id)` 100 000 times per tick. Compare the linear-scan version (§17) and the indexed version (§23). The ratio is roughly N - about a million.
+2. **Build the sparse set.** Give `hungry` a `sparse: Vec<u32>` alongside its dense list. Implement `subscribe(i)`, `unsubscribe(i)`, and `is_member(i)` - each O(1), no boolean. Confirm `is_member` always agrees with a linear scan of the dense list across a run of subscribes and unsubscribes.
+3. **Maintain both maps on swap_remove.** Modify your cleanup so that after `creatures.swap_remove(slot)`:
+   - `id_to_slot[deleted_entity] = INVALID`; `id_to_slot[moved_entity] = slot` (the last row, now at `slot`)
+   - every slot-keyed table is reindexed: wherever it listed the moved row's old slot, rewrite it to `slot`. Verify `hungry` still lists exactly the hungry creatures after a sequence of deaths.
+4. **Time the difference.** At 1 M creatures, call `is_member(random_slot)` 100 000 times per tick. Compare the linear scan of the dense list (§17) with the sparse-set lookup (§23). The ratio is roughly N - about a million.
 5. **The bandwidth cost.** At 1 M ids, `id_to_slot` is 4 MB. Cleanup's update of the map writes ~12 bytes per swap_remove (delete row's slot, moved row's slot, plus bookkeeping). Compute the cleanup cost in microseconds for 1 000 deletes per tick; compare to the budget at 30 Hz.
-6. **Sort-for-locality compatibility.** When `creatures` is sorted (a preview of [§28](#28---sort-for-locality)), every slot moves. Rewrite `id_to_slot` in lockstep. Verify external references (held as ids) are still correct after the sort.
+6. **Sort-for-locality compatibility.** When `creatures` is sorted (a preview of [§28](#28---sort-for-locality)), every slot moves. Rewrite `id_to_slot` *and* every slot-keyed table in lockstep with the new order. Verify both id-held references and slot-keyed memberships are still correct after the sort.
 7. *(stretch)* **A from-scratch generational arena.** Combine [§10](#10---stable-ids-and-generations)'s `generation: Vec<u32>`, [§22](#22---mutations-buffer-cleanup-is-batched)'s deferred cleanup, and §23's `id_to_slot` map into a `SlotMap<T>` struct. Compare the shape with [`slotmap::SlotMap`](https://docs.rs/slotmap/) - same machinery, organised differently.
 
 ## What's next
