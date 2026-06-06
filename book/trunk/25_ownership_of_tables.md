@@ -67,4 +67,4 @@ Reference notes in [25_ownership_of_tables_solutions.md](25_ownership_of_tables_
 
 ## What's next
 
-You have closed Memory & lifecycle. The simulator's machinery is now complete: it can grow, shrink, recycle, parallelise, and replay. The next phase is *Scale*, starting with [§26 - Hot/cold splits](26_hot_cold_splits.md). The simulator's per-tick cost goes under the microscope.
+You have closed Memory & lifecycle. The simulator's machinery is now complete: it can grow, shrink, recycle, parallelise, and replay. The next phase is *Scale*, starting with [§26 - Subscription tables, keyed by slot](26_subscription_tables.md). The simulator's per-tick cost goes under the microscope.

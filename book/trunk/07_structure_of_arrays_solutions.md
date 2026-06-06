@@ -42,9 +42,9 @@ Both compile to tight loops. The SoA loop reads one byte per iteration; the AoS 
 
 At 1,000,000 entries: SoA is 1 MB (fits L2 on most chips); AoS at 4 bytes/Card is 4 MB (out of L2, into L3). At 10,000,000 SoA still fits L3; AoS does not. Each cache transition is a sharp slowdown for AoS while SoA continues at near-L2 speed.
 
-## Exercise 5 - Hot/cold
+## Exercise 5 - The wide-field case
 
-Add `nickname: [u8; 16]` to `Card`. Now `size_of::<Card>() ≥ 19` (will pad to 20 or 24 for alignment). The AoS count loop reads 24 bytes per element while SoA still reads 1. The ratio is no longer ~3-4× - it is ~20×. This is the hot/cold split waiting to happen, named in [§26](26_hot_cold_splits.md).
+Add `nickname: [u8; 16]` to `Card`. Now `size_of::<Card>() ≥ 19` (will pad to 20 or 24 for alignment). The AoS count loop reads 24 bytes per element while SoA still reads 1. The ratio is no longer ~3-4× - it is ~20×. This is the whole point of SoA: a field a loop does not read sits in its own column, untouched, costing no bandwidth. There is no row to drag it along with - which is exactly why a structure-of-arrays world never needs a separate hot/cold field split.
 
 ## Exercise 6 - When AoS wins
 

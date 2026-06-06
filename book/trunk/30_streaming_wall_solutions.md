@@ -77,7 +77,7 @@ Replay speed depends on the events-per-tick rate. For most simulators, replay is
 A well-tuned simulator at 30 Hz on a typical desktop:
 
 - ~10 M creatures comfortable (RAM-resident, sub-budget).
-- ~100 M creatures possible with hot/cold splits and sort-for-locality (RAM-resident, near-budget).
+- ~100 M creatures possible with narrow fields and sort-for-locality (RAM-resident, near-budget).
 - ~1 B creatures requires streaming (working set exceeds RAM).
 - ~10 B+ requires distributed simulation across multiple machines (covered in the monograph).
 

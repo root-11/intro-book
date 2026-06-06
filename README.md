@@ -173,7 +173,7 @@ That asymmetry is the dominant fact about modern CPUs. The arithmetic - adding, 
 
 This is also what makes "complexity class" misleading on its own. An O(N log N) algorithm that hits the cache hard can outrun a "faster" O(N) algorithm that scatters reads across RAM. Big-O describes how cost grows with N; layout describes the constant factor that gets multiplied in. At the scales this book targets, the constant factor often wins.
 
-You will *measure* this in the next two sections. The numbers above are nominal - the chip in front of you may be slightly faster or slightly slower, and the ratios are what matters. Once you have felt how big the gap is, the rest of the book's reasoning about layout, SoA, hot-cold splits, and parallelism follows naturally.
+You will *measure* this in the next two sections. The numbers above are nominal - the chip in front of you may be slightly faster or slightly slower, and the ratios are what matters. Once you have felt how big the gap is, the rest of the book's reasoning about layout, SoA, locality, and parallelism follows naturally.
 
 ## Exercises
 
@@ -482,7 +482,7 @@ You will need a stopwatch (`std::time::Instant`) for some of these.
 2. **Count cards in a player's hand, both ways.** Write `fn count_held_soa(locations: &[u8], player: u8) -> usize` and `fn count_held_aos(cards: &[Card], player: u8) -> usize`. Confirm they return the same number on the same deck.
 3. **Time the count at 10,000 entries.** Make `Vec<u8>` and `Vec<Card>` of length 10,000 (replicate the deck 192-fold, or fill arbitrarily). Time each `count_held_*` function. Note the ratio.
 4. **Scale to 1,000,000 entries.** Repeat at length 1,000,000. The SoA version reads 1 MB; the AoS version reads 3 MB (assuming `size_of::<Card>() == 3` plus padding). On most chips L2 fits one but not the other. Note where the cliff appears.
-5. **The hot/cold case.** Extend the row with a 16-byte `nickname: [u8; 16]`. Rebuild both. Now AoS reads 19+ bytes per element while SoA still reads 1. Time the count again. The gap should widen sharply.
+5. **The wide-field case.** Extend the row with a 16-byte `nickname: [u8; 16]`. Rebuild both. Now AoS reads 19+ bytes per element while SoA still reads 1. Time the count again. The gap should widen sharply.
 
 > [!NOTE]
 > How sharp depends on your memory hierarchy. Measured ratios at N=10M: ~2× on machines with generous L3 (modern desktops, mid-2010s Intel laptops), ~6× on a Raspberry Pi 4 (no L3, narrow LPDDR4 channel). The principle is the same; the slope of the cliff scales with how badly the AoS row blows the cache budget.
@@ -1517,63 +1517,67 @@ This is the rule that closes Memory & lifecycle. Without it, the buffering, swap
 
 ## What's next
 
-You have closed Memory & lifecycle. The simulator's machinery is now complete: it can grow, shrink, recycle, parallelise, and replay. The next phase is *Scale*, starting with [§26 - Hot/cold splits](#26---hotcold-splits). The simulator's per-tick cost goes under the microscope.
+You have closed Memory & lifecycle. The simulator's machinery is now complete: it can grow, shrink, recycle, parallelise, and replay. The next phase is *Scale*, starting with [§26 - Subscription tables, keyed by slot](#26---subscription-tables-keyed-by-slot). The simulator's per-tick cost goes under the microscope.
 
 
-# 26 - Hot/cold splits
+# 26 - Subscription tables, keyed by slot
 
 <p align="center"><img src="book/covers/phase_scale.jpg" alt="Scale phase" style="max-height: 380px; max-width: 100%;"></p>
 
-The simulator's `creature` table has six columns: `pos`, `vel`, `energy`, `birth_t`, `id`, `generation`. The motion system reads three of the six (`pos`, `vel`, `energy`). The starvation system reads only `energy`. The cleanup system reads `id` and `generation`. The births log reads `birth_t`. *No system reads all six*.
+A system rarely touches every entity. Motion moves all of them, but starvation only reads the hungry, reproduction only the well-fed, a sleep timer only the sleeping. [§17](#17---presence-replaces-flags) gave the tool for "which entities are in this set": a membership table. [§19](#19---ebp-dispatch) measured the payoff: iterate the 100 000 hungry instead of scanning 1 000 000 and branching, and the work is proportional to the subset, not the population.
 
-If the columns are stored together - same memory region, same prefetcher pulls - every load brings in fields the inner loop ignores. At cache-spilling sizes, the ignored fields cost real bandwidth.
+Call that membership table a *subscription table*, and the loop that walks it a system's *hot loop*. A creature *subscribes* to `hungry` when its energy drops; it *unsubscribes* when it eats. The subscription is the system's input; the hot loop is the system. This section settles a question [§17](#17---presence-replaces-flags) left open: what does a subscription table store, and how fast is the hot loop that reads it?
 
-The fix is a split: fields touched on the hot path go in one table; fields read rarely go in another. Two tables, same length, same id alignment.
+**A wrong turn first: splitting fields.**
 
-```rust,no_run
-struct CreatureHot {
-    px:     Vec<f32>, py: Vec<f32>,  // motion, next_event, apply_eat
-    vx:     Vec<f32>, vy: Vec<f32>,  // motion
-    energy: Vec<f32>,                // motion, apply_eat, apply_starve
-}
+The instinct many readers arrive with is to split the *fields* of a creature into hot and cold: put the fields an inner loop touches in one struct, the rarely-read fields in another, so a load does not drag in bytes the loop ignores. In a row-oriented (array-of-structs) world this is a real technique. In the structure-of-arrays world this book has used since [§7](#7---structure-of-arrays-soa), it is already done for you: every field is its own column. Reading `px` never touches `birth_t`; they are different arrays. There is no row to drag a cold field along with, so there is nothing to split. The bandwidth win that motivates a field split in AoS is the same win SoA already banked back in [§7](#7---structure-of-arrays-soa); it is not a separate technique to apply here.
 
-struct CreatureCold {
-    birth_t: Vec<f64>,           // logging only
-    id:      Vec<u32>,           // cleanup, id_to_slot maintenance
-    generation:     Vec<u32>,           // cleanup
-}
-```
+So the attribute table is never split. It stays whole: every column, every slot, reachable by index `i`. What a system changes is not the table but how it *reaches into* it. Rather than scan the whole table and branch, a system keeps a subscription table, the slots `i` it cares about, and indexes straight in: no scan, no field split, direct access. The rest of this section is about making that direct access fast.
 
-Motion reads only `CreatureHot`. Cleanup reads `CreatureCold`. The two systems' cache traffic does not overlap.
+**What a subscription stores: ids or slots.**
 
-The bandwidth math: pre-split, motion's loop reads ~40 bytes per creature (the full row, prefetcher loads everything together). Post-split, motion reads 20 bytes (just `px, py` + `vx, vy` + `energy`). Half the bandwidth, which measured as ~2-2.5× faster wall-clock time at 1M creatures across the four reference machines (`code/README.md`).
+A creature has a stable [id](#10---stable-ids-and-generations) and a current [slot](#23---index-maps), its position in the attribute columns. `id_to_slot` maps one to the other. A subscription table can hold either, and the choice is not cosmetic.
 
-The discipline carries cost. Two tables means two id-to-slot maps (or careful sharing of one). Cleanup must update both in lockstep when slots move. The split is a real architectural commitment - once made, every system that touches creatures must know which table it is touching.
+- Hold *ids*. The hot loop reads an id, looks up `id_to_slot[id]` to find the slot, then gathers the columns. One extra load per element, every tick. The table survives relocation untouched: when [cleanup](#24---append-only-and-recycling) moves entities, only `id_to_slot` changes.
+- Hold *slots*. The hot loop reads a slot and gathers the columns directly, no redirection. But when cleanup moves entities, every slot in every subscription is now stale and must be rewritten.
 
-When the split is wrong:
+The redirection is paid every tick. The rewrite is paid once per cleanup interval. Which loses?
 
-- **All-fields workloads.** A debug-inspect system that prints every field reads everything; the split adds overhead without reducing bandwidth.
-- **Tiny rows.** If the full row is already 16-24 bytes (one or two fields per cache line), splitting a 4-byte field out adds more pointer traffic than it saves.
-- **Frequently rebalancing.** If which fields are "hot" changes from tick to tick, a fixed split becomes unhelpful. Hot/cold is a static decision, made once for a given target workload.
+**Measured.** At 1 000 000 creatures with a tenth subscribed, the id-keyed hot loop runs about twice as slow as the slot-keyed one. The cost is not the extra instruction. `id_to_slot` is a four-megabyte array and the subscribed ids are scattered through it, so each lookup is a cache miss before the column gather has even started. The slot key skips that miss entirely.
 
-The decision rests on measurement. Profile the simulator at the target size; identify the inner loop's actual touched fields; split accordingly. The split is earned by data, not by aesthetics.
+The rewrite the slot key pays in return is small and bounded. It scales with how many subscriptions an entity sits in (rewrite each table the entity appears in), but it happens once per cleanup interval, not once per tick. Across the realistic range, a handful of subscriptions and a cleanup every few dozen ticks, the per-tick saving buries the per-interval rewrite by roughly two to one. The numbers are in `code/README.md`; the benchmark is `ebp_partition`.
 
-A useful test: name the split *before* writing it. "I am moving `birth_t` into a cold table because no inner loop reads it" is a sound design choice. "I am moving `birth_t` into a cold table because that's how ECS engines do it" is not.
+So **subscription tables hold slots.** This is also *why* the lifecycle keeps [stable slots](#24---append-only-and-recycling) and lets cleanup own the reindex: slot keys are only safe when one system is responsible for rewriting them when entities move. The cleanup can do that for any reference it owns - a subscription, or a cross-entity link stored in a column - remapping them all in one pass.
+
+So what is the stable [id](#10---stable-ids-and-generations) for, once the hot loop runs on slots? For every reference the cleanup *cannot* reach to rewrite. A save file ([§36](#36---persistence-is-table-serialization)), a replay log ([§37](#37---the-log-is-the-world)) whose events are `(entity, key, value)`, a packet on the wire, an entity the UI has selected, a snapshot a slow background system is still reading ([§39](#39---system-of-systems)): a slot is meaningless to all of them, because the next compaction moves it. They hold the id and resolve it through `id_to_slot` once, at the boundary ([§35](#35---the-boundary-is-the-queue)), never per element. Slots are an internal, momentary fact; the id (with its generation, [§10](#10---stable-ids-and-generations)) is the identity that survives a relocation, a save, and a network hop.
+
+**Locality: a slot-keyed loop is fast only when its slots are dense.**
+
+A slot-keyed hot loop gathers columns at the slots the subscription lists. If those slots are scattered through the column, which is what churn produces as deaths and births leave holes, the gather misses cache on nearly every element. If they are contiguous, the gather streams. Compacting the live, subscribed entities to the front of the columns turns a scattered gather into a sequential one; measured, that is several times faster. The compaction is not free, but it pays for itself within a few ticks, and it is the same batch pass that reclaims dead slots. [§28](#28---sort-for-locality) is that pass.
+
+**The one case a split would help, in full view.**
+
+There is a single scenario where grouping fields would still pay. A hot loop that reads several columns at *scattered* slots touches one cache line per column per element; interleaving those columns into one record would touch one. That case is real, and worth stating plainly rather than hiding behind the principle. We keep the columns separate anyway. The book's answer to scatter is to remove it: compaction ([§28](#28---sort-for-locality)) makes the subscribed slots dense, a dense gather streams each column at full bandwidth, and the per-column cost the interleaving would have saved is gone, paid back within a few ticks. Interleaving would also forfeit what SoA bought in [§7](#7---structure-of-arrays-soa), whole-column streaming and SIMD, on every loop that is not scattered, to win the one that is. So the rule stands with its exception in the open: keep the columns separate, and compact when the gather scatters.
+
+**Name the subscription before you build it.**
+
+A subscription is earned by a system that genuinely processes a subset. "Most creatures are not hungry on most ticks, so `hungry` is far smaller than the population" is a sound reason to build one. "Every creature is always in `alive`, but other engines keep an alive-set" is not. A subscription that holds the whole population is a scan-all with extra bookkeeping, and the measurement says so: at full participation the subscription loop is marginally *slower* than a plain scan. The subscription wins in proportion to how much it excludes, and not otherwise.
 
 ## Exercises
 
-These extend the simulator's `creature` table from §0/§1.
+These extend the simulator's `creature` columns and the `id_to_slot` map from [§23](#23---index-maps).
 
-1. **Audit access patterns.** For each system in your simulator, list which fields it reads and which it writes. Fields read every tick are hot; the rest are cold.
-2. **Build the split.** Refactor `creature` into `creature_hot` and `creature_cold`. Both share the id allocator. Verify each row's fields stay aligned across the two tables.
-3. **Time motion at 1M creatures.** Pre-split: time motion. Post-split: time motion. Compare. The post-split version should be ~2-2.5× faster.
-4. **Cleanup must touch both.** Modify cleanup to `swap_remove` from both `creature_hot` and `creature_cold` when a creature dies. Verify alignment after.
-5. **A bad split.** Construct a split where the wrong fields go cold (e.g. `energy` in cold). Time motion. The cost of the cache miss on `energy` should bury any savings elsewhere.
-6. *(stretch)* **The all-fields case.** Write a system that reads every field (e.g. a serialiser). Time the split version. Discuss why the split's overhead is real here, and why this is a fine tradeoff: most ticks do not run this system.
+1. **Build a slot-keyed subscription.** Add `hungry: Vec<u32>` holding the *slots* of hungry creatures. A creature subscribes (push its slot) when `energy[slot]` drops below a threshold. Write the hot loop: iterate `hungry`, gather the columns by slot directly. Verify it touches only the subscribed creatures.
+2. **Key it by id instead, and time both.** Build a second version where `hungry` holds entity ids and the hot loop resolves each through `id_to_slot[entity]` before the gather. At 1M creatures with 10% subscribed, time both hot loops. Reproduce the ~2x gap. Where does the id version's time go? Compare the size of `id_to_slot` with one cache line.
+3. **Unsubscribe in O(1).** When a creature stops being hungry, remove its slot from `hungry` with `swap_remove`. What do you need alongside `hungry` to find the slot's *position in the table* without scanning it? (It is the [§23](#23---index-maps) trick again, one level up.)
+4. **Reindex on compaction.** Relocate the live creatures to the front of the columns (a stand-in for the [§24](#24---append-only-and-recycling)/[§28](#28---sort-for-locality) cleanup), producing an old-slot to new-slot map. Rewrite the slot-keyed `hungry` through that map; confirm the hot loop still processes the same creatures. Now do the same for the id-keyed version: what has to change? Time both reindex passes.
+5. **Dense vs scattered.** Time the slot-keyed hot loop with the subscription's slots scattered through the column, then again after compacting them to the front. Reproduce the several-fold speedup. How many ticks of hot-loop saving pay back one compaction pass?
+6. **The subscription that holds everyone.** Subscribe every creature and time the hot loop against a plain `for i in 0..n` scan. The subscription should be no faster, and slightly slower. Explain why, and state the rule for when a subscription is worth building.
+7. *(stretch)* **Two subscriptions, one entity.** Put creatures in both `hungry` and `sleepy`. On compaction, both tables need rewriting. Measure how the reindex cost grows with the number of subscriptions an entity sits in, and argue why it stays cheaper than the id key's per-tick redirection for any realistic cleanup interval.
 
 ## What's next
 
-[§27 - Working set vs cache](#27---working-set-vs-cache) puts numbers on the question this section was implicitly asking: how big *is* the inner loop's footprint, and what cache level does it fit in?
+[§27 - Working set vs cache](#27---working-set-vs-cache) puts numbers on the question this section kept leaning on: how big *is* the hot loop's footprint, and what cache level does it fit in?
 
 
 # 27 - Working set vs cache
@@ -1600,7 +1604,7 @@ Sequential streaming barely shows the cliff: the prefetcher keeps motion bandwid
 
 This is what §4's "cliff" was about, made concrete for your simulator. The transition points are not magic - they are arithmetic over your cache sizes.
 
-The hot/cold split (§26) shrinks the working set. Motion's working set went from 40 bytes per creature (full row) to 20 bytes (hot table only). This pushes the cliff outward by a factor of 2: a 2M-creature simulator now runs at L3-resident speeds instead of RAM-resident.
+The working set is exactly the columns the loop reads, no more: SoA hands you that for free, because there is no wider row to trim ([§7](#7---structure-of-arrays-soa) again). From there, two levers push the cliff outward. A narrower field (§2) cuts the bytes per creature - dropping `energy` from `f64` to `f32` is 4 bytes per creature off the set. And a system that touches only a subset can subscribe (§26), cutting the *count* rather than the width. Motion reads every creature, so its lever is field width and access order, not subscription.
 
 The implication is design discipline:
 
@@ -1615,7 +1619,7 @@ This is not premature optimisation. It is *layout-aware design* - making the sch
 
 1. **Compute your working sets.** For each system in your simulator, compute `bytes per row × N` for N = 1K, 10K, 100K, 1M, 10M. Note which cache level each falls into for your machine.
 2. **Find your cliff.** Time motion at N = 1K, 10K, 100K, 1M, 10M. Plot ns-per-element against N. The transitions should match your cache sizes.
-3. **Reduce the working set.** Apply hot/cold splits (§26) to push motion's footprint down. Repeat exercise 2. Did the cliff move?
+3. **The unused column costs nothing.** Add a `birth_t: f64` column that motion never reads. Recompute motion's working set and repeat exercise 2. The cliff should not move: in SoA a column a loop does not read sits in its own array, untouched, so it adds zero to that loop's working set. (In an array-of-structs world it would have widened every row and moved the cliff inward - the difference SoA buys you.)
 4. **A wider field.** Change `energy: f32` to `energy: f64`. Recompute the working set. Repeat exercise 2. The cliff should move inward (closer to smaller N).
 5. **Random vs sequential.** Repeat motion's loop with `for &i in random_indices` instead of `for i in 0..N`. At 10M creatures the per-element time rises by roughly 25-45× (random RAM access vs sequential). A single-pointer chase shows a wider gap; motion's is smaller because each creature amortises five columns.
 6. *(stretch)* **The L1 sweet spot.** Find the N at which motion's working set fills L1 to roughly 75 %. Run the loop in tight repetition and compare to the closest L2-only neighbour. For *sequential* motion the difference is small - measured 1.0-1.2× across the four reference machines (`l1_sweet_spot`), because the loop is bandwidth-bound at both sizes and the prefetcher hides the L1/L2 boundary. The dramatic L1 win shows up when the access is random (exercise 5), not streaming.
@@ -1687,13 +1691,13 @@ This is the pattern Bevy, Unity DOTS, Unreal's Mass Entities, and most productio
 
 A simulator that runs cleanly at 10 000 creatures often grinds to a halt at 1 000 000. Not because the algorithm changed - because constant factors that were invisible at the smaller scale now bind.
 
-This chapter is about *finding the wall*. The fixes are techniques you already have: hot/cold splits (§26), working-set discipline (§27), sort for locality (§28), pre-sized buffers, batched cleanup. The chapter's job is to teach the reader to *measure* - to find which constant factors blew up.
+This chapter is about *finding the wall*. The fixes are techniques you already have: narrower fields (§7), subscriptions (§26), working-set discipline (§27), sort for locality (§28), pre-sized buffers, batched cleanup. The chapter's job is to teach the reader to *measure* - to find which constant factors blew up.
 
 Constant-factor bugs that bind at 10K → 1M:
 
 - **Reallocation.** A `to_insert: Vec<CreatureRow>` that grew lazily was fine at 100 pushes per tick (10K creatures × 1% reproduction). At 10K pushes per tick (1M × 1%), the reallocations dominate. Fix: `Vec::with_capacity(estimated_max)`.
 - **Linear scans.** `hungry.iter().any(|&id| id == target_id)` was 0.1 ms at 10K, but 10 ms at 1M. Fix: the `id_to_slot` map (§23) plus parallel presence flags.
-- **Cache spillover.** `creature` working set at 10K is 200 KB (L2-resident). At 1M it is 20 MB (L3-resident). Per-element time triples. Fix: hot/cold splits + narrower fields.
+- **Cache spillover.** `creature` working set at 10K is 200 KB (L2-resident). At 1M it is 20 MB (L3-resident). Per-element time triples. Fix: narrower fields (§7) and sort for locality (§28); for a system that touches only a subset, a subscription (§26).
 - **`HashMap` iteration order.** A `HashMap<u32, _>` iterated by systems that need deterministic order. At 10K the cost was tolerable; at 1M the bandwidth cost is high. Fix: `BTreeMap` or `Vec<(K, V)>`.
 - **Per-tick allocation.** A system that allocates a fresh `Vec` per tick was fine when the `Vec` was 1 KB. At 1M it is 100 KB; allocation latency starts to matter. Fix: reuse buffers across ticks.
 - **Logging.** A `println!` per creature was tolerable at 10K. At 1M it is the simulator's bottleneck. Fix: buffered logging, periodic snapshots, or simply turn it off.
@@ -1704,7 +1708,7 @@ The right tool is a profiler. `cargo flamegraph` (or `perf record` + `perf repor
 
 A useful exercise: run your simulator at 10K for 1000 ticks; time it. Run at 1M for 100 ticks (same total entity-ticks); time it. The 1M version should take ~10× longer, not 100×. If it takes 100×, something has crossed a constant-factor wall and the profiler will show you what.
 
-The fix is structural. Apply the techniques: hot/cold, working set, sort for locality, pre-sized buffers, batched cleanup, deterministic structures. Each is a chapter you have already read. The wall is the moment they all become non-optional.
+The fix is structural. Apply the techniques: narrow fields, subscriptions, working set, sort for locality, pre-sized buffers, batched cleanup, deterministic structures. Each is a chapter you have already read. The wall is the moment they all become non-optional.
 
 ## Exercises
 
@@ -1712,13 +1716,13 @@ The fix is structural. Apply the techniques: hot/cold, working set, sort for loc
 2. **Scale up.** Run at N = 1M for 100 ticks (same total entity-ticks). Time it. Compute the ratio.
 3. **Profile.** Use `cargo flamegraph` (or `perf`) on the 1M run. Identify the top three hottest functions.
 4. **Pre-size `to_insert`.** Apply `Vec::with_capacity` to your cleanup buffers. Re-run; re-profile. Did the hot list change?
-5. **Hot/cold split.** Apply the §26 split. Re-run; re-profile. Working set should shrink visibly in the cache-miss counters.
+5. **Subscribe a subset system.** Take a system that acts on a fraction of creatures (starvation, reproduction) and give it a slot-keyed subscription table (§26) instead of scanning all 1M and branching. Re-run; re-profile. The scan-all frame should drop off the flame graph; the system's work falls in proportion to the subscribed fraction.
 6. **Use index maps.** Replace any linear `iter().any()` with the §23 `id_to_slot` lookup. Re-run; re-profile.
 7. *(stretch)* **Find one new wall.** Pick any system in your simulator and find one constant factor that scales worse than expected. The fix is usually one of the techniques above; identifying *which* one is the lesson.
 
 ## What's next
 
-[§30 - Moving beyond the wall](#30---moving-beyond-the-wall) takes the next step: when even your fastest, tightest, hot/cold-split, sorted-for-locality simulator no longer fits in RAM, the architecture itself shifts.
+[§30 - Moving beyond the wall](#30---moving-beyond-the-wall) takes the next step: when even your fastest, tightest, subscription-driven, sorted-for-locality simulator no longer fits in RAM, the architecture itself shifts.
 
 
 # 30 - Moving beyond the wall

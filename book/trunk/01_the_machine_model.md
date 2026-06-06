@@ -16,7 +16,7 @@ That asymmetry is the dominant fact about modern CPUs. The arithmetic - adding, 
 
 This is also what makes "complexity class" misleading on its own. An O(N log N) algorithm that hits the cache hard can outrun a "faster" O(N) algorithm that scatters reads across RAM. Big-O describes how cost grows with N; layout describes the constant factor that gets multiplied in. At the scales this book targets, the constant factor often wins.
 
-You will *measure* this in the next two sections. The numbers above are nominal - the chip in front of you may be slightly faster or slightly slower, and the ratios are what matters. Once you have felt how big the gap is, the rest of the book's reasoning about layout, SoA, hot-cold splits, and parallelism follows naturally.
+You will *measure* this in the next two sections. The numbers above are nominal - the chip in front of you may be slightly faster or slightly slower, and the ratios are what matters. Once you have felt how big the gap is, the rest of the book's reasoning about layout, SoA, locality, and parallelism follows naturally.
 
 ## Exercises
 

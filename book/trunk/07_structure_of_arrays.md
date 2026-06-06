@@ -33,7 +33,7 @@ You will need a stopwatch (`std::time::Instant`) for some of these.
 2. **Count cards in a player's hand, both ways.** Write `fn count_held_soa(locations: &[u8], player: u8) -> usize` and `fn count_held_aos(cards: &[Card], player: u8) -> usize`. Confirm they return the same number on the same deck.
 3. **Time the count at 10,000 entries.** Make `Vec<u8>` and `Vec<Card>` of length 10,000 (replicate the deck 192-fold, or fill arbitrarily). Time each `count_held_*` function. Note the ratio.
 4. **Scale to 1,000,000 entries.** Repeat at length 1,000,000. The SoA version reads 1 MB; the AoS version reads 3 MB (assuming `size_of::<Card>() == 3` plus padding). On most chips L2 fits one but not the other. Note where the cliff appears.
-5. **The hot/cold case.** Extend the row with a 16-byte `nickname: [u8; 16]`. Rebuild both. Now AoS reads 19+ bytes per element while SoA still reads 1. Time the count again. The gap should widen sharply.
+5. **The wide-field case.** Extend the row with a 16-byte `nickname: [u8; 16]`. Rebuild both. Now AoS reads 19+ bytes per element while SoA still reads 1. Time the count again. The gap should widen sharply.
 
 > [!NOTE]
 > How sharp depends on your memory hierarchy. Measured ratios at N=10M: ~2× on machines with generous L3 (modern desktops, mid-2010s Intel laptops), ~6× on a Raspberry Pi 4 (no L3, narrow LPDDR4 channel). The principle is the same; the slope of the cliff scales with how badly the AoS row blows the cache budget.

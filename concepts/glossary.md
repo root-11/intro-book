@@ -97,7 +97,7 @@ Each entry has four parts:
 
 **Anti-pattern.** Reaching for `Vec<Creature>` because "it's neater". Neatness is not a layout property. The cost is real and shows up at §1 onwards.
 
-**See also.** 4 (cost & budget), 6 (row is a tuple), 26 (hot/cold splits), 31 (disjoint writes parallelize).
+**See also.** 4 (cost & budget), 6 (row is a tuple), 26 (subscription tables), 31 (disjoint writes parallelize).
 
 ---
 
@@ -317,15 +317,15 @@ Each entry has four parts:
 
 ---
 
-## 26 - Hot/cold splits
+## 26 - Subscription tables, keyed by slot
 
-**Definition.** Fields touched in the inner loop go in one table; metadata read rarely goes in another. The inner loop's footprint shrinks; cache works. SoA is the prerequisite - you cannot split fields you have already bundled into a struct.
+**Definition.** A system that processes a subset of entities iterates a *subscription table* (the slots it cares about) and indexes the attribute columns directly, instead of scanning every entity and branching. The table is keyed by slot, not entity id, so the hot loop carries no `id_to_slot` redirection; cleanup reindexes the table when slots move. SoA does the orthogonal job - each field is its own column, so a loop never loads fields it does not read - while the subscription does the count job: touch only the entities that matter.
 
-**Example.** The §2 simulator splits `creature` into `creature_hot` (`pos`, `vel`, `energy` - read every tick by `motion` and `next_event`) and `creature_cold` (`birth_t`, `species`, `name` - read only when logging or debugging). The hot table fits in L2; the cold table does not have to.
+**Example.** Starvation reads only the hungry, reproduction only the well-fed. Each keeps a `Vec<slot>`: subscribe on the transition in, unsubscribe (swap_remove) on the transition out. The hot loop walks the table and gathers columns by slot.
 
-**Anti-pattern.** A single fat table where every system reads all fields whether it uses them or not. The cold fields are paid for in cache traffic at every hot-path read.
+**Anti-pattern.** A subscription that holds the whole population - a scan with extra bookkeeping; at full participation it is slower than a plain loop. Or keying the table by entity id, which pays a scattered `id_to_slot` cache miss per element, every tick.
 
-**See also.** 4 (cost & budget), 7 (SoA), 27 (working set vs cache), 28 (sort for locality).
+**See also.** 7 (SoA), 17 (presence replaces flags), 19 (EBP dispatch), 23 (index maps), 28 (sort for locality).
 
 ---
 
@@ -333,11 +333,11 @@ Each entry has four parts:
 
 **Definition.** The size of the data the inner loop touches per pass decides speed more than the algorithm. If it fits in L1/L2, the loop is fast; if it does not, no algorithm saves you. This is what every other Scale-phase node serves: keeping the working set in cache.
 
-**Example.** The §2 simulator's `motion` loop reads two `f32×2` fields (`pos`, `vel`) per creature. At 1,000,000 creatures × 16 bytes = 16 MB - bigger than L2, fits in L3. The loop is L3-bound. Splitting hot/cold (node 26) and sorting for locality (node 28) shrinks the per-pass touch and brings the loop back into L2.
+**Example.** The §2 simulator's `motion` loop reads `px, py, vx, vy` per creature. At 1,000,000 creatures × 16 bytes = 16 MB - bigger than L2, fits in L3. The loop is L3-bound. Reading only the columns it needs (SoA, node 7) and sorting for locality (node 28) keep the per-pass touch small and sequential. Motion touches every creature, so a subscription (node 26) does not help here; subscriptions pay for systems that process a subset.
 
 **Anti-pattern.** Optimising the algorithm without measuring the working set. A 2× algorithmic speedup that doubles the working set is a slowdown.
 
-**See also.** 1 (machine model), 4 (cost & budget), 26 (hot/cold splits), 28 (sort for locality).
+**See also.** 1 (machine model), 4 (cost & budget), 7 (SoA), 28 (sort for locality).
 
 ---
 

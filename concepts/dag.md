@@ -92,14 +92,16 @@ flowchart TB
     N13 --> N25
 
     subgraph SC["Scale"]
-        N26[26. hot/cold splits]
+        N26[26. subscription tables]
         N27[27. working set vs cache]
         N28[28. sort for locality]
         N29[29. wall: 10K to 1M]
         N30[30. wall: 1M to streaming]
     end
-    N4 --> N26
-    N7 --> N26
+    N17 --> N26
+    N19 --> N26
+    N23 --> N26
+    N24 --> N26
     N26 --> N27
     N27 --> N28
     N27 --> N29
@@ -226,7 +228,7 @@ flowchart TB
 
 ### Scale (26-30)
 
-26. **Hot and cold splits.** Fields touched in the inner loop go in one table; metadata read rarely goes in another. The inner loop's footprint shrinks; cache works.
+26. **Subscription tables, keyed by slot.** A system that processes a subset iterates the slots it subscribes to and indexes the columns directly, instead of scanning every entity and branching. Keyed by slot, not entity id, so the hot loop carries no id-to-slot redirection; cleanup reindexes the table when slots move.
 
 27. **Working set vs cache.** The size of the data the inner loop touches per pass decides speed more than the algorithm. If it fits in L1/L2, the loop is fast; if it does not, no algorithm saves you.
 

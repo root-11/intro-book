@@ -42,9 +42,9 @@ Plot ns-per-element vs N. On a typical desktop:
 
 The transitions at 100K (L2 boundary) and 10M (L3 boundary) are the visible cliffs.
 
-## Exercise 3 - Reduce the working set
+## Exercise 3 - The unused column costs nothing
 
-After hot/cold splitting, motion's working set drops from 20 B to (still 20 B in this case, since we only kept the hot fields). If the original loop also read `birth_t` (8 B unnecessarily), the split drops from 28 B to 20 B - a roughly 30 % shrink, pushing the cliff outward by ~30 % in N.
+Adding `birth_t: f64` leaves motion's working set at 20 B per creature, and the cliff does not move. Motion reads `px, py, vx, vy, energy`; `birth_t` lives in its own array that the loop never touches, so it contributes nothing to the bytes streamed per pass. In an array-of-structs layout the same field would have widened every record from 20 B to 28 B and pulled the cliff inward by ~30 % in N. That gap is the SoA win (§7): the working set is the columns you read, never the columns you store.
 
 ## Exercise 4 - A wider field
 

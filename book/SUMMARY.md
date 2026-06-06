@@ -72,8 +72,8 @@
 
 # Part 6: Scale
 
-- [Hot/cold splits](trunk/26_hot_cold_splits.md)
-  - [Solutions](trunk/26_hot_cold_splits_solutions.md)
+- [Subscription tables, keyed by slot](trunk/26_subscription_tables.md)
+  - [Solutions](trunk/26_subscription_tables_solutions.md)
 - [Working set vs cache](trunk/27_working_set_vs_cache.md)
   - [Solutions](trunk/27_working_set_vs_cache_solutions.md)
 - [Sort for locality](trunk/28_sort_for_locality.md)
