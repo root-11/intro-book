@@ -94,7 +94,7 @@ flowchart TB
     subgraph SC["Scale"]
         N26[26. subscription tables]
         N27[27. working set vs cache]
-        N28[28. sort for locality]
+        N28[28. proximity is a property of position]
         N29[29. wall: 10K to 1M]
         N30[30. wall: 1M to streaming]
     end
@@ -232,7 +232,7 @@ flowchart TB
 
 27. **Working set vs cache.** The size of the data the inner loop touches per pass decides speed more than the algorithm. If it fits in L1/L2, the loop is fast; if it does not, no algorithm saves you.
 
-28. **Sort for locality.** Reordering rows so that frequently co-accessed entities sit together turns random access into sequential access. This is the technique that node 9 was the prerequisite pain for.
+28. **Proximity is a property of position.** Who is near here is a function of position, which motion already streams. Bin entities into cells (a dense counting sort recomputed each tick) instead of maintaining a bolt-on spatial index; locality of the gather is the node 24/26 compaction ordered by cell. The same idea globally: one centroid or leader, read by all, replaces all-pairs coordination.
 
 29. **The wall at 10K → 1M.** What changes when allocations cannot be casual: pre-sized buffers, no per-frame heap traffic, `swap_remove` instead of `remove`, batched cleanup, consciously chosen layouts. The design budget from node 4 starts to bind.
 

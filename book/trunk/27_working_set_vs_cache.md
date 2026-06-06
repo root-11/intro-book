@@ -48,4 +48,4 @@ Reference notes in [27_working_set_vs_cache_solutions.md](27_working_set_vs_cach
 
 ## What's next
 
-[§28 - Sort for locality](28_sort_for_locality.md) puts the cache to work explicitly: rearrange your rows so accesses become more sequential.
+[§28 - Proximity is a property of position](28_proximity.md) answers the neighbour query the simulator has been deferring - and shows that the spatial index you reach for is one you never have to keep.

@@ -37,7 +37,7 @@ The choice of partitioning matters.
 
 **By entity range** (above): simple, works when access is uniform. Each thread does the same work on a different slice.
 
-**By spatial cell** (after sort-for-locality, [§28](28_sort_for_locality.md)): each thread takes a region of the world. Useful when interactions are local - neighbours-only collisions, regional behaviours. Threads at boundary cells need a small synchronisation step (or a halo region copied into each thread's input).
+**By spatial cell** (after the spatial compaction, [§28](28_proximity.md)): each thread takes a region of the world. Useful when interactions are local - neighbours-only collisions, regional behaviours. Threads at boundary cells need a small synchronisation step (or a halo region copied into each thread's input).
 
 **By hash**: each thread takes ids whose hash modulo N matches its thread number. Useful when access is uniform but you want stable thread-to-data mapping across ticks.
 
@@ -53,7 +53,7 @@ The pattern is the right answer to "but I have one big table". You almost never 
 
 1. **Partition motion.** Use `chunks_mut` to split `pos`, `vel`, and `energy` into 8 chunks. Run motion across 8 `thread::scope` threads. Compare to single-threaded.
 2. **Speedup at scale.** Time partitioned motion at N = 100K, 1M, 10M creatures with 1, 2, 4, 8 threads. Plot speedup. Note where the bandwidth ceiling kicks in.
-3. **Spatial partition.** After running [§28](28_sort_for_locality.md)'s sort-for-locality, partition by spatial region (e.g. 8 vertical stripes of the world). Each thread handles one stripe. Compare with the entity-range partition. Does the spatial version pay off for `next_event`?
+3. **Spatial partition.** After running [§28](28_proximity.md)'s spatial compaction, partition by spatial region (e.g. 8 vertical stripes of the world). Each thread handles one stripe. Compare with the entity-range partition. Does the spatial version pay off for `next_event`?
 4. **Workload-weighted partition.** Suppose 90 % of creatures are idle and 10 % are active. A naive partition gives most threads almost no work and one thread all the work. Implement a partition that balances *active* count, not *total* count. Time both.
 5. *(stretch)* **`rayon::par_chunks_mut`.** Replace your manual `thread::scope` + `chunks_mut` with `pos.par_chunks_mut(chunk_size)`. Same result, less code. Note that rayon's work-stealing scheduler internally rebalances unbalanced workloads.
 

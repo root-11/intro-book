@@ -44,7 +44,7 @@ A sentinel (`u32::MAX`) marks "no slot - this entity has no current row". The `O
 - **`id_to_slot`.** Set `id_to_slot[moved_entity] = i`; set `id_to_slot[deleted_entity] = INVALID`.
 - **Every slot-keyed table.** Wherever a `dense` array listed slot `last`, rewrite it to `i` - a reindex through the move. With the sparse set this is O(1): the moved creature's position is `sparse[last]`, so `dense[sparse[last]] = i`, then `sparse[i] = sparse[last]; sparse[last] = INVALID` (when the moved creature was a member).
 - **Append.** A new row at slot `n` sets `id_to_slot[new_entity] = n`.
-- **Sort or shuffle.** Reordering for locality ([§28](28_sort_for_locality.md)) moves every slot; both maps are rewritten in lockstep with the new order.
+- **Sort or shuffle.** Reordering for locality ([§28](28_proximity.md)) moves every slot; both maps are rewritten in lockstep with the new order.
 
 The cleanup system from [§22](22_mutations_buffer.md) is the natural home for all of this. Every move goes through cleanup; cleanup keeps the maps in step. This is also why [§24](24_append_only_and_recycling.md) prefers not to move slots on death at all: every avoided move is a reindex never paid.
 
@@ -71,7 +71,7 @@ Combined with [§10](10_stable_ids_and_generations.md)'s stable ids and [§24](2
    - every slot-keyed table is reindexed: wherever it listed the moved row's old slot, rewrite it to `slot`. Verify `hungry` still lists exactly the hungry creatures after a sequence of deaths.
 4. **Time the difference.** At 1 M creatures, call `is_member(random_slot)` 100 000 times per tick. Compare the linear scan of the dense list (§17) with the sparse-set lookup (§23). The ratio is roughly N - about a million.
 5. **The bandwidth cost.** At 1 M ids, `id_to_slot` is 4 MB. Cleanup's update of the map writes ~12 bytes per swap_remove (delete row's slot, moved row's slot, plus bookkeeping). Compute the cleanup cost in microseconds for 1 000 deletes per tick; compare to the budget at 30 Hz.
-6. **Sort-for-locality compatibility.** When `creatures` is sorted (a preview of [§28](28_sort_for_locality.md)), every slot moves. Rewrite `id_to_slot` *and* every slot-keyed table in lockstep with the new order. Verify both id-held references and slot-keyed memberships are still correct after the sort.
+6. **Compaction compatibility.** When `creatures` are reordered for locality (the [§28](28_proximity.md) compaction), every slot moves. Rewrite `id_to_slot` *and* every slot-keyed table in lockstep with the new order. Verify both id-held references and slot-keyed memberships are still correct after the sort.
 7. *(stretch)* **A from-scratch generational arena.** Combine [§10](10_stable_ids_and_generations.md)'s `generation: Vec<u32>`, [§22](22_mutations_buffer.md)'s deferred cleanup, and §23's `id_to_slot` map into a `SlotMap<T>` struct. Compare the shape with [`slotmap::SlotMap`](https://docs.rs/slotmap/) - same machinery, organised differently.
 
 Reference notes in [23_index_maps_solutions.md](23_index_maps_solutions.md).

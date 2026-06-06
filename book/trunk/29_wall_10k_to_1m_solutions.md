@@ -28,7 +28,7 @@ Re-profile: the `Vec::extend` frames should shrink dramatically. A typical fix r
 
 ## Exercise 5 - Subscribe a subset system
 
-Give a subset system (say `apply_starve`, which acts only on the hungry) a slot-keyed subscription table (§26) instead of scanning all 1M creatures and branching on a flag. Re-profile: the scan-all frame disappears from the flame graph, and the system's cost falls in proportion to the subscribed fraction - at 1 % subscribed the `ebp_partition` benchmark shows roughly a 14x drop versus scan-all-and-branch. Motion, which touches every creature, gains nothing from a subscription; its lever is narrower fields (§7) and sort for locality (§28).
+Give a subset system (say `apply_starve`, which acts only on the hungry) a slot-keyed subscription table (§26) instead of scanning all 1M creatures and branching on a flag. Re-profile: the scan-all frame disappears from the flame graph, and the system's cost falls in proportion to the subscribed fraction - at 1 % subscribed the `ebp_partition` benchmark shows roughly a 14x drop versus scan-all-and-branch. Motion, which touches every creature, gains nothing from a subscription; its lever is narrower fields (§7) and the spatial compaction (§28).
 
 ## Exercise 6 - Index maps
 

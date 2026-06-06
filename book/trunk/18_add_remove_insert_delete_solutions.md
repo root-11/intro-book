@@ -93,7 +93,7 @@ events.push((tick, id[i], "became_hungry"));
 events.push((tick, id[i], "stopped_being_hungry"));
 ```
 
-After 100 ticks the log is a complete history. Logging the entity rather than the slot is what makes the log survive: by the time it is read back, swap_remove and sort ([§21](21_swap_remove.md), [§28](28_sort_for_locality.md)) have moved slots around, but the entity id still names the same creature.
+After 100 ticks the log is a complete history. Logging the entity rather than the slot is what makes the log survive: by the time it is read back, swap_remove and sort ([§21](21_swap_remove.md), [§28](28_proximity.md)) have moved slots around, but the entity id still names the same creature.
 
 ## Exercise 6 - Reconstruct from the log
 

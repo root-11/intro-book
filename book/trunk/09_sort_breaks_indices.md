@@ -8,7 +8,7 @@ In [§5 - Identity is an integer](05_identity_is_an_integer.md), exercise 10 lef
 
 That bug is the structural fact this section names. Sorting did not damage anything; the player's reference was never robust to begin with. An index points at a *slot*, not at a *thing*. When the slot's contents change, the index quietly changes meaning.
 
-It is not only sorting. Any rearrangement does it: `swap_remove` (a O(1) deletion that moves the last row into the freed slot, coming in [§21](21_swap_remove.md)), reshuffling for locality ([§28](28_sort_for_locality.md)), compacting after a batch of deletions. The same index, the same array, the same line of code, now means a different card.
+It is not only sorting. Any rearrangement does it: `swap_remove` (a O(1) deletion that moves the last row into the freed slot, coming in [§21](21_swap_remove.md)), reshuffling for locality ([§28](28_proximity.md)), compacting after a batch of deletions. The same index, the same array, the same line of code, now means a different card.
 
 This is uncomfortable. In OOP you held a `Card` reference and the card stayed put because `Card` was a thing. In data-oriented code the card *is the slot*, and the slot does not have permanent meaning. The card you saved a reference to yesterday may be a different card today, if the deck has been touched.
 

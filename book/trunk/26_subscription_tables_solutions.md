@@ -76,7 +76,7 @@ Measured, ~100 000 live: the id-keyed reindex is about 0.13 ms (rebuild `id_to_s
 
 ## Exercise 5 - Dense vs scattered
 
-Measured: the slot-keyed hot loop costs about 0.37 ms/pass when the subscribed slots are scattered through the column, and about 0.084 ms/pass after compacting them to the front - roughly 4.4x. The compaction pass itself costs about 0.88 ms (one batch reindex of the ~100 000 live). It saves ~0.29 ms/pass, so it pays for itself after about 3 passes (ticks) and is pure profit until churn re-scatters the slots. This is the same pass as [§28](28_sort_for_locality.md) and the same pass that reclaims dead slots ([§24](24_append_only_and_recycling.md)).
+Measured: the slot-keyed hot loop costs about 0.37 ms/pass when the subscribed slots are scattered through the column, and about 0.084 ms/pass after compacting them to the front - roughly 4.4x. The compaction pass itself costs about 0.88 ms (one batch reindex of the ~100 000 live). It saves ~0.29 ms/pass, so it pays for itself after about 3 passes (ticks) and is pure profit until churn re-scatters the slots. This is the same pass as [§28](28_proximity.md) and the same pass that reclaims dead slots ([§24](24_append_only_and_recycling.md)).
 
 ## Exercise 6 - The subscription that holds everyone
 

@@ -38,7 +38,7 @@ At 10M, the working set is 200 MB, well past L3. The loop is memory-bandwidth bo
 
 ## Exercise 3 - Spatial partition
 
-After [§28](28_sort_for_locality.md)'s spatial sort, creatures in the same region are adjacent in memory. Assigning each thread a region means the cache lines a thread loads are the cache lines that thread uses - no cross-thread cache traffic.
+After [§28](28_proximity.md)'s spatial compaction, creatures in the same region are adjacent in memory. Assigning each thread a region means the cache lines a thread loads are the cache lines that thread uses - no cross-thread cache traffic.
 
 For systems with neighbour reads (`next_event`'s collision check), spatial partitioning is roughly 10-30 % faster than entity-range partitioning at scale, depending on neighbour density.
 

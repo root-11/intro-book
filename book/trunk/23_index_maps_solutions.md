@@ -123,7 +123,7 @@ The factor of N (a million) shows up in real wall time.
 
 1 000 deletes per tick × 12 bytes each = 12 KB written per tick. At ~12 GB/s memory bandwidth, that is ~1 µs. Compare to a 30 Hz budget of 33 ms: ~0.003 % of the tick. The cleanup pass is essentially free; the system can afford to run every tick without measurable cost.
 
-## Exercise 6 - Sort-for-locality compatibility
+## Exercise 6 - Compaction compatibility
 
 ```rust,no_run
 fn sort_creatures_for_locality(world: &mut World) {

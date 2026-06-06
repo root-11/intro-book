@@ -534,7 +534,7 @@ In [§5 - Identity is an integer](#5---identity-is-an-integer), exercise 10 left
 
 That bug is the structural fact this section names. Sorting did not damage anything; the player's reference was never robust to begin with. An index points at a *slot*, not at a *thing*. When the slot's contents change, the index quietly changes meaning.
 
-It is not only sorting. Any rearrangement does it: `swap_remove` (a O(1) deletion that moves the last row into the freed slot, coming in [§21](#21---swap_remove)), reshuffling for locality ([§28](#28---sort-for-locality)), compacting after a batch of deletions. The same index, the same array, the same line of code, now means a different card.
+It is not only sorting. Any rearrangement does it: `swap_remove` (a O(1) deletion that moves the last row into the freed slot, coming in [§21](#21---swap_remove)), reshuffling for locality ([§28](#28---proximity-is-a-property-of-position)), compacting after a batch of deletions. The same index, the same array, the same line of code, now means a different card.
 
 This is uncomfortable. In OOP you held a `Card` reference and the card stayed put because `Card` was a thing. In data-oriented code the card *is the slot*, and the slot does not have permanent meaning. The card you saved a reference to yesterday may be a different card today, if the deck has been touched.
 
@@ -1353,7 +1353,7 @@ A sentinel (`u32::MAX`) marks "no slot - this entity has no current row". The `O
 - **`id_to_slot`.** Set `id_to_slot[moved_entity] = i`; set `id_to_slot[deleted_entity] = INVALID`.
 - **Every slot-keyed table.** Wherever a `dense` array listed slot `last`, rewrite it to `i` - a reindex through the move. With the sparse set this is O(1): the moved creature's position is `sparse[last]`, so `dense[sparse[last]] = i`, then `sparse[i] = sparse[last]; sparse[last] = INVALID` (when the moved creature was a member).
 - **Append.** A new row at slot `n` sets `id_to_slot[new_entity] = n`.
-- **Sort or shuffle.** Reordering for locality ([§28](#28---sort-for-locality)) moves every slot; both maps are rewritten in lockstep with the new order.
+- **Sort or shuffle.** Reordering for locality ([§28](#28---proximity-is-a-property-of-position)) moves every slot; both maps are rewritten in lockstep with the new order.
 
 The cleanup system from [§22](#22---mutations-buffer-cleanup-is-batched) is the natural home for all of this. Every move goes through cleanup; cleanup keeps the maps in step. This is also why [§24](#24---append-only-and-recycling) prefers not to move slots on death at all: every avoided move is a reindex never paid.
 
@@ -1380,7 +1380,7 @@ Combined with [§10](#10---stable-ids-and-generations)'s stable ids and [§24](#
    - every slot-keyed table is reindexed: wherever it listed the moved row's old slot, rewrite it to `slot`. Verify `hungry` still lists exactly the hungry creatures after a sequence of deaths.
 4. **Time the difference.** At 1 M creatures, call `is_member(random_slot)` 100 000 times per tick. Compare the linear scan of the dense list (§17) with the sparse-set lookup (§23). The ratio is roughly N - about a million.
 5. **The bandwidth cost.** At 1 M ids, `id_to_slot` is 4 MB. Cleanup's update of the map writes ~12 bytes per swap_remove (delete row's slot, moved row's slot, plus bookkeeping). Compute the cleanup cost in microseconds for 1 000 deletes per tick; compare to the budget at 30 Hz.
-6. **Sort-for-locality compatibility.** When `creatures` is sorted (a preview of [§28](#28---sort-for-locality)), every slot moves. Rewrite `id_to_slot` *and* every slot-keyed table in lockstep with the new order. Verify both id-held references and slot-keyed memberships are still correct after the sort.
+6. **Compaction compatibility.** When `creatures` are reordered for locality (the [§28](#28---proximity-is-a-property-of-position) compaction), every slot moves. Rewrite `id_to_slot` *and* every slot-keyed table in lockstep with the new order. Verify both id-held references and slot-keyed memberships are still correct after the sort.
 7. *(stretch)* **A from-scratch generational arena.** Combine [§10](#10---stable-ids-and-generations)'s `generation: Vec<u32>`, [§22](#22---mutations-buffer-cleanup-is-batched)'s deferred cleanup, and §23's `id_to_slot` map into a `SlotMap<T>` struct. Compare the shape with [`slotmap::SlotMap`](https://docs.rs/slotmap/) - same machinery, organised differently.
 
 ## What's next
@@ -1577,11 +1577,11 @@ So what is the stable [id](#10---stable-ids-and-generations) for, once the hot l
 
 **Locality: a slot-keyed loop is fast only when its slots are dense.**
 
-A slot-keyed hot loop gathers columns at the slots the subscription lists. If those slots are scattered through the column, which is what churn produces as deaths and births leave holes, the gather misses cache on nearly every element. If they are contiguous, the gather streams. Compacting the live, subscribed entities to the front of the columns turns a scattered gather into a sequential one; measured, that is several times faster. The compaction is not free, but it pays for itself within a few ticks, and it is the same batch pass that reclaims dead slots. [§28](#28---sort-for-locality) is that pass.
+A slot-keyed hot loop gathers columns at the slots the subscription lists. If those slots are scattered through the column, which is what churn produces as deaths and births leave holes, the gather misses cache on nearly every element. If they are contiguous, the gather streams. Compacting the live, subscribed entities to the front of the columns turns a scattered gather into a sequential one; measured, that is several times faster. The compaction is not free, but it pays for itself within a few ticks, and it is the same batch pass that reclaims dead slots. [§28](#28---proximity-is-a-property-of-position) is that pass.
 
 **The one case a split would help, in full view.**
 
-There is a single scenario where grouping fields would still pay. A hot loop that reads several columns at *scattered* slots touches one cache line per column per element; interleaving those columns into one record would touch one. That case is real, and worth stating plainly rather than hiding behind the principle. We keep the columns separate anyway. The book's answer to scatter is to remove it: compaction ([§28](#28---sort-for-locality)) makes the subscribed slots dense, a dense gather streams each column at full bandwidth, and the per-column cost the interleaving would have saved is gone, paid back within a few ticks. Interleaving would also forfeit what SoA bought in [§7](#7---structure-of-arrays-soa), whole-column streaming and SIMD, on every loop that is not scattered, to win the one that is. So the rule stands with its exception in the open: keep the columns separate, and compact when the gather scatters.
+There is a single scenario where grouping fields would still pay. A hot loop that reads several columns at *scattered* slots touches one cache line per column per element; interleaving those columns into one record would touch one. That case is real, and worth stating plainly rather than hiding behind the principle. We keep the columns separate anyway. The book's answer to scatter is to remove it: compaction ([§28](#28---proximity-is-a-property-of-position)) makes the subscribed slots dense, a dense gather streams each column at full bandwidth, and the per-column cost the interleaving would have saved is gone, paid back within a few ticks. Interleaving would also forfeit what SoA bought in [§7](#7---structure-of-arrays-soa), whole-column streaming and SIMD, on every loop that is not scattered, to win the one that is. So the rule stands with its exception in the open: keep the columns separate, and compact when the gather scatters.
 
 **Name the subscription before you build it.**
 
@@ -1594,7 +1594,7 @@ These extend the simulator's `creature` columns and the `id_to_slot` map from [�
 1. **Build a slot-keyed subscription.** Add `hungry: Vec<u32>` holding the *slots* of hungry creatures. A creature subscribes (push its slot) when `energy[slot]` drops below a threshold. Write the hot loop: iterate `hungry`, gather the columns by slot directly. Verify it touches only the subscribed creatures.
 2. **Key it by id instead, and time both.** Build a second version where `hungry` holds entity ids and the hot loop resolves each through `id_to_slot[entity]` before the gather. At 1M creatures with 10% subscribed, time both hot loops. Reproduce the ~2x gap. Where does the id version's time go? Compare the size of `id_to_slot` with one cache line.
 3. **Unsubscribe in O(1).** When a creature stops being hungry, remove its slot from `hungry` with `swap_remove`. What do you need alongside `hungry` to find the slot's *position in the table* without scanning it? (It is the [§23](#23---index-maps) trick again, one level up.)
-4. **Reindex on compaction.** Relocate the live creatures to the front of the columns (a stand-in for the [§24](#24---append-only-and-recycling)/[§28](#28---sort-for-locality) cleanup), producing an old-slot to new-slot map. Rewrite the slot-keyed `hungry` through that map; confirm the hot loop still processes the same creatures. Now do the same for the id-keyed version: what has to change? Time both reindex passes.
+4. **Reindex on compaction.** Relocate the live creatures to the front of the columns (a stand-in for the [§24](#24---append-only-and-recycling)/[§28](#28---proximity-is-a-property-of-position) cleanup), producing an old-slot to new-slot map. Rewrite the slot-keyed `hungry` through that map; confirm the hot loop still processes the same creatures. Now do the same for the id-keyed version: what has to change? Time both reindex passes.
 5. **Dense vs scattered.** Time the slot-keyed hot loop with the subscription's slots scattered through the column, then again after compacting them to the front. Reproduce the several-fold speedup. How many ticks of hot-loop saving pay back one compaction pass?
 6. **The subscription that holds everyone.** Subscribe every creature and time the hot loop against a plain `for i in 0..n` scan. The subscription should be no faster, and slightly slower. Explain why, and state the rule for when a subscription is worth building.
 7. *(stretch)* **Two subscriptions, one entity.** Put creatures in both `hungry` and `sleepy`. On compaction, both tables need rewriting. Measure how the reindex cost grows with the number of subscriptions an entity sits in, and argue why it stays cheaper than the id key's per-tick redirection for any realistic cleanup interval.
@@ -1650,59 +1650,62 @@ This is not premature optimisation. It is *layout-aware design* - making the sch
 
 ## What's next
 
-[§28 - Sort for locality](#28---sort-for-locality) puts the cache to work explicitly: rearrange your rows so accesses become more sequential.
+[§28 - Proximity is a property of position](#28---proximity-is-a-property-of-position) answers the neighbour query the simulator has been deferring - and shows that the spatial index you reach for is one you never have to keep.
 
 
-# 28 - Sort for locality
+# 28 - Proximity is a property of position
 
-<p align="center"><img src="book/illustrations/optimization.jpg" alt="Optimization: minimize f(x) - sorting for locality is reordering for cost" style="max-height: 300px; max-width: 100%;"></p>
+<p align="center"><img src="book/illustrations/optimization.jpg" alt="Optimization: minimize f(x) - proximity is a function of position, computed where position lives" style="max-height: 300px; max-width: 100%;"></p>
 
-In §9 you learned the sort-breaks-indices bug. In §10 you fixed it with stable ids. In §23 you made id-to-slot lookup O(1). With those three pieces in place, the simulator can now do something it could not before: rearrange its rows for locality.
+Creatures eat the food they encounter. So `next_event` has to answer, for every creature, *which food is within reach?* At §1's ten thousand that is a cheap scan. At §2's million it is a wall: comparing every creature to every food is O(C×F). Measured, even twenty thousand all-pairs neighbour tests cost ~270 ms - one frame's entire budget spent on a fraction of the world.
 
-The principle is simple. Rows accessed near each other in time should sit near each other in memory. Two creatures that interact (collide, query a neighbour, broadphase against each other) should land on adjacent cache lines.
+The reflex is to reach for a *spatial index*: a quadtree, a grid hash, a structure that lives beside the world, that you insert into and delete from as things move, that you query. It works. But stop and look at what it is: a second copy of information the world already holds - position - with its own maintenance budget, its own allocations, and pointer-chased buckets that miss cache on every hop.
 
-The classic technique is a *spatial sort*. Each creature's position is hashed to a spatial cell; the creatures table is sorted by cell. Reading "all creatures in cell C" becomes a contiguous range read.
+Step back and ask what proximity *is*. It is a function of position. And position is already owned and streamed, every tick, by the motion system. The cell a creature falls in is one line - `cell = f(px, py)` - computed in the pass motion is already making, branchless, SIMD-friendly. The index was never necessary. The cell is a property you read off position.
+
+**Bin, don't index.** Compute each creature's cell, then place the creatures into per-cell buckets with a counting sort: histogram the cells, prefix-sum into offsets, scatter the indices into one dense array. No `HashMap`, no per-cell allocation, no pointer-chasing - three linear passes over contiguous memory. A neighbour query reads the 3x3 block of cells around a point as contiguous ranges.
 
 ```rust,no_run
-fn spatial_cell(px: f32, py: f32, cell_size: f32) -> u32 {
+// cell id per creature - the SIMD-friendly byproduct of the position stream
+let cell: Vec<u32> = (0..n).map(|i| cell_of(px[i], py[i])).collect();
+
+// counting sort into a dense CSR bucket array: offsets[c]..offsets[c+1]
+let mut offsets = vec![0u32; ncells + 1];
+for &c in &cell { offsets[c as usize + 1] += 1; }
+for c in 0..ncells { offsets[c + 1] += offsets[c]; }
+let mut items = vec![0u32; n];
+let mut cursor = offsets.clone();
+for i in 0..n { let c = cell[i] as usize; items[cursor[c] as usize] = i as u32; cursor[c] += 1; }
+```
+
+**Measured** (`proximity`, 1M creatures): the dense bin answers the neighbour query in ~520 ms against the bolt-on `HashMap`'s ~1470 ms - about 2.8x - and its *build* is ~8x cheaper (3.7 ms vs 31 ms). The hash spends its time allocating buckets and chasing them; the dense bin streams.
+
+The sharpest number is the build itself. Rebuilding the *entire* spatial structure from scratch costs 3.7 ms - **0.7% of the query it serves.** So the whole reason a bolt-on index exists, "don't pay to rebuild," is optimising under one percent of the work. You do not maintain proximity across ticks. You recompute it from the position stream each tick, for free, in the pass motion already makes. *Recompute from the stream* beats *maintain a structure*, and the old question of how often to re-sort the world simply evaporates: there is no kept structure to schedule.
+
+**The gather still scatters, and that is [§26](#26---subscription-tables-keyed-by-slot)'s job.** Binning finds the *candidates* cheaply, but reading their positions jumps around the columns. Making that gather dense is the compaction from [§24](#24---append-only-and-recycling)/[§26](#26---subscription-tables-keyed-by-slot): the same batch pass that reclaims dead slots can reorder the survivors *by cell* (a Z-order curve keeps neighbouring cells adjacent in memory), so a cell's creatures land on adjacent cache lines. That reorder is the GC's slow-cadence pass, not a separate spatial sort with its own knob. §28 says *which cell*; §26 makes *reading the cell* stream.
+
+```rust,no_run
+fn cell_of(px: f32, py: f32, cell_size: f32) -> u32 {
     let x = (px / cell_size).floor() as i32;
     let y = (py / cell_size).floor() as i32;
-    // Pack (x, y) into a single u32 hash. (Z-order or Hilbert work too.)
+    // simple stripe pack; a Z-order (Morton) hash keeps 2D neighbours close in 1D
     ((x as u32 & 0xFFFF) << 16) | (y as u32 & 0xFFFF)
-}
-
-fn sort_creatures_for_locality(world: &mut World, cell_size: f32) {
-    let c = &world.creatures;
-    let mut order: Vec<usize> = (0..c.len()).collect();
-    order.sort_by_key(|&i| spatial_cell(c.px[i], c.py[i], cell_size));
-    apply_permutation(world, &order); // reorders every column; rewrites id_to_slot
 }
 ```
 
-Two creatures in the same spatial cell are now adjacent in `px` and `py`. The next-event system, which checks every creature against its spatial neighbours, can stride through the position columns and read neighbours from the same cache line.
+**The same lesson at the global scale: the pack-leader.** Swarming beasts look coordinated, but if every beast accounts for every other - cohesion, alignment, separation against all N - the cost is O(N²) (~240 ms at twenty thousand). The way the old games did it: put an abstract, invisible leader at the centre of the pack. The leader does the one expensive thing, deciding where the pack goes; each beast subscribes to the leader and steers relative to it. One centroid pass, every member reads one value: O(N), ~0.03 ms at the same twenty thousand - four orders of magnitude, and the gap grows with N. Lifelike swarm behaviour, no all-pairs accounting. The "who is near the group" question, like "who is near me," is answered by a single pass over position, not by a structure every agent maintains.
 
-The cost is the sort itself. At 1M creatures, an O(N log N) sort of `u32` keys takes ~10 ms. Done every tick this is too expensive - but typically the sort is done every ~100 ticks (or when accumulated motion exceeds a threshold), amortising to ~0.1 ms per tick. The savings on the inner loop dwarf the cost.
-
-Other sort orders pay off in different regimes:
-
-- **Sort by id.** Stable across runs; nice for debugging; but no locality benefit unless ids correlate with access patterns.
-- **Sort by access frequency.** Hot creatures first; cold last. Useful only when the inner loop respects the order.
-- **Sort by behaviour.** All hungry creatures together; all sleepy together. Mostly redundant in a presence-based system, where the hungry-driver iterates `hungry` directly (§19).
-
-Sort cadence is its own decision. Sorting every tick is wasted work if the world is mostly stationary. Sorting once at startup is wrong if the world drifts. Most simulators trigger a re-sort when accumulated motion since the last sort exceeds a fraction of the cell size.
-
-The sort interacts with stable references (§10): rebuilding `id_to_slot` is part of the sort's cost, not a separate concern. Code outside the sort holds *ids*, not slots; the sort moves slots, the map keeps the ids correct.
-
-This is the pattern Bevy, Unity DOTS, Unreal's Mass Entities, and most production ECS engines use under the hood. Locality is paid up front (one sort) and amortised over many cache-friendly inner loops.
+The meta-lesson is the one worth keeping. Twice now the cheap path was to refuse the obvious data structure - the `id_to_slot` hop in [§26](#26---subscription-tables-keyed-by-slot), the spatial index here - and instead let the system that already owns the data produce the answer in the pass it already makes. Ask what the problem *is* before reaching for a structure to make it fit. Proximity is position; position is already in hand.
 
 ## Exercises
 
-1. **Compute spatial cells.** Write `fn spatial_cell(pos, cell_size) -> u32`. Apply it to a 1 000-creature world. Print the histogram of cells.
-2. **Sort by cell.** Implement `sort_creatures_for_locality`. Run it. Verify: print `pos[0..10]` - these should be near-neighbour positions.
-3. **Maintain `id_to_slot`.** Update `id_to_slot` during the sort. Verify a previously held id still resolves to the right creature.
-4. **Time `next_event` before and after.** Write a `next_event` system that, for each creature, scans the next 100 entries of `pos` for collisions. Time it pre-sort vs post-sort. The post-sort version should be measurably faster.
-5. **Sort cadence.** Run a 10-tick simulation, sorting every tick. Run the same simulation, sorting every 10 ticks. Compare total cost. Find the cadence where sort cost equals `next_event` savings.
-6. *(stretch)* **Z-order curve.** Replace the simple `(x, y)` packing with a Z-order (Morton) hash. Compare `next_event` timings. Z-order keeps spatially close cells close in the linear order; it usually outperforms simple stripe packing.
+1. **The all-pairs wall.** For N agents in a box, count neighbours within radius `r` by testing every pair. Time it at N = 1K, 10K, 20K. Confirm the O(N²) curve, and that 20K alone already exceeds a 30 Hz frame budget.
+2. **Cell as a derived column.** Write `fn cell_of(px, py, cell_size) -> u32`. Compute the `cell` column for a 1M-creature world in the same loop that would update position. Note that it adds one cheap arithmetic op per creature to a pass you are already making.
+3. **Dense binning.** Build the CSR bucket array (count, prefix-sum, scatter). Answer "neighbours within `r`" by reading the 3x3 cell block. Verify it gives the same counts as exercise 1.
+4. **Bolt-on hash vs dense bin.** Build the same query with a `HashMap<cell, Vec<u32>>`. At 1M, time build and query for both. Reproduce the ~2.8x end-to-end gap; note where the hash spends its time (allocation, pointer-chasing) against the dense bin's contiguous streams.
+5. **Recompute beats maintain.** Measure the dense bin's build as a fraction of its query. Confirm it is roughly 1%. Argue why maintaining a spatial index incrementally (to "save" the rebuild) optimises the wrong thing.
+6. **The pack-leader.** Steer N agents toward the group two ways: each averaging the other N-1 positions (all-pairs), and each reading one centroid computed in a single pass. Time both; reproduce the O(N²) vs O(N) gap. Argue why the leader gives swarm-like behaviour without any agent knowing about any other.
+7. *(stretch)* **Z-order and the compaction.** Replace the stripe pack with a Z-order (Morton) hash. Then order the [§24](#24---append-only-and-recycling) compaction by cell and re-time the neighbour query's gather (§26). How much of the remaining query cost was the scattered gather?
 
 ## What's next
 
@@ -1715,13 +1718,13 @@ This is the pattern Bevy, Unity DOTS, Unreal's Mass Entities, and most productio
 
 A simulator that runs cleanly at 10 000 creatures often grinds to a halt at 1 000 000. Not because the algorithm changed - because constant factors that were invisible at the smaller scale now bind.
 
-This chapter is about *finding the wall*. The fixes are techniques you already have: narrower fields (§7), subscriptions (§26), working-set discipline (§27), sort for locality (§28), pre-sized buffers, batched cleanup. The chapter's job is to teach the reader to *measure* - to find which constant factors blew up.
+This chapter is about *finding the wall*. The fixes are techniques you already have: narrower fields (§7), subscriptions (§26), working-set discipline (§27), spatial binning and locality (§28), pre-sized buffers, batched cleanup. The chapter's job is to teach the reader to *measure* - to find which constant factors blew up.
 
 Constant-factor bugs that bind at 10K → 1M:
 
 - **Reallocation.** A `to_insert: Vec<CreatureRow>` that grew lazily was fine at 100 pushes per tick (10K creatures × 1% reproduction). At 10K pushes per tick (1M × 1%), the reallocations dominate. Fix: `Vec::with_capacity(estimated_max)`.
 - **Linear scans.** `hungry.iter().any(|&id| id == target_id)` was 0.1 ms at 10K, but 10 ms at 1M. Fix: the `id_to_slot` map (§23) plus parallel presence flags.
-- **Cache spillover.** `creature` working set at 10K is 200 KB (L2-resident). At 1M it is 20 MB (L3-resident). Per-element time triples. Fix: narrower fields (§7) and sort for locality (§28); for a system that touches only a subset, a subscription (§26).
+- **Cache spillover.** `creature` working set at 10K is 200 KB (L2-resident). At 1M it is 20 MB (L3-resident). Per-element time triples. Fix: narrower fields (§7) and the spatial compaction for locality (§28); for a system that touches only a subset, a subscription (§26).
 - **`HashMap` iteration order.** A `HashMap<u32, _>` iterated by systems that need deterministic order. At 10K the cost was tolerable; at 1M the bandwidth cost is high. Fix: `BTreeMap` or `Vec<(K, V)>`.
 - **Per-tick allocation.** A system that allocates a fresh `Vec` per tick was fine when the `Vec` was 1 KB. At 1M it is 100 KB; allocation latency starts to matter. Fix: reuse buffers across ticks.
 - **Logging.** A `println!` per creature was tolerable at 10K. At 1M it is the simulator's bottleneck. Fix: buffered logging, periodic snapshots, or simply turn it off.
@@ -1732,7 +1735,7 @@ The right tool is a profiler. `cargo flamegraph` (or `perf record` + `perf repor
 
 A useful exercise: run your simulator at 10K for 1000 ticks; time it. Run at 1M for 100 ticks (same total entity-ticks); time it. The 1M version should take ~10× longer, not 100×. If it takes 100×, something has crossed a constant-factor wall and the profiler will show you what.
 
-The fix is structural. Apply the techniques: narrow fields, subscriptions, working set, sort for locality, pre-sized buffers, batched cleanup, deterministic structures. Each is a chapter you have already read. The wall is the moment they all become non-optional.
+The fix is structural. Apply the techniques: narrow fields, subscriptions, working set, spatial binning and locality, pre-sized buffers, batched cleanup, deterministic structures. Each is a chapter you have already read. The wall is the moment they all become non-optional.
 
 ## Exercises
 
@@ -1890,7 +1893,7 @@ The choice of partitioning matters.
 
 **By entity range** (above): simple, works when access is uniform. Each thread does the same work on a different slice.
 
-**By spatial cell** (after sort-for-locality, [§28](#28---sort-for-locality)): each thread takes a region of the world. Useful when interactions are local - neighbours-only collisions, regional behaviours. Threads at boundary cells need a small synchronisation step (or a halo region copied into each thread's input).
+**By spatial cell** (after the spatial compaction, [§28](#28---proximity-is-a-property-of-position)): each thread takes a region of the world. Useful when interactions are local - neighbours-only collisions, regional behaviours. Threads at boundary cells need a small synchronisation step (or a halo region copied into each thread's input).
 
 **By hash**: each thread takes ids whose hash modulo N matches its thread number. Useful when access is uniform but you want stable thread-to-data mapping across ticks.
 
@@ -1906,7 +1909,7 @@ The pattern is the right answer to "but I have one big table". You almost never 
 
 1. **Partition motion.** Use `chunks_mut` to split `pos`, `vel`, and `energy` into 8 chunks. Run motion across 8 `thread::scope` threads. Compare to single-threaded.
 2. **Speedup at scale.** Time partitioned motion at N = 100K, 1M, 10M creatures with 1, 2, 4, 8 threads. Plot speedup. Note where the bandwidth ceiling kicks in.
-3. **Spatial partition.** After running [§28](#28---sort-for-locality)'s sort-for-locality, partition by spatial region (e.g. 8 vertical stripes of the world). Each thread handles one stripe. Compare with the entity-range partition. Does the spatial version pay off for `next_event`?
+3. **Spatial partition.** After running [§28](#28---proximity-is-a-property-of-position)'s spatial compaction, partition by spatial region (e.g. 8 vertical stripes of the world). Each thread handles one stripe. Compare with the entity-range partition. Does the spatial version pay off for `next_event`?
 4. **Workload-weighted partition.** Suppose 90 % of creatures are idle and 10 % are active. A naive partition gives most threads almost no work and one thread all the work. Implement a partition that balances *active* count, not *total* count. Time both.
 5. *(stretch)* **`rayon::par_chunks_mut`.** Replace your manual `thread::scope` + `chunks_mut` with `pos.par_chunks_mut(chunk_size)`. Same result, less code. Note that rayon's work-stealing scheduler internally rebalances unbalanced workloads.
 
@@ -2304,12 +2307,12 @@ You have closed I/O & persistence. The simulator can now talk to durable storage
 The trunk so far has assumed every system runs every tick and completes within the tick budget. That covers most of what the simulator does - motion, EBP dispatch, cleanup, persistence - and the surrounding chapters earned the assumption. But the assumption is not universal. Practical simulators have at least three classes of work that do not fit it.
 
 - **Optimisation.** A scheduler choosing which tasks each warehouse robot should take next. A combat AI choosing a counter-strategy. A constraint solver finding a feasible plan. These can take seconds or minutes; they cannot fit in a 33 ms tick.
-- **Search.** The nearest-task scan for a warehouse operator. A path-finder over a large map. A neighbour query in a million-creature world. Even with [§28](#28---sort-for-locality)'s spatial sort, some searches genuinely take longer than one tick can afford.
+- **Search.** The nearest-task scan for a warehouse operator. A path-finder over a large map. A neighbour query in a million-creature world. Even with [§28](#28---proximity-is-a-property-of-position)'s spatial sort, some searches genuinely take longer than one tick can afford.
 - **Out-of-process work.** A game AI evolving its strategy on a separate thread. A pricing model running on a remote server. A precomputation handed off to a worker pool. The simulator never blocks waiting; results arrive when they arrive.
 
 This chapter names the three patterns that cover these cases without breaking any of the trunk's previous rules. They are not new architecture. They are the trunk's existing rules, applied to a wider set of cadences.
 
-The unifying principle: **a system has a cadence, and the cadence does not have to be one tick.** A system can run every tick (motion). It can run every N ticks (the spatial sort that [§28](#28---sort-for-locality) re-runs every 50 frames). It can have a *deadline* and return its best current answer when the deadline arrives. It can be *suspended and resumed* across ticks, with its progress part of its state. It can be *out-of-loop* entirely, communicating with the simulator only through the queue. The DAG generalises naturally: edges still represent dependencies, but some dependencies wait for promises rather than synchronous returns.
+The unifying principle: **a system has a cadence, and the cadence does not have to be one tick.** A system can run every tick (motion). It can run every N ticks (the spatial compaction from [§28](#28---proximity-is-a-property-of-position)/[§24](#24---append-only-and-recycling), which reorders the columns by cell every few dozen ticks). It can have a *deadline* and return its best current answer when the deadline arrives. It can be *suspended and resumed* across ticks, with its progress part of its state. It can be *out-of-loop* entirely, communicating with the simulator only through the queue. The DAG generalises naturally: edges still represent dependencies, but some dependencies wait for promises rather than synchronous returns.
 
 ## Anytime algorithms
 
@@ -2399,7 +2402,7 @@ The chapter is constructive: it names the three patterns and shows where each fi
 2. **Anytime path-finder.** Implement `plan_route(world, deadline)` for one creature. The function returns the best path found within the deadline. With a 5 ms deadline, time how good the answers are; with 50 ms, how much better. Plot quality vs deadline.
 3. **Time-sliced spatial search.** Implement `SpatialSearch` and `step_search` as in the prose. Run it across multiple ticks, advancing the cursor by a budget-bounded `max_cells` each tick. Verify the result is identical to a single-pass search done in one go.
 4. **Out-of-loop AI.** Spawn a worker thread that receives world snapshots and returns strategy updates via channels. Dispatch a snapshot every second; let the worker take 5 seconds; observe that the simulator's tick rate is unaffected and the strategy update lands at the queue when ready.
-5. **Mixed cadence.** Run your simulator with motion at every tick, sort-for-locality every 50 ticks, snapshot every 1000 ticks, and a (mock) AI thread updating strategy out-of-loop. Verify that determinism still holds: same seed plus same input queue produces identical hashes after 1000 ticks.
+5. **Mixed cadence.** Run your simulator with motion at every tick, the spatial compaction every 50 ticks, snapshot every 1000 ticks, and a (mock) AI thread updating strategy out-of-loop. Verify that determinism still holds: same seed plus same input queue produces identical hashes after 1000 ticks.
 6. *(stretch)* **Anytime under varying budget.** Modify the path-finder so its caller passes the *remaining* tick budget each time. Some ticks have plenty of budget; some have very little. The path-finder still returns a valid answer in every case, and the answers improve when the budget allows. Plot quality over time as the simulator runs.
 
 ## What's next

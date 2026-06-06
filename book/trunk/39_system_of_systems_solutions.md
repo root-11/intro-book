@@ -12,7 +12,7 @@ For a typical simulator the breakdown looks like:
 | apply_eat/repro/starve | every tick  | event consumption                   |
 | cleanup         | every tick         | mutation commit                     |
 | inspect         | every tick         | observation                         |
-| sort-for-locality | every ~50 ticks  | amortised cost                      |
+| spatial compaction | every ~50 ticks | amortised cost                      |
 | snapshot        | every ~1000 ticks  | persistence checkpoint              |
 | AI/strategy     | out-of-loop        | seconds-long computation            |
 | route planning  | anytime, per-creature | budget-bounded path search       |

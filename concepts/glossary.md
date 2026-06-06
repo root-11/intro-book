@@ -121,7 +121,7 @@ Each entry has four parts:
 
 **Anti-pattern.** Saving an index across a reordering. The fix - coming next - is to save a stable id, not a slot index.
 
-**See also.** 5 (id is integer), 10 (stable IDs and generations), 23 (index maps), 28 (sort for locality).
+**See also.** 5 (id is integer), 10 (stable IDs and generations), 23 (index maps), 28 (proximity).
 
 ---
 
@@ -283,13 +283,13 @@ Each entry has four parts:
 
 ## 23 - Index maps
 
-**Definition.** An *index map* is a parallel array from a key to a position, with a sentinel for "absent". It appears twice. `id_to_slot` maps a stable entity to its current column slot, so a reference held as an id survives reordering; it is updated on every move - `swap_remove`, sort-for-locality, the buffered-cleanup sweep. A *sparse set* maps a slot to its position in a membership table's dense list, giving O(1) membership-test and O(1) unsubscribe without a per-creature boolean. Both are O(1) lookups; neither scans.
+**Definition.** An *index map* is a parallel array from a key to a position, with a sentinel for "absent". It appears twice. `id_to_slot` maps a stable entity to its current column slot, so a reference held as an id survives reordering; it is updated on every move - `swap_remove`, the spatial compaction, the buffered-cleanup sweep. A *sparse set* maps a slot to its position in a membership table's dense list, giving O(1) membership-test and O(1) unsubscribe without a per-creature boolean. Both are O(1) lookups; neither scans.
 
 **Example.** A player holds creature id 42. The `creature` columns get sorted for locality (node 28). `id_to_slot` is rewritten in lockstep, so `id_to_slot[42]` returns the new slot and the player's reference still works; every slot-keyed membership table is reindexed through the same permutation in the same sweep.
 
 **Anti-pattern.** Scanning the id column to find a row by id (O(N) per lookup), or keying membership with a per-creature `bool` flag - the very flag node 17 abolished. The sparse set gives O(1) membership without the flag.
 
-**See also.** 5 (id is integer), 9 (sort breaks indices), 10 (stable IDs and generations), 17 (presence replaces flags), 26 (subscription tables), 28 (sort for locality).
+**See also.** 5 (id is integer), 9 (sort breaks indices), 10 (stable IDs and generations), 17 (presence replaces flags), 26 (subscription tables), 28 (proximity).
 
 ---
 
@@ -325,7 +325,7 @@ Each entry has four parts:
 
 **Anti-pattern.** A subscription that holds the whole population - a scan with extra bookkeeping; at full participation it is slower than a plain loop. Or keying the table by entity id, which pays a scattered `id_to_slot` cache miss per element, every tick.
 
-**See also.** 7 (SoA), 17 (presence replaces flags), 19 (EBP dispatch), 23 (index maps), 28 (sort for locality).
+**See also.** 7 (SoA), 17 (presence replaces flags), 19 (EBP dispatch), 23 (index maps), 28 (proximity).
 
 ---
 
@@ -337,19 +337,19 @@ Each entry has four parts:
 
 **Anti-pattern.** Optimising the algorithm without measuring the working set. A 2× algorithmic speedup that doubles the working set is a slowdown.
 
-**See also.** 1 (machine model), 4 (cost & budget), 7 (SoA), 28 (sort for locality).
+**See also.** 1 (machine model), 4 (cost & budget), 7 (SoA), 28 (proximity).
 
 ---
 
-## 28 - Sort for locality
+## 28 - Proximity is a property of position
 
-**Definition.** Reordering rows so that frequently co-accessed entities sit together turns random access into sequential access. This is the technique that node 9 (sort breaks indices) was the prerequisite pain for: once you have stable ids and an index map (nodes 10, 23), you can sort the table without breaking external references.
+**Definition.** "Who is near here?" is a function of position, which the motion system already streams every tick. Compute each entity's cell from its position and bin the entities with a counting sort - a dense structure recomputed each tick - rather than maintaining a bolt-on spatial index (quadtree, grid hash) that duplicates position and carries its own budget. Locality of the gather is the node 24/26 compaction, ordered by cell.
 
-**Example.** The §2 simulator sorts creatures by spatial cell so that creatures-likely-to-collide are adjacent in the column. The `next_event` system's per-creature work now reads neighbours from the same cache line. The id-to-index map is rewritten in the same pass.
+**Example.** The §2 simulator answers `next_event`'s creature-food encounter query by binning into cells and reading the 3x3 block around each creature. Measured at 1M, the dense bin beats a `HashMap` spatial index ~2.8x, and rebuilding the whole bin costs ~0.7% of the query it serves - so proximity is recomputed from the position stream each tick, not maintained. The pack-leader is the same idea for global coordination: one shared centroid, read by all, replaces all-pairs cohesion.
 
-**Anti-pattern.** Skipping the sort because of node 9. The fear of breaking references is solved by node 10's stable ids, not by leaving the table unsorted forever.
+**Anti-pattern.** Reaching for a maintained spatial index because "you need one to find neighbours" - a second copy of position with insert/remove bookkeeping and pointer-chased buckets. Or all-pairs O(N²) coordination where one centroid or leader, read by every agent, is O(N).
 
-**See also.** 9 (sort breaks indices), 10 (stable IDs and generations), 23 (index maps), 27 (working set vs cache).
+**See also.** 7 (SoA), 24 (append-only & recycling), 26 (subscription tables), 27 (working set vs cache).
 
 ---
 
@@ -397,7 +397,7 @@ Each entry has four parts:
 
 **Anti-pattern.** A `Mutex<Vec<T>>` shared across threads. Even when correct, the lock serialises the write under contention; you have re-introduced the single-writer rule the long way around.
 
-**See also.** 25 (ownership), 28 (sort for locality), 31 (disjoint writes), 33 (false sharing).
+**See also.** 25 (ownership), 28 (proximity), 31 (disjoint writes), 33 (false sharing).
 
 ---
 
