@@ -73,6 +73,22 @@ fn motion_subscription(
     }
 }
 
+// iterate a subscription table of entity ids, resolve each through id_to_slot,
+// then gather the columns. One extra (scattered) load per element vs the slot
+// version above - the redirection the slot-keyed design removes.
+#[inline(never)]
+fn motion_subscription_id(
+    px: &mut [f32], py: &mut [f32], vx: &[f32], vy: &[f32], en: &mut [f32],
+    subs_id: &[u32], id_to_slot: &[u32], dt: f32,
+) {
+    for &id in subs_id {
+        let i = id_to_slot[id as usize] as usize;
+        px[i] += vx[i] * dt;
+        py[i] += vy[i] * dt;
+        en[i] -= DECAY;
+    }
+}
+
 fn ns_per(elapsed_ns: f64, iters: u32) -> f64 {
     elapsed_ns / iters as f64
 }
@@ -276,5 +292,98 @@ fn main() {
     if compact_batch > 0.0 {
         println!("      compaction {:.1}x faster, and runs once per GC interval, not per tick",
                  swap_batch / compact_batch);
+    }
+
+    // ---- Claim 4: keying - slot-subscription vs id-subscription ----
+    // Two costs pull in opposite directions, so only measurement settles it:
+    //   hot loop  - slot keys gather columns directly; id keys pay one extra
+    //               (scattered) id_to_slot load per element, every tick.
+    //   reindex   - when the GC compaction moves slots, id-keyed subscriptions
+    //               are untouched (only id_to_slot is rebuilt, once, over live);
+    //               slot-keyed subscriptions must each be remapped, so the cost
+    //               scales with how many subscriptions an entity sits in (S).
+    // The hot saving is paid every tick; the reindex burden once per GC interval
+    // (G ticks). The verdict is the amortized sum, swept over S and G.
+    println!("\nClaim 4 (keying): slot-subscription vs id-subscription, frac = 10%");
+    const IDMIX: usize = 2_654_435_761; // coprime to N => slot -> id is a bijection
+    let frac = 0.10;
+    let thr = ((1.0 - frac) * 100.0) as u32;
+    let active: Vec<bool> = (0..N).map(|i| scattered(i) >= thr).collect();
+    let subs_slot: Vec<u32> = (0..N as u32).filter(|&i| active[i as usize]).collect();
+    // Each live entity gets a scattered, unique id; id_to_slot resolves it.
+    let id_of = |slot: u32| -> u32 { ((slot as usize * IDMIX) % N) as u32 };
+    let subs_id: Vec<u32> = subs_slot.iter().map(|&s| id_of(s)).collect();
+    let mut id_to_slot = vec![u32::MAX; N];
+    for &s in &subs_slot { id_to_slot[id_of(s) as usize] = s; }
+    let iters = (200_000_000usize / N.max(1)).max(20) as u32;
+
+    for _ in 0..3 {
+        motion_subscription(&mut px, &mut py, &vx, &vy, &mut en, &subs_slot, black_box(DT));
+        motion_subscription_id(&mut px, &mut py, &vx, &vy, &mut en, &subs_id, &id_to_slot, black_box(DT));
+    }
+    let t0 = Instant::now();
+    for _ in 0..iters {
+        motion_subscription(&mut px, &mut py, &vx, &vy, &mut en, &subs_slot, black_box(DT));
+    }
+    black_box(&px);
+    let hot_slot = ns_per(t0.elapsed().as_nanos() as f64, iters);
+
+    let t0 = Instant::now();
+    for _ in 0..iters {
+        motion_subscription_id(&mut px, &mut py, &vx, &vy, &mut en, &subs_id, &id_to_slot, black_box(DT));
+    }
+    black_box(&px);
+    let hot_id = ns_per(t0.elapsed().as_nanos() as f64, iters);
+
+    println!("  hot loop:  slot {:.0} ns/pass   id {:.0} ns/pass   (id pays {:.0} ns/pass for the hop)",
+             hot_slot, hot_id, hot_id - hot_slot);
+
+    // Compaction moves every live entity to a front slot (the §28 purge).
+    let mut old_to_new = vec![u32::MAX; N];
+    for (new, &old) in subs_slot.iter().enumerate() { old_to_new[old as usize] = new as u32; }
+
+    // id-keyed reindex: rebuild id_to_slot over the live set; subscriptions untouched.
+    let reps = 50u32;
+    let mut acc = 0u128;
+    for _ in 0..reps {
+        let t0 = Instant::now();
+        for &old in &subs_slot {
+            id_to_slot[id_of(old) as usize] = old_to_new[old as usize];
+        }
+        acc += t0.elapsed().as_nanos();
+        black_box(&id_to_slot);
+    }
+    let reindex_id = acc as f64 / reps as f64;
+
+    println!("  reindex (per GC interval):");
+    println!("    id-keyed                 {:>10.0} ns   (rebuild id_to_slot, subscriptions untouched)", reindex_id);
+
+    // slot-keyed reindex: same id_to_slot rebuild for boundary identity, PLUS
+    // remap every entry of every subscription the entity belongs to (S copies).
+    for &s_count in &[1usize, 2, 4] {
+        let pristine: Vec<u32> = (0..s_count).flat_map(|_| subs_slot.iter().copied()).collect();
+        let mut work = pristine.clone();
+        let mut acc = 0u128;
+        for _ in 0..reps {
+            work.copy_from_slice(&pristine); // untimed restore
+            let t0 = Instant::now();
+            for &old in &subs_slot {
+                id_to_slot[id_of(old) as usize] = old_to_new[old as usize];
+            }
+            for x in work.iter_mut() { *x = old_to_new[*x as usize]; }
+            acc += t0.elapsed().as_nanos();
+            black_box((&work, &id_to_slot));
+        }
+        let reindex_slot = acc as f64 / reps as f64;
+        println!("    slot-keyed, S={}          {:>10.0} ns", s_count, reindex_slot);
+
+        // Amortized verdict over GC intervals G.
+        for &g in &[30u32, 100] {
+            let slot_total = hot_slot * g as f64 + reindex_slot;
+            let id_total   = hot_id   * g as f64 + reindex_id;
+            let winner = if slot_total < id_total { "slot" } else { "id" };
+            println!("      G={:<4} ticks: slot {:>12.0} ns   id {:>12.0} ns   -> {} wins",
+                     g, slot_total, id_total, winner);
+        }
     }
 }
