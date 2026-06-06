@@ -23,9 +23,9 @@ A creature has a stable [id](10_stable_ids_and_generations.md) and a current [sl
 
 The redirection is paid every tick. The rewrite is paid once per cleanup interval. Which loses?
 
-**Measured.** At 1 000 000 creatures with a tenth subscribed, the id-keyed hot loop runs about twice as slow as the slot-keyed one. The cost is not the extra instruction. `id_to_slot` is a four-megabyte array and the subscribed ids are scattered through it, so each lookup is a cache miss before the column gather has even started. The slot key skips that miss entirely.
+**Measured.** At 1 000 000 creatures with a tenth subscribed, the id-keyed hot loop runs about twice as slow as the slot-keyed one on a modern desktop<sup>1</sup>, and is the slower of the two on every machine measured. The cost is not the extra instruction. `id_to_slot` is a four-megabyte array and the subscribed ids are scattered through it, so each lookup is a cache miss before the column gather has even started. The slot key skips that miss entirely.
 
-The rewrite the slot key pays in return is small and bounded. It scales with how many subscriptions an entity sits in (rewrite each table the entity appears in), but it happens once per cleanup interval, not once per tick. Across the realistic range, a handful of subscriptions and a cleanup every few dozen ticks, the per-tick saving buries the per-interval rewrite by roughly two to one. The numbers are in `code/README.md`; the benchmark is `ebp_partition`.
+The rewrite the slot key pays in return is small and bounded. It scales with how many subscriptions an entity sits in (rewrite each table the entity appears in), but it happens once per cleanup interval, not once per tick. Across the realistic range, a handful of subscriptions and a cleanup every few dozen ticks, the per-tick saving buries the per-interval rewrite: the amortized verdict favours slot keys at every subscription count and interval tested, on every machine measured. The benchmark is `ebp_partition`; numbers below and in `code/README.md`.
 
 So **subscription tables hold slots.** This is also *why* the lifecycle keeps [stable slots](24_append_only_and_recycling.md) and lets cleanup own the reindex: slot keys are only safe when one system is responsible for rewriting them when entities move. The cleanup can do that for any reference it owns - a subscription, or a cross-entity link stored in a column - remapping them all in one pass.
 
@@ -33,7 +33,7 @@ So what is the stable [id](10_stable_ids_and_generations.md) for, once the hot l
 
 **Locality: a slot-keyed loop is fast only when its slots are dense.**
 
-A slot-keyed hot loop gathers columns at the slots the subscription lists. If those slots are scattered through the column, which is what churn produces as deaths and births leave holes, the gather misses cache on nearly every element. If they are contiguous, the gather streams. Compacting the live, subscribed entities to the front of the columns turns a scattered gather into a sequential one; measured, that is several times faster. The compaction is not free, but it pays for itself within a few ticks, and it is the same batch pass that reclaims dead slots. [§28](28_proximity.md) is that pass.
+A slot-keyed hot loop gathers columns at the slots the subscription lists. If those slots are scattered through the column, which is what churn produces as deaths and births leave holes, the gather misses cache on nearly every element. If they are contiguous, the gather streams. Compacting the live, subscribed entities to the front of the columns turns a scattered gather into a sequential one; measured, that is several times faster<sup>2</sup>. The compaction is not free, but it pays for itself within a few ticks<sup>3</sup>, and it is the same batch pass that reclaims dead slots. [§28](28_proximity.md) is that pass.
 
 **The one case a split would help, in full view.**
 
@@ -42,6 +42,16 @@ There is a single scenario where grouping fields would still pay. A hot loop tha
 **Name the subscription before you build it.**
 
 A subscription is earned by a system that genuinely processes a subset. "Most creatures are not hungry on most ticks, so `hungry` is far smaller than the population" is a sound reason to build one. "Every creature is always in `alive`, but other engines keep an alive-set" is not. A subscription that holds the whole population is a scan-all with extra bookkeeping, and the measurement says so: at full participation the subscription loop is marginally *slower* than a plain scan. The subscription wins in proportion to how much it excludes, and not otherwise.
+
+## Measurements
+
+The prose quotes the modern-desktop figure; the spread across the reference machines is below. The amortized keying verdict (slot vs id) favours slot keys at every subscription count `S` and interval `G` on every machine. Full per-machine output: `ebp_partition` in `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | id-keyed ÷ slot-keyed hot loop, 1M @ 10% | 2.2x | 3.2x | 1.3x | 1.4x |
+| 2 | scattered ÷ compacted gather, 1M @ 10% | 4.4x | 6.8x | 9.0x | 9.0x |
+| 3 | compaction payback | 3.0 ticks | 1.5 ticks | 1.1 ticks | 0.7 ticks |
 
 ## Exercises
 

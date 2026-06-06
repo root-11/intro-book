@@ -1,6 +1,6 @@
 # Solutions: 26 - Subscription tables, keyed by slot
 
-Throughout, `i` is a slot (a creature's position in the columns) and `entity` is a stable id. The numbers below are from `ebp_partition` at N = 1 000 000; see `code/README.md` for the per-machine table.
+Throughout, `i` is a slot (a creature's position in the columns) and `entity` is a stable id. The numbers below are modern-desktop figures from `ebp_partition` at N = 1 000 000; the chapter's Measurements table and `code/README.md` carry the per-machine spread.
 
 ## Exercise 1 - Build a slot-keyed subscription
 

@@ -103,6 +103,34 @@ The exercise-prediction binaries (§31, §36, §38, §27.6), same four hosts:
 
 Two of these corrected the prose: §38's "50-1000×" became the measured 14-256× (buffered writes), and §27.6's "L1-resident ~5-10× faster" became ~1.0-1.2× - sequential motion is bandwidth-bound at both sizes, so the L1/L2 boundary is invisible to it (the L1 win is a *random*-access effect). §36's "5-50×" splits by format: the text encoder lands at ~30-65×, the binary encoder at ~1-2×.
 
+### Subscription keying and proximity (captured 2026-06-06)
+
+`ebp_partition` backs §26 (and §19/§24); `proximity` backs §28. Same four hosts.
+
+`ebp_partition`, 1M creatures, 10% subscribed unless noted:
+
+| Test | Pi 4 | i7-3610QM | i3-5010U | Ryzen 9 270 |
+|---|---:|---:|---:|---:|
+| Keying: id-keyed ÷ slot-keyed hot loop (§26) | 1.4× | 3.2× | 1.3× | 2.2× |
+| Relevance: scan+branch ÷ subscription, **1%** active (§19) | 2.0× | 10× | 4.3× | 14× |
+| Relevance: same, **10%** active | 1.0× | 1.1× | 1.0× | 1.6× |
+| Locality: scattered ÷ compacted gather (§26.5/§28) | 9.0× | 6.8× | 9.0× | 4.4× |
+| Compaction payback (ticks) | 0.7 | 1.5 | 1.1 | 3.0 |
+| Lifecycle: batch compaction vs per-element swap_remove (§24) | 8.0× | 8.5× | 8.0× | 5.1× |
+
+The amortized keying verdict (slot vs id, over the GC interval) favours **slot keys on every host, at every subscription count and interval tested** - that is the durable result; the hot-loop ratio above is only its per-tick component. The relevance rows carry the important nuance: a *scattered* subscription at 10% is barely faster than scan-all in wall time on any machine (the 10× is a reduction in *work and bandwidth*, not yet in time); the wall-time win arrives at high sparsity (the 1% row) or once the subscription is compacted (the locality row). On the small-cache Pi the scattered gather is most punishing and the compaction win is largest.
+
+`proximity` (§28), N as noted:
+
+| Test | Pi 4 | i7-3610QM | i3-5010U | Ryzen 9 270 |
+|---|---:|---:|---:|---:|
+| All-pairs neighbour test, N=20k (ms) | 1720 | 864 | 960 | 270 |
+| Dense bin vs bolt-on hash, 1M (end to end) | 1.5× | 1.7× | 1.6× | 2.8× |
+| Dense bin rebuild ÷ its query, 1M | 0.8% | 1.0% | 1.4% | 0.7% |
+| Pack-leader vs all-pairs cohesion, N=20k | 9439× | 7296× | 6712× | 9087× |
+
+Every direction holds on every machine: all-pairs is hopeless, the dense bin beats the bolt-on hash, the rebuild is ~1% of the query (so recompute beats maintain), and one leader read by all crushes all-pairs cohesion by thousands of times.
+
 ## A note on benchmark anti-patterns
 
 Several binaries had to use `std::hint::black_box` to defeat the optimizer. The compiler will happily hoist a pure `sum_seq(&v)` out of an inner loop if the result feeds a deterministic accumulator - making the loop O(1) regardless of `iters` and the timing meaningless. The pattern is:

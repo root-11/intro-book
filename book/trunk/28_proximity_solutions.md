@@ -1,6 +1,6 @@
 # Solutions: 28 - Proximity is a property of position
 
-Numbers below are from the `proximity` benchmark; see `code/README.md`.
+Numbers below are the modern-desktop figures from the `proximity` benchmark; the chapter's Measurements table and `code/README.md` carry the four-machine spread.
 
 ## Exercise 1 - The all-pairs wall
 

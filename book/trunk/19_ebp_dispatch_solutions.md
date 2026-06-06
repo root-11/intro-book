@@ -24,23 +24,23 @@ fn drive_hunger_ebp(
 }
 ```
 
-At 1M creatures with 10 % hungry, on a typical desktop:
+At 1M creatures, scan-all-and-branch vs the slot-keyed subscription gather, on a modern desktop (`ebp_partition`; per-machine spread in `code/README`):
 
-- Filtered: ~1 ms (1M slots × ~1 ns each, all sequential, prefetcher is happy).
-- EBP: ~0.35 ms (100 K slot accesses into `energy`, scattered, but only 10 % the work, and no id-to-slot hop).
+- At 10 % subscribed: filtered ~0.58 ms, EBP ~0.36 ms - about 1.6×. The subscription does a tenth of the *work*, but its slots are scattered through the column, so the gather misses cache and spends most of the bandwidth win on the misses.
+- At 1 % subscribed: filtered ~0.52 ms, EBP ~0.04 ms - about 14×. Sparse enough that a scattered gather still beats scanning a million flags.
 
-The ratio is roughly 3× at 10 %, and it widens fast as the state gets sparser - about 14× at 1 %.
+The headline "10× less work at 10 %" is real as *work and memory traffic*; it shows up in *wall time* only once the subscription is compacted so the gather streams ([§26](26_subscription_tables.md)'s locality, several× there). Scattered, the 10 % win is modest; dense, it is the full order of magnitude. This is why EBP and the §26 compaction belong together.
 
 ## Exercise 2 - Sparsity test
 
-|  fraction hungry | filtered (ms) | EBP (ms) |
-|-----------------:|--------------:|---------:|
-|             1 % |          ~1.0 |    ~0.04 |
-|            10 % |          ~1.0 |     ~0.36 |
-|            50 % |          ~1.0 |     ~0.86 |
-|            90 % |          ~1.0 |     ~1.1 |
+| fraction hungry | filtered (ms) | EBP scattered (ms) |
+|----------------:|--------------:|-------------------:|
+|             1 % |         ~0.52 |              ~0.04 |
+|            10 % |         ~0.58 |              ~0.36 |
+|            50 % |         ~0.88 |              ~0.86 |
+|           100 % |         ~1.03 |              ~1.20 |
 
-(Numbers vary by chip; the *shape* is what matters.) The filtered cost is roughly constant - it walks the full table regardless. The EBP cost is roughly linear in the active fraction. Their cross-over is up near 85-90 %: only when nearly every creature is hungry does walking the whole table beat walking the subscription, and even then EBP loses only because it also reads the subscription array. The crossover used to sit lower because the old hot loop paid a random `id_to_slot` lookup per entry; keying `hungry` by slot removes that, so EBP stays ahead across almost the entire range. [§26](26_subscription_tables.md) measures this directly.
+(Modern desktop; numbers vary by chip - see `code/README`. The *shape* is what matters.) Filtered rises gently with the active fraction: it reads all N flags every time but only *writes* the active ones. The scattered subscription rises faster and crosses filtered near full participation - at 100 % it is a scan with extra bookkeeping (the [§26](26_subscription_tables.md) anti-pattern). Two things pull the EBP curve down: high sparsity (the 1 % row), and compaction ([§26](26_subscription_tables.md)), which turns the scattered gather sequential. The durable claim is the *work* ratio - touch the subset, not the population - and wall time follows once the gather is dense.
 
 ## Exercise 3 - Multi-state systems
 

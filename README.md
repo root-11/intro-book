@@ -1567,9 +1567,9 @@ A creature has a stable [id](#10---stable-ids-and-generations) and a current [sl
 
 The redirection is paid every tick. The rewrite is paid once per cleanup interval. Which loses?
 
-**Measured.** At 1 000 000 creatures with a tenth subscribed, the id-keyed hot loop runs about twice as slow as the slot-keyed one. The cost is not the extra instruction. `id_to_slot` is a four-megabyte array and the subscribed ids are scattered through it, so each lookup is a cache miss before the column gather has even started. The slot key skips that miss entirely.
+**Measured.** At 1 000 000 creatures with a tenth subscribed, the id-keyed hot loop runs about twice as slow as the slot-keyed one on a modern desktop<sup>1</sup>, and is the slower of the two on every machine measured. The cost is not the extra instruction. `id_to_slot` is a four-megabyte array and the subscribed ids are scattered through it, so each lookup is a cache miss before the column gather has even started. The slot key skips that miss entirely.
 
-The rewrite the slot key pays in return is small and bounded. It scales with how many subscriptions an entity sits in (rewrite each table the entity appears in), but it happens once per cleanup interval, not once per tick. Across the realistic range, a handful of subscriptions and a cleanup every few dozen ticks, the per-tick saving buries the per-interval rewrite by roughly two to one. The numbers are in `code/README.md`; the benchmark is `ebp_partition`.
+The rewrite the slot key pays in return is small and bounded. It scales with how many subscriptions an entity sits in (rewrite each table the entity appears in), but it happens once per cleanup interval, not once per tick. Across the realistic range, a handful of subscriptions and a cleanup every few dozen ticks, the per-tick saving buries the per-interval rewrite: the amortized verdict favours slot keys at every subscription count and interval tested, on every machine measured. The benchmark is `ebp_partition`; numbers below and in `code/README.md`.
 
 So **subscription tables hold slots.** This is also *why* the lifecycle keeps [stable slots](#24---append-only-and-recycling) and lets cleanup own the reindex: slot keys are only safe when one system is responsible for rewriting them when entities move. The cleanup can do that for any reference it owns - a subscription, or a cross-entity link stored in a column - remapping them all in one pass.
 
@@ -1577,7 +1577,7 @@ So what is the stable [id](#10---stable-ids-and-generations) for, once the hot l
 
 **Locality: a slot-keyed loop is fast only when its slots are dense.**
 
-A slot-keyed hot loop gathers columns at the slots the subscription lists. If those slots are scattered through the column, which is what churn produces as deaths and births leave holes, the gather misses cache on nearly every element. If they are contiguous, the gather streams. Compacting the live, subscribed entities to the front of the columns turns a scattered gather into a sequential one; measured, that is several times faster. The compaction is not free, but it pays for itself within a few ticks, and it is the same batch pass that reclaims dead slots. [§28](#28---proximity-is-a-property-of-position) is that pass.
+A slot-keyed hot loop gathers columns at the slots the subscription lists. If those slots are scattered through the column, which is what churn produces as deaths and births leave holes, the gather misses cache on nearly every element. If they are contiguous, the gather streams. Compacting the live, subscribed entities to the front of the columns turns a scattered gather into a sequential one; measured, that is several times faster<sup>2</sup>. The compaction is not free, but it pays for itself within a few ticks<sup>3</sup>, and it is the same batch pass that reclaims dead slots. [§28](#28---proximity-is-a-property-of-position) is that pass.
 
 **The one case a split would help, in full view.**
 
@@ -1586,6 +1586,16 @@ There is a single scenario where grouping fields would still pay. A hot loop tha
 **Name the subscription before you build it.**
 
 A subscription is earned by a system that genuinely processes a subset. "Most creatures are not hungry on most ticks, so `hungry` is far smaller than the population" is a sound reason to build one. "Every creature is always in `alive`, but other engines keep an alive-set" is not. A subscription that holds the whole population is a scan-all with extra bookkeeping, and the measurement says so: at full participation the subscription loop is marginally *slower* than a plain scan. The subscription wins in proportion to how much it excludes, and not otherwise.
+
+## Measurements
+
+The prose quotes the modern-desktop figure; the spread across the reference machines is below. The amortized keying verdict (slot vs id) favours slot keys at every subscription count `S` and interval `G` on every machine. Full per-machine output: `ebp_partition` in `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | id-keyed ÷ slot-keyed hot loop, 1M @ 10% | 2.2x | 3.2x | 1.3x | 1.4x |
+| 2 | scattered ÷ compacted gather, 1M @ 10% | 4.4x | 6.8x | 9.0x | 9.0x |
+| 3 | compaction payback | 3.0 ticks | 1.5 ticks | 1.1 ticks | 0.7 ticks |
 
 ## Exercises
 
@@ -1657,7 +1667,7 @@ This is not premature optimisation. It is *layout-aware design* - making the sch
 
 <p align="center"><img src="book/illustrations/optimization.jpg" alt="Optimization: minimize f(x) - proximity is a function of position, computed where position lives" style="max-height: 300px; max-width: 100%;"></p>
 
-Creatures eat the food they encounter. So `next_event` has to answer, for every creature, *which food is within reach?* At §1's ten thousand that is a cheap scan. At §2's million it is a wall: comparing every creature to every food is O(C×F). Measured, even twenty thousand all-pairs neighbour tests cost ~270 ms - one frame's entire budget spent on a fraction of the world.
+Creatures eat the food they encounter. So `next_event` has to answer, for every creature, *which food is within reach?* At §1's ten thousand that is a cheap scan. At §2's million it is a wall: comparing every creature to every food is O(C×F). Measured, even twenty thousand all-pairs neighbour tests cost ~270 ms on a modern desktop<sup>1</sup> (and close to a second on the older reference machines) - many frames' budget spent on a fraction of the world.
 
 The reflex is to reach for a *spatial index*: a quadtree, a grid hash, a structure that lives beside the world, that you insert into and delete from as things move, that you query. It works. But stop and look at what it is: a second copy of information the world already holds - position - with its own maintenance budget, its own allocations, and pointer-chased buckets that miss cache on every hop.
 
@@ -1678,9 +1688,9 @@ let mut cursor = offsets.clone();
 for i in 0..n { let c = cell[i] as usize; items[cursor[c] as usize] = i as u32; cursor[c] += 1; }
 ```
 
-**Measured** (`proximity`, 1M creatures): the dense bin answers the neighbour query in ~520 ms against the bolt-on `HashMap`'s ~1470 ms - about 2.8x - and its *build* is ~8x cheaper (3.7 ms vs 31 ms). The hash spends its time allocating buckets and chasing them; the dense bin streams.
+**Measured** (`proximity`, 1M creatures): the dense bin answers the neighbour query about 2.8x faster than the bolt-on `HashMap` on a modern desktop<sup>2</sup>, and is ahead on every machine measured (nearer 1.6x on the small-cache Broadwell NUCs). The hash spends its time allocating buckets and chasing them; the dense bin streams.
 
-The sharpest number is the build itself. Rebuilding the *entire* spatial structure from scratch costs 3.7 ms - **0.7% of the query it serves.** So the whole reason a bolt-on index exists, "don't pay to rebuild," is optimising under one percent of the work. You do not maintain proximity across ticks. You recompute it from the position stream each tick, for free, in the pass motion already makes. *Recompute from the stream* beats *maintain a structure*, and the old question of how often to re-sort the world simply evaporates: there is no kept structure to schedule.
+The sharpest number is the build itself. Rebuilding the *entire* spatial structure from scratch costs **around one percent of the query it serves**<sup>3</sup>. So the whole reason a bolt-on index exists, "don't pay to rebuild," is optimising about one percent of the work. You do not maintain proximity across ticks. You recompute it from the position stream each tick, for free, in the pass motion already makes. *Recompute from the stream* beats *maintain a structure*, and the old question of how often to re-sort the world simply evaporates: there is no kept structure to schedule.
 
 **The gather still scatters, and that is [§26](#26---subscription-tables-keyed-by-slot)'s job.** Binning finds the *candidates* cheaply, but reading their positions jumps around the columns. Making that gather dense is the compaction from [§24](#24---append-only-and-recycling)/[§26](#26---subscription-tables-keyed-by-slot): the same batch pass that reclaims dead slots can reorder the survivors *by cell* (a Z-order curve keeps neighbouring cells adjacent in memory), so a cell's creatures land on adjacent cache lines. That reorder is the GC's slow-cadence pass, not a separate spatial sort with its own knob. §28 says *which cell*; §26 makes *reading the cell* stream.
 
@@ -1693,9 +1703,20 @@ fn cell_of(px: f32, py: f32, cell_size: f32) -> u32 {
 }
 ```
 
-**The same lesson at the global scale: the pack-leader.** Swarming beasts look coordinated, but if every beast accounts for every other - cohesion, alignment, separation against all N - the cost is O(N²) (~240 ms at twenty thousand). The way the old games did it: put an abstract, invisible leader at the centre of the pack. The leader does the one expensive thing, deciding where the pack goes; each beast subscribes to the leader and steers relative to it. One centroid pass, every member reads one value: O(N), ~0.03 ms at the same twenty thousand - four orders of magnitude, and the gap grows with N. Lifelike swarm behaviour, no all-pairs accounting. The "who is near the group" question, like "who is near me," is answered by a single pass over position, not by a structure every agent maintains.
+**The same lesson at the global scale: the pack-leader.** Swarming beasts look coordinated, but if every beast accounts for every other - cohesion, alignment, separation against all N - the cost is O(N²) (~240 ms at twenty thousand). The way the old games did it: put an abstract, invisible leader at the centre of the pack. The leader does the one expensive thing, deciding where the pack goes; each beast subscribes to the leader and steers relative to it. One centroid pass, every member reads one value: O(N), some 9000x cheaper at the same twenty thousand on a modern desktop<sup>4</sup> (thousands of times on every machine), and the gap grows with N. Lifelike swarm behaviour, no all-pairs accounting. The "who is near the group" question, like "who is near me," is answered by a single pass over position, not by a structure every agent maintains.
 
 The meta-lesson is the one worth keeping. Twice now the cheap path was to refuse the obvious data structure - the `id_to_slot` hop in [§26](#26---subscription-tables-keyed-by-slot), the spatial index here - and instead let the system that already owns the data produce the answer in the pass it already makes. Ask what the problem *is* before reaching for a structure to make it fit. Proximity is position; position is already in hand.
+
+## Measurements
+
+The prose quotes the modern-desktop figure; the spread across the reference machines is below. Full per-machine output: `proximity` in `code/README.md`.
+
+| # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
+|---|---|---|---|---|---|
+| 1 | all-pairs neighbour test, N = 20 000 | 270 ms | 864 ms | 960 ms | 1720 ms |
+| 2 | dense bin vs bolt-on hash, 1M (end to end) | 2.8x | 1.7x | 1.6x | 1.5x |
+| 3 | dense bin rebuild ÷ its query, 1M | 0.7 % | 1.0 % | 1.4 % | 0.8 % |
+| 4 | pack-leader vs all-pairs cohesion, N = 20 000 | 9087x | 7296x | 6712x | 9439x |
 
 ## Exercises
 
