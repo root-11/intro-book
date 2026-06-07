@@ -51,7 +51,9 @@ No reallocations happened. This is the right pattern when you know the upper bou
 
 ## Exercise 4 - Indexing cost
 
-A sequential `Vec<u32>` sum runs ~1 ns/elem. A `HashMap<usize, u32>` lookup costs ~50-100 ns each (hash, probe, compare). Multiple orders of magnitude.
+Indexing a `Vec<u32>` runs ~1 ns/elem. A `HashMap<usize, u32>` lookup costs ~50-100 ns each (hash, probe, compare). Multiple orders of magnitude.
+
+Iterate the map by index - `map[&i]` for each `i` - not `into_values()`. The cost being measured is the per-key hash-and-probe that an indexed lookup pays; draining the map in bucket order is a cheap sequential walk that hides exactly that cost, so it reports the wrong ratio.
 
 ## Exercise 5 - `swap_remove` vs `remove`
 

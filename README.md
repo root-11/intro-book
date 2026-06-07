@@ -283,7 +283,7 @@ Order of magnitude (60-200×) is the durable claim; the exact factor widens with
 1. **Layout.** Print `std::mem::size_of::<Vec<u32>>()`. It should be 24 on a 64-bit machine - three pointer-sized fields. Notice that the size of the *Vec value* does not depend on how many elements it holds.
 2. **Capacity vs length.** Build `let mut v: Vec<u32> = Vec::new();`. In a loop from 0 to 100, print `v.len()` and `v.capacity()` after each `v.push(i)`. Observe the capacity doubling pattern: 0, 4, 8, 16, 32, 64, 128.
 3. **Pre-size.** Build `let mut v = Vec::with_capacity(100);` and push 100 elements. Print `len` and `capacity` once at the end. There were no reallocations.
-4. **Indexing cost.** Time `vec[i]` on a 1M `Vec<u32>` accessed sequentially. Compare with the same access on a `HashMap<usize, u32>` of the same size. Sequential `Vec` reads should be ~10-100× faster<sup>1</sup>.
+4. **Indexing cost.** Sum a 1M `Vec<u32>` by index: `black_box((0..N).map(|i| v[i] as u64).sum::<u64>())`. Time it. Now build a `HashMap<usize, u32>` with the same entries (key `i` maps to the value) and sum it *by the same indices*: `(0..N).map(|i| map[&i] as u64).sum::<u64>()`. Each `map[&i]` is one hash-and-probe, so this measures indexed lookup. Draining the map with `into_values().sum()` walks it in bucket order instead, a cheap sequential pass that measures the wrong thing. Indexed `Vec` reads should be ~10-100× faster<sup>1</sup>.
 
 > [!NOTE]
 > Measured ratios: ~65× on a Raspberry Pi 4, ~90-95× on mid-2010s Intel laptops, ~160× on a Ryzen 9 270. All use Rust's default `HashMap` (SipHash). Modern hardware widens the gap because the `Vec` sum is auto-vectorized and well-prefetched; `HashMap::get` cannot be either. Order-of-magnitude (60-200×) is the durable claim.
