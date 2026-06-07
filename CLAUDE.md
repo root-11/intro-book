@@ -25,7 +25,7 @@ Audience: adult learners and motivated undergrads who want to build things they 
 - **PDF reading**: `tools/read_pdf.py` (PEP 723 inline-deps, run via `uv run tools/read_pdf.py <path>`).
 - **HTML reading**: `tools/read_html.py` (same approach; uses BeautifulSoup).
 - Reference monograph path is in `.env` (gitignored): `MONOGRAPH_PATH`. The monograph is Bjorn's existing technical reference and informs the trunk vocabulary.
-- Simlog reference implementation: vendored at `book/simlog/logger.py` (tracked in git) so the link in §37 always resolves. `SIMLOG_PATH` in `.env` (gitignored) is an optional override - when set and the file exists, `build.py` copies the live source over the vendored copy at staging time. Refresh the vendored snapshot by re-copying from the source repo whenever you want.
+- §37's logger specimen is the Rust crate `code/logger` (dependency-free triple-store + string codebook + double-buffered revolver; std-only). Chapters link to it by full GitHub URL, not a relative path (whole crates are not staged into the rendered book). The Python `simlog` reference implementation lives only in the Python edition now; it is no longer vendored here.
 - Reference for build style: Daniel Krupke's CP-SAT primer (`https://d-krupke.github.io/cpsat-primer/`, source cloned to `/tmp/cpsat-primer/`). Same pattern: `chapters/*.md` source files, `mdbook` for the rendered site.
 
 ## Build flow
