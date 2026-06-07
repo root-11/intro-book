@@ -37,15 +37,13 @@ EXTERNAL_FILES = [
     ("code/sim/SPEC.md", "code/sim/SPEC.md"),
 ]
 
-# (env_var, rel_in_staging) - files referenced via env var (in `.env`).
-# When the env var is set and the file exists, this *overwrites* whatever
-# was already in the staging area at `rel_in_staging`. The vendored copy
-# under `book/<rel_in_staging>` (already copied by the book/ tree copy
-# above) is therefore the fallback when the env var is unset; the live
-# source is the override when it is.
-ENV_FILES = [
-    ("SIMLOG_PATH", "simlog/logger.py"),  # vendored fallback at book/simlog/logger.py
-]
+# (env_var, rel_in_staging) - optional files referenced via env var (in `.env`)
+# that *overwrite* their staged copy when the env var is set and the file
+# exists (the in-tree copy under `book/<rel_in_staging>` is the fallback).
+# Currently none: the simlog reference implementation lives only in the
+# Python edition now; the Rust edition's §37 specimen is the `code/logger`
+# crate. The mechanism is kept dormant for any future env-referenced file.
+ENV_FILES: list[tuple[str, str]] = []
 
 
 def _read_dotenv(path: Path) -> dict[str, str]:
@@ -179,7 +177,7 @@ def stage() -> None:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(src, dst)
 
-    # 2b. Copy env-var-referenced files (e.g. SIMLOG_PATH for logger.py).
+    # 2b. Copy any env-var-referenced override files (ENV_FILES; currently none).
     dotenv = _read_dotenv(ROOT / ".env")
     for env_var, dst_rel in ENV_FILES:
         path_str = dotenv.get(env_var) or os.environ.get(env_var)
@@ -425,7 +423,7 @@ def stage_readme_in_dist() -> None:
     text = src.read_text(encoding="utf-8")
     # mdbook flattens the staging tree, so any `book/X/` path becomes `X/` in dist.
     # The asset directories that surface in the README via image / link refs:
-    for sub in ("illustrations", "covers", "icons", "simlog"):
+    for sub in ("illustrations", "covers", "icons"):
         text = text.replace(f'"book/{sub}/', f'"{sub}/')
         text = text.replace(f'](book/{sub}/', f']({sub}/')
     # Cross-doc .md links → live-URL .html so they resolve on the static site

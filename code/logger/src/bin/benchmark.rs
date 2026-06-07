@@ -1,5 +1,4 @@
-//! Reproduce the §37 logger throughput numbers, the Rust counterpart of
-//! `book/simlog/benchmark.py`.
+//! Reproduce the §37 logger throughput numbers.
 //!
 //!     cargo run --release --bin benchmark
 //!

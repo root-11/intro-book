@@ -4,7 +4,7 @@ version = "0.0.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 
-# A self-contained, dependency-free Rust analogue of book/simlog/logger.py (§37).
+# A self-contained, dependency-free Rust logger specimen for §37 (the log is the world).
 # Triple-store COO + evolving string codebook + f64 type inference + a
 # double-buffered background-writer revolver. Disk format: raw little-endian
 # column bytes (no .npz, no serde) - "tables serialise themselves" (§36).

@@ -453,7 +453,7 @@ Each entry has four parts:
 
 **Definition.** An append-only log of events is the canonical state; the world's tables are the log decoded into SoA. They share a structure - `(rid, key, val)` triples either way - so replaying the log builds the tables, and serialising the tables produces a log. The two are not analogues; they are two views of one thing.
 
-**Example.** [`science/simlog/logger.py`](../simlog/logger.py) stores rows as three parallel arrays: `rids` (which entity), `keys` (which component code), `vals` (the value, as `f64`). On read, the triples are re-densified into per-field arrays plus presence masks - the canonical SoA-plus-EBP shape. Any simulation that logs every event automatically has a replayable history; recovery is not a separate code path, it is the read path.
+**Example.** The [`code/logger`](https://github.com/root-11/intro-book/tree/main/code/logger) crate stores rows as three parallel arrays: `rids` (which entity), `keys` (which `table.column` cell), `vals` (the value, as `f64`). On read, the triples are re-densified into per-field arrays plus presence masks - the canonical SoA-plus-EBP shape. Any simulation that logs every event automatically has a replayable history; recovery is not a separate code path, it is the read path.
 
 **Anti-pattern.** Treating logs as ledger / audit records and the world as the "real" state, with translation code on each side. The translation is friction; it implies impedance mismatch where there is none. When the log and the world share a shape, they are interchangeable representations and can be converted by transposition rather than translation.
 

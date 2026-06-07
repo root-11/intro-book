@@ -1,5 +1,5 @@
-//! A self-contained, dependency-free columnar simulation logger - the Rust
-//! analogue of `book/simlog/logger.py` named in [§37](../../book/trunk/37_log_is_world.md).
+//! A self-contained, dependency-free columnar simulation logger - the §37
+//! specimen ([the log is the world](../../book/trunk/37_log_is_world.md)).
 //!
 //! The shape is the one the chapter teaches:
 //!

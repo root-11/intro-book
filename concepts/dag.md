@@ -314,7 +314,7 @@ The afterword names the monograph as a sequel for the curious, not as a continua
 - **Reframed node 4** (was "cost is layout") - coupled with the budget framing: tick rate sets ms-budget per tick, operations count in ppm of a second.
 - **Reframed node 13** (system as function) - inspection-system named as canonical example, drawing on the InspectionSystem pattern in `~/code/ppdn/SYSTEMS.md`.
 - **Strengthened node 17** (presence replaces flags) - added the `established_contacts` admission example from SYSTEMS.md as a concrete one-liner.
-- **Strengthened node 37** (log is the world) - explicit structural-equivalence framing observed in [`science/simlog/logger.py`](../simlog/logger.py): the log's `(rid, key, val)` triples are the same shape as the world's SoA tables. Title changed from "log is truth" to "log is the world".
+- **Strengthened node 37** (log is the world) - explicit structural-equivalence framing, embodied in the [`code/logger`](https://github.com/root-11/intro-book/tree/main/code/logger) crate: the log's `(rid, key, val)` triples are the same shape as the world's SoA tables. Title changed from "log is truth" to "log is the world".
 - **Reframed node 38** (was "SQLite as boundary store") - generalised to "Storage systems: bandwidth and IOPS"; SQLite demoted to a specimen alongside sockets and network filesystems.
 - **Reframed node 41** (was "you own what you wrote") - discipline as recommendation, not prohibition: foreign libraries allowed, but you can only fix what you wrote.
 - **Reframed node 42** (was "tests are tables and replays") - TDD-from-day-one framing; tests are systems; same code path for inspection in debug and assertions in tests.
