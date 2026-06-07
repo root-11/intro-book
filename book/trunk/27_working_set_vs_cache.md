@@ -1,6 +1,6 @@
 # 27 - Working set vs cache
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 27](../../concepts/glossary.md#27--working-set-vs-cache).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 27](../../concepts/glossary.md#27---working-set-vs-cache).*
 
 <p align="center"><img src="../illustrations/bridge_clipboard.jpg" alt="Engineer mouse with clipboard - load capacity is what fits in the working set" style="max-height: 300px; max-width: 100%;"></p>
 

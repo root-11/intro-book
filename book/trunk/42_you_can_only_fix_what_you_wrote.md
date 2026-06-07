@@ -1,6 +1,6 @@
 # 42 - You can only fix what you wrote
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 42](../../concepts/glossary.md#42--you-can-only-fix-what-you-wrote).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 42](../../concepts/glossary.md#42---you-can-only-fix-what-you-wrote).*
 
 <p align="center"><img src="../illustrations/cad_bearing.jpg" alt="The bearing you drew is the bearing you fix" style="max-height: 300px; max-width: 100%;"></p>
 

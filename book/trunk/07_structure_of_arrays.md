@@ -1,6 +1,6 @@
 # 7 - Structure of arrays (SoA)
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 7](../../concepts/glossary.md#7--structure-of-arrays-soa).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 7](../../concepts/glossary.md#7---structure-of-arrays-soa).*
 
 <p align="center"><img src="../illustrations/ecs_banner.jpg" alt="Three mice: ENTITY, COMPONENT, SYSTEMS - naming the layout that splits an entity into component columns" style="max-height: 300px; max-width: 100%;"></p>
 

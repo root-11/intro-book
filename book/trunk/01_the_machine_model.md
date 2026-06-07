@@ -2,7 +2,7 @@
 
 <p align="center"><img src="../covers/phase_foundation.jpg" alt="Foundation phase" style="max-height: 380px; max-width: 100%;"></p>
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 1](../../concepts/glossary.md#1--the-machine-model).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 1](../../concepts/glossary.md#1---the-machine-model).*
 
 Most explanations of "how a computer works" use a diagram with a CPU and a single big block called *memory*. The diagram is wrong. Memory is many things at different speeds, and which one your data sits in decides whether your program is fast or slow.
 

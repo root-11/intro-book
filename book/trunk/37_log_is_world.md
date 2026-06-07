@@ -1,6 +1,6 @@
 # 37 - The log is the world
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 37](../../concepts/glossary.md#37--the-log-is-the-world).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 37](../../concepts/glossary.md#37---the-log-is-the-world).*
 
 <p align="center"><img src="../illustrations/model_real_world.jpg" alt="Model the real world - the log is the world reconstructed step by step" style="max-height: 300px; max-width: 100%;"></p>
 

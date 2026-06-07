@@ -1,6 +1,6 @@
 # 18 - Add/remove = insert/delete
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 18](../../concepts/glossary.md#18--addremove--insertdelete).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 18](../../concepts/glossary.md#18---addremove--insertdelete).*
 
 <p align="center"><img src="../illustrations/ebp_banner.jpg" alt="Three mice: EXISTENCE, BASED, PROCESSING" style="max-height: 300px; max-width: 100%;"></p>
 

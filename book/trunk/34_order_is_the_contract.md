@@ -1,6 +1,6 @@
 # 34 - Order is the contract
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 34](../../concepts/glossary.md#34--order-is-the-contract).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 34](../../concepts/glossary.md#34---order-is-the-contract).*
 
 <p align="center"><img src="../illustrations/monte_carlo.jpg" alt="Monte Carlo simulation - reproducibility is the contract under concurrency" style="max-height: 300px; max-width: 100%;"></p>
 

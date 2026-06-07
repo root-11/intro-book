@@ -1,6 +1,6 @@
 # 8 - Where there's one, there's many
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 8](../../concepts/glossary.md#8--where-theres-one-theres-many).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 8](../../concepts/glossary.md#8---where-theres-one-theres-many).*
 
 <p align="center"><img src="../illustrations/tip_simplify_full.jpg" alt="Break complex problems into smaller parts - the singleton special-cased away" style="max-height: 300px; max-width: 100%;"></p>
 

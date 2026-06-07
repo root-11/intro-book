@@ -1,6 +1,6 @@
 # 22 - Mutations buffer; cleanup is batched
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 22](../../concepts/glossary.md#22--mutations-buffer-cleanup-is-batched).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 22](../../concepts/glossary.md#22---mutations-buffer-cleanup-is-batched).*
 
 <p align="center"><img src="../illustrations/engineer_fuel.jpg" alt="Engineer-fuel coffee, mouse soldering - work buffered on the bench, applied in a batch" style="max-height: 300px; max-width: 100%;"></p>
 

@@ -1,6 +1,6 @@
 # 20 - Empty tables are free
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 20](../../concepts/glossary.md#20--empty-tables-are-free).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 20](../../concepts/glossary.md#20---empty-tables-are-free).*
 
 <p align="center"><img src="../illustrations/tip_visualize_full.jpg" alt="Visualize the problem - the diagram of an empty table is free" style="max-height: 300px; max-width: 100%;"></p>
 

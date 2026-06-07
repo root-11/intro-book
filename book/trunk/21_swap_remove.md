@@ -2,7 +2,7 @@
 
 <p align="center"><img src="../covers/phase_memory_lifecycle.jpg" alt="Memory & lifecycle phase" style="max-height: 380px; max-width: 100%;"></p>
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 21](../../concepts/glossary.md#21--swap_remove).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 21](../../concepts/glossary.md#21---swap_remove).*
 
 The presence-replaces-flags substitution from [§17](17_presence_replaces_flags.md) raised a problem we deferred. When a creature stops being hungry, you remove its slot from `hungry`. When a creature dies, you remove its row from every column. *Removing rows from a `Vec` is expensive* - `vec.remove(i)` shifts every later row left by one, costing O(N).
 

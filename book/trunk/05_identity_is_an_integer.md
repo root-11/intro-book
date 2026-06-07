@@ -2,7 +2,7 @@
 
 <p align="center"><img src="../covers/phase_identity_structure.jpg" alt="Identity & structure phase" style="max-height: 380px; max-width: 100%;"></p>
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 5](../../concepts/glossary.md#5--identity-is-an-integer).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 5](../../concepts/glossary.md#5---identity-is-an-integer).*
 
 Hand a programmer fifty-two cards and tell them to write code that shuffles, sorts, and deals. Ask how long.
 

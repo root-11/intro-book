@@ -1,6 +1,6 @@
 # 13 - A system is a function over tables
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 13](../../concepts/glossary.md#13--a-system-is-a-function-over-tables).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 13](../../concepts/glossary.md#13---a-system-is-a-function-over-tables).*
 
 <p align="center"><img src="../illustrations/differential_equations.jpg" alt="A mouse at the chalkboard - systems are functions of state" style="max-height: 300px; max-width: 100%;"></p>
 

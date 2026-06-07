@@ -1,6 +1,6 @@
 # 16 - Determinism by order
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 16](../../concepts/glossary.md#16--determinism-by-order).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 16](../../concepts/glossary.md#16---determinism-by-order).*
 
 <p align="center"><img src="../illustrations/monte_carlo.jpg" alt="Monte Carlo estimate of π - same seed, same answer, every run" style="max-height: 300px; max-width: 100%;"></p>
 

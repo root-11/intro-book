@@ -1,6 +1,6 @@
 # 38 - Storage systems: bandwidth and IOPS
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 38](../../concepts/glossary.md#38--storage-systems-bandwidth-and-iops).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 38](../../concepts/glossary.md#38---storage-systems-bandwidth-and-iops).*
 
 A *storage system* is the part of the program that crosses the boundary into something that holds bytes for longer than RAM does. Disk, network, distributed file system, message queue, message broker - all are storage systems. They differ in technology; they share a cost model.
 

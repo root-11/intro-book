@@ -2,7 +2,7 @@
 
 <p align="center"><img src="../covers/phase_io_persistence.jpg" alt="I/O & persistence phase" style="max-height: 380px; max-width: 100%;"></p>
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 35](../../concepts/glossary.md#35--the-boundary-is-the-queue).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 35](../../concepts/glossary.md#35---the-boundary-is-the-queue).*
 
 The simulator is a pure function. Given the world at tick start (`world_t`) and the inputs that arrived during the tick (`inputs_t`), it produces the world at tick end (`world_t+1`) and the outputs that should leave (`outputs_t`). Between those endpoints, no system touches the outside world. No system reads `Instant::now()`, sends a packet, writes to disk, or prints to stdout. Inside, the simulator is a transformation. Outside, it is a queue.
 

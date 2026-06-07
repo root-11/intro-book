@@ -1,6 +1,6 @@
 # 36 - Persistence is table serialization
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 36](../../concepts/glossary.md#36--persistence-is-table-serialization).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 36](../../concepts/glossary.md#36---persistence-is-table-serialization).*
 
 <p align="center"><img src="../illustrations/mathematics_describes.jpg" alt="Mathematics describes, models, implements - persistence captures the world that worked" style="max-height: 300px; max-width: 100%;"></p>
 

@@ -1,6 +1,6 @@
 # 3 - The `Vec` is a table
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 3](../../concepts/glossary.md#3--the-vec-is-a-table).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 3](../../concepts/glossary.md#3---the-vec-is-a-table).*
 
 <p align="center"><img src="../illustrations/linear_algebra.jpg" alt="Linear algebra: Ax = b - a table is a matrix of columns indexed in lockstep" style="max-height: 300px; max-width: 100%;"></p>
 

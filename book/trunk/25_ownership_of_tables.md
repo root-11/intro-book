@@ -1,6 +1,6 @@
 # 25 - One writer, many readers
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 25](../../concepts/glossary.md#25--one-writer-many-readers).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 25](../../concepts/glossary.md#25---one-writer-many-readers).*
 
 <p align="center"><img src="../illustrations/dag_planning_checklist.jpg" alt="One plan, one writer - PLAN, ANALYZE, DESIGN, BUILD, TEST, IMPROVE" style="max-height: 300px; max-width: 100%;"></p>
 

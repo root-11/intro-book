@@ -1,6 +1,6 @@
 # 6 - A row is a tuple
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 6](../../concepts/glossary.md#6--a-row-is-a-tuple).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 6](../../concepts/glossary.md#6---a-row-is-a-tuple).*
 
 <p align="center"><img src="../illustrations/cad_bearing.jpg" alt="A bearing's dimensioned drawing names every field" style="max-height: 300px; max-width: 100%;"></p>
 

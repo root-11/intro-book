@@ -1,6 +1,6 @@
 # 4 - Cost is layout - and you have a budget
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 4](../../concepts/glossary.md#4--cost-is-layout--and-you-have-a-budget).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 4](../../concepts/glossary.md#4---cost-is-layout---and-you-have-a-budget).*
 
 A program runs at some *target rate*. A game runs at 30 Hz or 60 Hz; an audio loop at 48 kHz; a control loop at 1 kHz; an interactive shell at "as fast as a human can type". The target rate sets a *budget* - the time available for one tick of work.
 

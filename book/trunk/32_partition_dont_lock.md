@@ -1,6 +1,6 @@
 # 32 - Partition, don't lock
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 32](../../concepts/glossary.md#32--partition-dont-lock).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 32](../../concepts/glossary.md#32---partition-dont-lock).*
 
 <p align="center"><img src="../illustrations/bridge_clipboard.jpg" alt="Bridges drawn as independent spans - partition into disjoint write-sets" style="max-height: 300px; max-width: 100%;"></p>
 

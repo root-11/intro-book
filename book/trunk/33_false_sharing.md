@@ -1,6 +1,6 @@
 # 33 - False sharing
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 33](../../concepts/glossary.md#33--false-sharing).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 33](../../concepts/glossary.md#33---false-sharing).*
 
 <p align="center"><img src="../illustrations/multimeter.jpg" alt="A mouse with a multimeter - false sharing is a precision-of-cost-measurement problem" style="max-height: 300px; max-width: 100%;"></p>
 

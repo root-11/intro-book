@@ -2,7 +2,7 @@
 
 <p align="center"><img src="../covers/phase_scale.jpg" alt="Scale phase" style="max-height: 380px; max-width: 100%;"></p>
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 26](../../concepts/glossary.md#26--subscription-tables-keyed-by-slot).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 26](../../concepts/glossary.md#26---subscription-tables-keyed-by-slot).*
 
 A system rarely touches every entity. Motion moves all of them, but starvation only reads the hungry, reproduction only the well-fed, a sleep timer only the sleeping. [§17](17_presence_replaces_flags.md) gave the tool for "which entities are in this set": a membership table. [§19](19_ebp_dispatch.md) measured the payoff: iterate the 100 000 hungry instead of scanning 1 000 000 and branching, and the work is proportional to the subset, not the population.
 

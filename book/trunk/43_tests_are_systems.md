@@ -1,6 +1,6 @@
 # 43 - Tests are systems; TDD from day one
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 43](../../concepts/glossary.md#43--tests-are-systems-tdd-from-day-one).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 43](../../concepts/glossary.md#43---tests-are-systems-tdd-from-day-one).*
 
 <p align="center"><img src="../illustrations/dag_planning_checklist.jpg" alt="PLAN, ANALYZE, DESIGN, BUILD, TEST, IMPROVE - tests are part of the same loop, written first" style="max-height: 300px; max-width: 100%;"></p>
 

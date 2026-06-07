@@ -1,6 +1,6 @@
 # 28 - Proximity is a property of position
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 28](../../concepts/glossary.md#28--proximity-is-a-property-of-position).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 28](../../concepts/glossary.md#28---proximity-is-a-property-of-position).*
 
 <p align="center"><img src="../illustrations/optimization.jpg" alt="Optimization: minimize f(x) - proximity is a function of position, computed where position lives" style="max-height: 300px; max-width: 100%;"></p>
 

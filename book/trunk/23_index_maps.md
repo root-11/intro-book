@@ -1,6 +1,6 @@
 # 23 - Index maps
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 23](../../concepts/glossary.md#23--index-maps).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 23](../../concepts/glossary.md#23---index-maps).*
 
 <p align="center"><img src="../illustrations/linear_algebra.jpg" alt="Linear algebra: Ax = b - a lookup is a matrix-vector product" style="max-height: 300px; max-width: 100%;"></p>
 

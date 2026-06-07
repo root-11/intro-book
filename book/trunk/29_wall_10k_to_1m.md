@@ -1,6 +1,6 @@
 # 29 - The wall at 10K → 1M
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 29](../../concepts/glossary.md#29--the-wall-at-10k--1m).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 29](../../concepts/glossary.md#29---the-wall-at-10k--1m).*
 
 <p align="center"><img src="../illustrations/hard_hat_repeat.jpg" alt="Construction mouse - scale up the build, MEASURE / CALCULATE / DESIGN / BUILD / REPEAT" style="max-height: 300px; max-width: 100%;"></p>
 

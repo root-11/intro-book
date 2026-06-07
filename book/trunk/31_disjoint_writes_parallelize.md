@@ -2,7 +2,7 @@
 
 <p align="center"><img src="../covers/phase_concurrency.jpg" alt="Concurrency phase" style="max-height: 380px; max-width: 100%;"></p>
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 31](../../concepts/glossary.md#31--disjoint-write-sets-parallelize-freely).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 31](../../concepts/glossary.md#31---disjoint-write-sets-parallelize-freely).*
 
 Two systems can run in parallel if and only if their write-sets do not overlap. That is the rule. It is small. It is what node 25's single-writer ownership buys you.
 

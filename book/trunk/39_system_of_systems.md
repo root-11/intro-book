@@ -2,7 +2,7 @@
 
 <p align="center"><img src="../covers/phase_system_of_systems.jpg" alt="System of systems phase" style="max-height: 380px; max-width: 100%;"></p>
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 39](../../concepts/glossary.md#39--system-of-systems).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 39](../../concepts/glossary.md#39---system-of-systems).*
 
 The trunk so far has assumed every system runs every tick and completes within the tick budget. That covers most of what the simulator does - motion, EBP dispatch, cleanup, persistence - and the surrounding chapters earned the assumption. But the assumption is not universal. Practical simulators have at least three classes of work that do not fit it.
 

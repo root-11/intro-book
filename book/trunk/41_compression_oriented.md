@@ -1,6 +1,6 @@
 # 41 - Deferred abstraction
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 41](../../concepts/glossary.md#41--deferred-abstraction).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 41](../../concepts/glossary.md#41---deferred-abstraction).*
 
 The instinct most programmers acquire from training is *abstract early*. See a case; imagine the second case; design an interface that handles both. The early abstraction feels tidy. It also breaks down the moment the third or fourth case turns out not to fit.
 

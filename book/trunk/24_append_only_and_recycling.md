@@ -1,6 +1,6 @@
 # 24 - Append-only and recycling
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 24](../../concepts/glossary.md#24--append-only-and-recycling).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 24](../../concepts/glossary.md#24---append-only-and-recycling).*
 
 <p align="center"><img src="../illustrations/hard_hat_repeat.jpg" alt="MEASURE / CALCULATE / DESIGN / BUILD / REPEAT - recycling is the construction cycle" style="max-height: 300px; max-width: 100%;"></p>
 

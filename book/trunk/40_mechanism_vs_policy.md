@@ -2,7 +2,7 @@
 
 <p align="center"><img src="../covers/phase_discipline.jpg" alt="Discipline phase" style="max-height: 380px; max-width: 100%;"></p>
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 40](../../concepts/glossary.md#40--mechanism-vs-policy).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 40](../../concepts/glossary.md#40---mechanism-vs-policy).*
 
 > [!NOTE]
 > **Building it to last.** Sections 1-39 made the simulator *work* - deterministic, scaled, parallel, persisted. These four chapters make it *last*. They are still act one - building - but they answer the questions you ask of a thing you intend to keep: is it **extendible** (can it grow without a rewrite), is it **maintainable** (can someone who is not you change it safely), and does it hold its **performance** and its **memory** as it grows. Mechanism vs policy, deferred abstraction, dependency pricing, and tests-are-systems are the discipline for those four. The fifth question - can you **operate** it in service, with nobody watching - is the second act, and it opens at [§45](45_living_with_it.md). Mechanism vs policy is where the discipline starts: a kernel you can keep is a kernel whose rules can change without it.

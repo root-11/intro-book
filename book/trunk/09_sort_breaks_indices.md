@@ -1,6 +1,6 @@
 # 9 - Sort breaks indices
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 9](../../concepts/glossary.md#9--the-sort-breaks-indices).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 9](../../concepts/glossary.md#9---the-sort-breaks-indices).*
 
 <p align="center"><img src="../illustrations/bridge_clipboard.jpg" alt="Engineer mouse with clipboard and F = ma - alignment is a structural property" style="max-height: 300px; max-width: 100%;"></p>
 

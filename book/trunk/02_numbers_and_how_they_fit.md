@@ -1,6 +1,6 @@
 # 2 - Numbers and how they fit
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 2](../../concepts/glossary.md#2--numbers-and-how-they-fit).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 2](../../concepts/glossary.md#2---numbers-and-how-they-fit).*
 
 <p align="center"><img src="../illustrations/multimeter.jpg" alt="A mouse with a multimeter - numbers measured to the precision the budget allows" style="max-height: 300px; max-width: 100%;"></p>
 

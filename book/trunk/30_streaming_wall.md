@@ -1,6 +1,6 @@
 # 30 - Moving beyond the wall
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 30](../../concepts/glossary.md#30--the-wall-at-1m--streaming).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 30](../../concepts/glossary.md#30---the-wall-at-1m--streaming).*
 
 <p align="center"><img src="../illustrations/microcontroller_loop.jpg" alt="Read / process / update under tight resource budget" style="max-height: 300px; max-width: 100%;"></p>
 

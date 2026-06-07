@@ -1,6 +1,6 @@
 # 12 - Event time is separate from tick time
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 12](../../concepts/glossary.md#12--event-time-is-separate-from-tick-time).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 12](../../concepts/glossary.md#12---event-time-is-separate-from-tick-time).*
 
 Most beginners assume the loop's frequency sets the model's time resolution. If the loop runs at 30 Hz, surely the model can only resolve events at 1/30 s = 33 ms? This is wrong, and the confusion costs many simulations their precision.
 

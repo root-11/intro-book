@@ -1,6 +1,6 @@
 # 19 - EBP dispatch
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 19](../../concepts/glossary.md#19--ebp-dispatch).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 19](../../concepts/glossary.md#19---ebp-dispatch).*
 
 <p align="center"><img src="../illustrations/tip_simplify_full.jpg" alt="Break complex problems into smaller parts - dispatch by decomposition" style="max-height: 300px; max-width: 100%;"></p>
 

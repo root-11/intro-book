@@ -1,6 +1,6 @@
 # 15 - State changes between ticks
 
-> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 15](../../concepts/glossary.md#15--state-changes-between-ticks).*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 15](../../concepts/glossary.md#15---state-changes-between-ticks).*
 
 <p align="center"><img src="../illustrations/microcontroller_loop.jpg" alt="Init / while { read; process; update } - the visible tick loop" style="max-height: 300px; max-width: 100%;"></p>
 
