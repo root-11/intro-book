@@ -2534,7 +2534,7 @@ The chapter is constructive: it names the three patterns and shows where each fi
 <p align="center"><img src="book/covers/phase_discipline.jpg" alt="Discipline phase" style="max-height: 380px; max-width: 100%;"></p>
 
 > [!NOTE]
-> **The book turns here.** Sections 1-39 were one job: *building something that works* - a simulator that runs deterministically, scales, parallelises, and persists. This part is the other job: *living with the code after it works*. The question changes. You stop asking "does it run" and start asking five things you only ask once a system is in service - is it **extendible** (can it grow without a rewrite), is it **maintainable** (can someone who is not you change it safely), does it hold its **performance** and its **memory** as it grows, and can you **operate** it (evolve, observe, and recover it in production). The next chapters are the discipline for the first four. The fifth, operations, is where the book stops and the [horizon](#the-horizon-living-with-it-at-production-scale) begins. Mechanism vs policy is where living-with-it starts: a kernel you can keep is a kernel whose rules can change without it.
+> **Building it to last.** Sections 1-39 made the simulator *work* - deterministic, scaled, parallel, persisted. These four chapters make it *last*. They are still act one - building - but they answer the questions you ask of a thing you intend to keep: is it **extendible** (can it grow without a rewrite), is it **maintainable** (can someone who is not you change it safely), and does it hold its **performance** and its **memory** as it grows. Mechanism vs policy, deferred abstraction, dependency pricing, and tests-are-systems are the discipline for those four. The fifth question - can you **operate** it in service, with nobody watching - is the second act, and it opens at [§45](#45---living-with-it). Mechanism vs policy is where the discipline starts: a kernel you can keep is a kernel whose rules can change without it.
 
 The kernel of a system exposes verbs. The rules - what's allowed, what triggers what - live at the edges. Confusing the two is how systems calcify; once a kernel knows about a rule, the rule cannot change without rewriting the kernel.
 
@@ -2781,9 +2781,9 @@ Those three are not Rust-specific. They are not even ECS-specific. They are what
 
 ## Two acts: building it, and living with it
 
-Read back, the book had two acts. Sections 1-39 were *building something that works*: a simulator that runs deterministically, scales from a hundred creatures to streaming workloads, parallelises on disjoint writes, and persists. By the end of §39 the thing runs.
+Read back, the book has two acts. The first is *building something that works, and lasts*. Sections 1-39 made it run - deterministic, scaled from a hundred creatures past the million-entity wall, parallel on disjoint writes, persisted and replayable. Sections 40-43 made it durable to *change*: mechanism vs policy, deferred abstraction, dependency pricing, tests-are-systems - the discipline that holds four of the five costs of ownership: extendibility, maintainability, performance, and memory.
 
-Sections 40-43 and this closure were the second act: *living with it*. A different question. Once a system works you stop asking "does it run" and start asking five others - is it **extendible** (can it grow without a rewrite), is it **maintainable** (can someone who is not you change it safely), does it hold its **performance** and its **memory** as it grows, and can you **operate** it (evolve, observe, recover it in production). Mechanism vs policy, deferred abstraction, dependency pricing, and tests-are-systems are the discipline for the first four. The fifth, operations, is where the book stops and the horizon begins.
+The second act is *living with it* once it is in service - a different question entirely. The fifth cost of ownership, **operations** - recovering it, observing it, trusting it across machines and deadlines - only bites when the system is deployed and the human who used to watch it is gone. That act begins in [§45](#45---living-with-it).
 
 ## Open questions the book did not settle
 
@@ -2797,7 +2797,7 @@ The book made choices. Other books make different ones. Worth knowing where you 
 
 ## The horizon: living with it at production scale
 
-The list above is choices of taste - other books choose differently. This list is not. It is where what *is* in the book leaves a real gap once the system is in service. The book builds a deterministic in-memory simulator that can persist; turning that into a system you ship, evolve, observe, and recover is the next mile, and the book does not walk it. Each gap is named here against the criterion it threatens. Together they are the reading list for whatever you build next.
+The list above is choices of taste - other books choose differently. This list is not. It is where what the first act built leaves a real gap the moment the system is in service. Turning a deterministic in-memory simulator into a system you ship, evolve, observe, and recover is the next mile - and the second act walks it. Each gap is named here against the criterion it threatens; together they are the map of the chapters ahead.
 
 - **Schema evolution** (extendibility). [§36](#36---persistence-is-table-serialization) versions a save with a header byte. Renaming a column, splitting one, changing a unit, back-filling a derived column - each is a project, not a paragraph. The fast column-direct format makes every file in the wild a hostage to today's layout. The triple-store of [§37](#37---the-log-is-the-world) is the start of a fix; schema-as-data - a column registry and a forward/back migration runner - is the rest.
 - **Crash consistency** (operations). "The log is the world" holds only while the log survives power loss. Torn writes, fsync barriers, atomic rename, idempotent replay after a half-written batch - [§38](#38---storage-systems-bandwidth-and-iops) names fsync once and stops. For a save-game that is fine; for a system of record it is the whole problem.
@@ -2809,7 +2809,7 @@ The list above is choices of taste - other books choose differently. This list i
 - **Floating-point geometry** (correctness). Data layout is orthogonal to the hard part of geometric computation: degeneracies, robust predicates, exact-versus-interval arithmetic. A perfectly SoA Delaunay triangulation can still be wrong on collinear points. The book does not need to teach robust predicates; it needs to admit they exist for the readers building CAD, GIS, or path planning.
 - **The social layer** (maintainability). Code review, ownership transfer, deprecation policy, runbooks. "Onboardable because the data is visible" is one bullet; the rest of the team-scale layer - the lone maintainer, the silent deprecation, the unwritten convention - is where every criterion above degrades fastest under turnover.
 
-The first act is the harder problem, and the book finishes it. The second act - ship, evolve, observe, recover - is the next book.
+The first act is the harder problem, and the book finishes it. The second act - ship, evolve, observe, recover - begins now, in [§45](#45---living-with-it).
 
 ## Where to go next
 
@@ -2821,6 +2821,248 @@ The first act is the harder problem, and the book finishes it. The second act - 
 <p align="center"><img src="book/illustrations/model_real_world.jpg" alt="Model the real world." style="max-height: 300px; max-width: 100%;"></p>
 
 The book ends here. The simulator does not - it runs as long as you keep the discipline.
+
+
+# 45 - Living with it
+
+[§44](#44---what-you-have-built) closed the first act. The simulator runs: deterministic, scaled past the 1M wall, parallel on disjoint writes, persisted to disk and replayable from its log. On your machine, today, with you watching, it works.
+
+That sentence has three load-bearing qualifiers. *On your machine. Today. With you watching.* The first act earns the verb "works" and stops exactly where those qualifiers bite. The second act is what it costs to remove them - to run the thing on a machine you have never seen, a year from now, while you are asleep.
+
+That cost has a name: **cost of ownership**. It is the sum of every expense a system charges you *after* it first runs - the price of changing it, trusting it, observing it, recovering it, and handing it to someone else. The first act is a capital expense, paid once. The second act is the operating expense, paid for as long as the system lives. For anything that survives, most of the lifetime cost is in the second column.
+
+And operating cost is margin you do not keep. Every byte stored forever, every managed service kept running, every layer someone has to watch and restart is a charge that recurs for the life of the system. This is where the not-free abstractions hide their price: a managed queue, a per-request database, an orchestration tier, a metrics vendor - each bought once for the convenience and billed ever after, in money, in latency, and in the people paid to keep it breathing. The single-node, in-memory discipline of the first act, read as an economic choice, is an operating-cost strategy: fewer parts to rent, fewer boundaries to watch, fewer ways to fail at 3 AM. Hold the moving parts down and the saving falls straight through to margin. That is the same dependency-pricing rule from [§41](#41---deferred-abstraction), now read off the balance sheet instead of the source tree.
+
+## Software dies of cost, not bugs
+
+Here is the fact the rest of the book is built around: programs rarely die of bugs. They die of cost. A program becomes too expensive to change, so it ossifies. Too opaque to debug, so every incident is an outage. Too fragile to restart, so nobody dares deploy it. Too entangled with one person's memory, so it dies when they leave. None of those is a failed test. Each is a cost of ownership that grew without bound until the system was cheaper to abandon than to keep.
+
+The first act produced something that works. Whether it *survives* is decided entirely in the second.
+
+## The leverage
+
+This is not a chapter about hygiene, and it is not a chapter about virtue. Nobody here will tell you to write maintainable code because it is the responsible thing to do. The argument is leverage, the same argument as the rest of the book.
+
+A system you can recover, observe, evolve, and hand off is worth far more than one that merely runs - not a little more, far more - because it lives longer and it changes cheaper. Lifespan and change-cost are the two numbers that decide what a piece of software is worth, and the second act is where you set both. For the solo builder or the small team this book is written for, the discipline ahead is the multiplier that turns a demo into an asset you keep. It is the difference between owning one system that lasts a decade and rewriting a worse one every year.
+
+The good news is that the first act already did the hard part. Almost every move in the second act is a payoff of a decision you have already made. The log is the world ([§37](#37---the-log-is-the-world)), so recovery and audit are reading, not rebuilding. Systems are functions over tables ([§13](#13---a-system-is-a-function-over-tables)), so a metrics collector is just another read-only system. The boundary is a queue ([§35](#35---the-boundary-is-the-queue)), so the storage system and the metrics sink hang off the same hook. Tables are columns ([§7](#7---structure-of-arrays-soa)), so the hardware you have not reached for yet - SIMD, a GPU - is one transfer away. You are not learning a second architecture. You are collecting what the first one already earned.
+
+## What the second act asks
+
+Five questions the first act never had to answer. The chapters ahead take them one at a time.
+
+- **Can you run it unattended?** The human watching the console is gone. The log has to survive power loss, not just a clean shutdown. The system has to say what it is doing at 2 AM with nobody reading `print!`. It has to give the same answer on a machine with a different core count, and - when a missed deadline is a fault and not just a dropped frame - it has to finish on time, every time. This is *operations*, and it is the spine of the second act.
+- **Can you change it after it ships?** The first save file you write into the world is a hostage to today's column layout. Renaming a field, splitting one, changing a unit, back-filling a derived column - each is a migration, not an edit. This is *extendibility*, and the triple-store you already built is the start of the answer.
+- **Can you reach for more hardware when one core runs out?** The book stops at one core's bandwidth. The structure-of-arrays layout is the precondition for everything past it, and crossing the bus to a vector unit or an accelerator has its own cost model - transfer bandwidth and launch latency - that wants the same dollars-and-cents treatment [§4](#4---cost-is-layout---and-you-have-a-budget) gave the cache. This is *performance*, past the wall the first act hit.
+- **Do you know where your own advice stops?** Columns are a default, not a law. There are shapes - recursive, topology-heavy, very small, or bound for a non-ECS consumer - where they cost more than they save. And layout cannot rescue you from numerical fragility: a perfectly columnar geometry kernel is still wrong on a degenerate input. Honesty about the limits is part of *maintainability*; advice you cannot bound is advice you cannot trust.
+- **Can someone who is not you keep it alive?** Code review, ownership transfer, deprecation, the runbook for the incident at 3 AM. "Onboardable because the data is visible" was one bullet in the closure; the rest of the team-scale layer is where every criterion above degrades fastest under turnover. This is the part of the cost no benchmark reaches, and the book says so plainly when it gets there.
+
+## A note on trust
+
+The first act earned its claims by measuring them on four machines and printing the numbers. The second act keeps that bargain wherever it can. Recovery throughput, hash divergence as a function of core count, the GPU break-even size, the N where columns stop paying - all measured, all reproducible on your own hardware. Where a topic cannot be measured on four boxes - true worst-case timing needs a real-time OS, and the social layer needs a team, not a benchmark - the book says so and argues in the open instead of dressing an opinion as a result. The exclusions are named, not hidden.
+
+The first act was the harder problem, and the book finished it. The second act is the longer one. It is where what you built stops being a thing that ran once and becomes a thing you own.
+
+## Orient yourself
+
+These are not coding exercises; they are an audit. Run them against the simulator you finished in the first act, or against any system you currently maintain.
+
+1. **Kill it.** Stop the process with `kill -9` (or pull the power) midway through a tick that writes the log. Restart. Does it come back to a consistent world, or a half-written one? Note what you would have to build to make the answer "yes". You will build it in the crash-consistency chapter.
+2. **Go dark.** Without adding a debugger or a `print!`, answer: how many creatures are alive right now, and how fast is the population changing? If you cannot, you have no observability. Write down the three numbers you would most want on a dashboard.
+3. **Count the cost of one change.** Pick a column. Rename it. Count every place that breaks: the struct, the systems, the serializer, every save file already on disk. That count is your cost of ownership for one trivial edit. The second act is about driving it down.
+
+## What's next
+
+The first chapter of the second act takes the unattended question head-on: [§46](#46---the-log-survives-power-loss). The console human is gone, and the first thing that breaks without them is recovery - "the log is the world" only while the log survives the stop.
+
+
+# 46 - The log survives power loss
+
+[§37](#37---the-log-is-the-world) made the load-bearing claim of the persistence story: the log is the world, and the world is the log replayed. [§45](#45---living-with-it) took away the human who used to be watching. Put those two together and a crack opens that the first act never had to look at. "The log is the world" carries an unstated precondition: *the log is intact*. On a clean shutdown it always is - the program flushes its buffers and exits in its own time. Unattended, the program does not get to choose how it stops. A power loss, an out-of-memory kill, a `kill -9`, a kernel panic: each halts the process between one instruction and the next, buffers half-flushed and the last write half-done. If the log is the world, a torn log is a torn world.
+
+This chapter earns the precondition. The property it builds has a name once it is built: **crash consistency** - the guarantee that after *any* stop, at *any* instant, the system recovers to a world that actually existed, never to a corrupt halfway state.
+
+Three facts about writing to disk. Each is a place the naive version breaks.
+
+**A write is not atomic.** A single `write()` of N bytes is not one indivisible event. The bytes pass through a library buffer, the kernel page cache, the drive's own cache, and finally the platters or flash. A crash can land anywhere in that pipeline. The record you appended can reach disk as its first k bytes and nothing more - a *torn write*. Replay a log whose last record is torn and you decode garbage into the world, or panic, or worse, succeed quietly with a corrupt value. The length of the record does not have to exceed a disk sector for this to happen; the cache layers tear at their own granularities.
+
+**`fsync` is a barrier, not a moment.** Until you call `fsync` (or `fdatasync`), "written" means "sitting in a cache that a power loss empties." `fsync` forces the file's data through to durable media and does not return until it is there. It is the only thing that converts "wrote" into "will survive." It is also expensive: it is the operation that binds you to IOPS, not bandwidth ([§38](#38---storage-systems-bandwidth-and-iops)). And it is a *barrier*, so ordering is part of the contract: the data record must be durable *before* the marker that says the record is complete, or a crash between the two leaves a marker pointing at bytes that never landed.
+
+**`rename` is atomic.** POSIX `rename()` is the one filesystem operation that flips atomically: a reader sees either the old file or the new one, never a half-written blend. This is the lever for whole-file updates. To replace a snapshot, write the new one to a temporary file, `fsync` it, then `rename` it over the old name (and `fsync` the directory, so the rename itself survives a crash). At no instant does the snapshot on disk exist in a half-written form. The write-temp-then-rename pattern is how a whole file changes without a window of corruption.
+
+From these three facts the design follows, and it is one you have already half-built.
+
+**Frame every batch as a transaction.** The [§22](#22---mutations-buffer-cleanup-is-batched) cleanup pass already gathers a tick's mutations into one batch and is the natural commit point ([§37](#37---the-log-is-the-world) logs there). Make each batch a unit that either fully happened or did not. Append its records, then a trailing **commit marker** - a length, a checksum over the batch, a sentinel. `fsync` the records, write the marker, `fsync` again. On replay, scan from the last snapshot; a batch whose marker is missing or whose checksum fails is a torn tail - discard it. The batch never happened. This is a *write-ahead log* built from the three facts, nothing more: the commit marker is the line between "durable" and "did not occur."
+
+**Never acknowledge before the marker.** The commit marker is not only an internal recovery device; it is the line you may make promises across. One instant before it is durable the write *has not happened* - a crash there erases it - so nothing downstream may be told it succeeded until the marker lands. This is the rule a payment processor lives by: an e-commerce site does not tell the customer "paid" until the bank confirms the charge settled, because a crash between "charged" and "confirmed" must resolve to *not charged*, never to a customer holding a receipt for money the system lost. A log obeys the same rule. Data arriving from a remote across the [§35](#35---the-boundary-is-the-queue) boundary is not "received" when it lands in a buffer; it is received when it is durable and can be read back. Acknowledge one instant too early and a crash turns the acknowledgement into a lie: the sender believes you hold data you do not. "Logged" has one honest definition - *I can read it back after a crash* - and everything before the marker is hope.
+
+**Recover from a snapshot plus the surviving log.** Snapshots are written temp-then-rename, so a crash mid-snapshot leaves the previous snapshot whole. Recovery loads the most recent intact snapshot and replays the committed log suffix after it ([§37](#37---the-log-is-the-world)'s snapshot-plus-log, now crash-safe). The cost is bounded by the events since the last snapshot.
+
+**Make replay idempotent.** A crash can stop you after a batch is durable but before its effect is folded into a snapshot, so recovery may replay a batch that a previous run had already applied. Replaying must converge: applying a committed batch twice must equal applying it once. The clean way is to always replay from a snapshot that *predates* the batch, so each committed event applies exactly once on the path from that snapshot forward. Determinism ([§16](#16---determinism-by-order)) does the rest: the same snapshot plus the same committed log produces the same world, every recovery, on every machine.
+
+Then **price it.** What you have built - a checksummed write-ahead log with a commit marker, batch `fsync`, atomic-rename snapshots, idempotent replay - is exactly what a real database's durability layer gives you. SQLite's WAL mode, Postgres's WAL, any `rusqlite` or `sqlx` connection: under the surface they are doing these same three facts, hardened by years of edge cases you have not hit yet (group commit, partial-page tears, fsync lies on consumer drives). Build the from-scratch version once so you can read theirs and know what you are buying. For a save-game, the hand-rolled log is enough. For a system of record, buy the hardened one - and now you know precisely which guarantee you are paying for, and why the bare `write()` you started with did not have it.
+
+The exclusion, named plainly: crash consistency is *not* backup, and it is *not* replication. It protects against the process stopping, not against the disk dying or the building burning. A single durable log on a single disk survives a `kill -9`; it does not survive the disk. That is a different cost - copies in other places - and the log's shape ([§37](#37---the-log-is-the-world)) is what makes those copies cheap, but the chapter does not buy them for you.
+
+## Measurements
+
+The cost of crash consistency is the cost of `fsync` at the batch boundary, already measured in [§38](#38---storage-systems-bandwidth-and-iops): batching the `fsync` across a tick's records instead of paying it per record is the 14-256x batched-vs-unbatched span on the four reference machines, and a durable log widens it further because each unbatched record would pay a real `fsync`, not a buffered write. Crash *correctness* is not a throughput number; it is a pass/fail test - inject a torn write, recover, compare the world hash to the pre-crash hash. The exercises build that test; a four-machine recovery-throughput table follows once the specimen exists, in the style of `code/logger`.
+
+## Exercises
+
+1. **Tear a log on purpose.** Write 1 000 length-prefixed records to a file with no commit marker and no `fsync`. Truncate the file at a random byte past the last sector boundary to simulate a torn tail. Replay. Observe what decoding the torn record does to the world - a panic, a garbage value, or a silent corruption.
+2. **Add the commit marker.** Append a per-batch trailing marker: the batch byte length plus a checksum (CRC32 or a simple Fletcher) over the batch. On replay, verify the checksum before applying; a batch that fails is discarded as a torn tail. Re-run exercise 1: the recovered world is now the last *committed* world, intact.
+3. **Order the barrier.** Make the writer `fsync` the records before writing the marker, and `fsync` again after. Argue, from the three facts, why a crash at every point between those two `fsync`s recovers to a consistent world. Identify the one ordering that does not.
+4. **Atomic snapshot.** Write a snapshot with write-temp-then-`rename`-then-`fsync`-the-directory. Run a loop that snapshots repeatedly while a second process `kill -9`s it at random. After every kill, confirm a complete snapshot is on disk - never a half-written one.
+5. **Idempotent replay.** Take a snapshot at tick S, log committed batches to tick T, then replay the S..T suffix *twice* onto the snapshot. Hash the world after one pass and after two. They must match ([§16](#16---determinism-by-order)). If they do not, find the event that is not idempotent.
+6. **Recover to any tick.** After a `kill -9` mid-run, load the last intact snapshot and replay the committed suffix. Compare the recovered world hash against the live simulator's hash at the same tick. Bit-identical, or trace the first divergent event.
+7. **The premature acknowledgement.** Build a tiny ingest loop: receive a record, append it, and return "ok" to the sender *before* the commit marker is durable. `kill -9` between the append and the `fsync`. On recovery, show the sender holds an "ok" for a record the log does not contain. Move the "ok" to *after* the marker and repeat: the sender now retries the un-acknowledged record, and the log and the sender agree. The payment-processor rule, measured.
+8. **Measure the barrier.** Time the writer with `fsync` per record, then `fsync` per batch, then no `fsync`. Reproduce the [§38](#38---storage-systems-bandwidth-and-iops) batching span on your hardware, and note where durability costs you against where it is free.
+9. *(stretch)* **Price the database.** Replace the hand-rolled log with SQLite in WAL mode (`rusqlite`). Re-run exercises 1 and 4 against it. Note which guarantees you no longer have to write, which edge cases it closes that yours did not, and what the dependency costs in build size and control.
+
+## What's next
+
+The log now survives the stop. The next unattended question is the next thing the missing human took with them: knowing what the system is *doing*. [§47](#47---observation-is-a-read-only-system) turns observation into a read-only system - metrics, tracing, and structured logs that hang off the [§35](#35---the-boundary-is-the-queue) boundary beside the storage system, so the answer to "what is it doing at 2 AM" is a table you can read, not a `print!` you wish you had added.
+
+
+# 47 - Observation is a read-only system
+
+[§46](#46---the-log-survives-power-loss) made the log survive the stop: the system comes back from a crash to a world that existed. The next thing the missing human took with them is softer and just as fatal - knowing what the system is *doing*. [§13](#13---a-system-is-a-function-over-tables) said the data is visible: `print!` any column and look. That is true and useful, and it is a *debugger's* answer - you, at your desk, world paused, stepping through one moment. At 2 AM the world is not paused, you are not at your desk, and there is no `print!` you can add to a process that is already running and already wrong.
+
+The reflex is to reach for a logging library and bolt strings onto the hot path. Resist it. Observability is not a thing you sprinkle on a system; *it is a system*, in the exact sense the book has used the word since [§13](#13---a-system-is-a-function-over-tables). A function over tables. Its read-set is the world; its write-set is a small set of tables it owns and nothing else touches. Everything built for simulation systems applies to it unchanged, and that reuse is the whole trick.
+
+Two properties fall out of "it is a read-only system," and both are the line between observability that works and observability that lies.
+
+**It cannot perturb what it measures.** A system whose write-set is disjoint from the world's tables ([§31](#31---disjoint-write-sets-parallelize-freely)) cannot change the world by reading it. A metrics system that only appends to its own table leaves the simulation bit-identical to a run with no metrics at all - provably, by the same write-set discipline that lets systems parallelise. This is the observer effect, designed out: contrast a debugger that mutates state to inspect it, or a profiler that rewrites the hot path. Read-only is not a courtesy here; it is what makes the measurement trustworthy.
+
+**It must be cheap, or the cost becomes the measurement.** Reading columns is a sequential scan, the cheapest pass there is ([§7](#7---structure-of-arrays-soa), [§27](#27---working-set-vs-cache)). A per-tick metrics sample is a handful of reductions over columns that are already hot. Keep it to a read, a reduce, and an append and it disappears against the tick budget ([§4](#4---cost-is-layout---and-you-have-a-budget)). Let it grow teeth - a sort to find a median, a full extra pass - and it starts heating the water it is trying to take the temperature of: the timing it reports is now the timing *with the thermometer in it*.
+
+The three views are all that one read-only-system shape, pointed three ways.
+
+**Metrics** - aggregate numbers over time. A system that each tick (or every N) reduces the world's columns to a row of scalars - population, mean energy, tick duration, queue depths - and appends it to a metrics table. That table is a time series: the same SoA columns, indexed by tick. "How fast is the population changing" becomes a column you read, not a number you wish you had sampled.
+
+**Traces** - one thing across many systems. The [§37](#37---the-log-is-the-world) log already records per-entity events; a trace is the log filtered to one `rid` across a tick, or one unit of work across the [§35](#35---the-boundary-is-the-queue) boundary when a trace id rides along with it. Tracing is a query, not new machinery.
+
+**Structured logs** - typed events you can ask questions of. Not `print!("creature {id} died")` but the event itself (the [§37](#37---the-log-is-the-world) record), queryable: every `DIE` for creature 17, every tick where population fell more than ten percent. A string is for a human reading one line; a structured event is for a system reading a million.
+
+**Alerting** is the fourth view, and again just a system: read-set the metrics table, output a threshold crossing. "Population reached zero." "Tick budget exceeded for a hundred ticks." The thing that wakes you is a read-only system reading a table that another read-only system wrote.
+
+One inversion of the [§46](#46---the-log-survives-power-loss) rule, stated so it is not missed. The log is **lossless** because the world depends on it: drop a record and the world is wrong, so you pay the `fsync` and you do not acknowledge until it is durable. Metrics are **lossy by choice** because the world does *not* depend on them. The pipeline that ships metrics across the boundary runs behind the queue ([§35](#35---the-boundary-is-the-queue), the [§37](#37---the-log-is-the-world) revolver), and if the sink is slow or down you **drop samples; you never stall a tick to emit one**. Backpressure on observability degrades observability, not the system. The §46 acknowledgement rule still binds anything you *claim* delivered - a billing counter is not lossy - but the default for a metric is fire-and-forget: a missing sample is a gap in a chart, a stalled tick is an outage. Never trade the system's progress for a measurement of it.
+
+The leverage lands at 2 AM. You do not add observability during the incident; the read-only systems were already running, costing nothing, writing the history that answers the question before you knew to ask it. The difference between an outage and a glance is whether the three numbers you need are already a table you can read.
+
+The exclusion, named: observability is not debugging. A debugger stops the world and inspects one instant at full fidelity; observability never stops the world and records its whole history at low fidelity. You reach for the debugger at your desk, for observability when you cannot. Neither replaces the other.
+
+## Measurements
+
+The observer's cost is a sequential read plus a reduction plus an append - the cheapest pass there is ([§7](#7---structure-of-arrays-soa), [§27](#27---working-set-vs-cache)) - so the claim is that a per-tick metrics system is ~free against the tick budget; the exercise measures the tick with it on and off. The correctness claim is non-perturbation: the world hash is identical with metrics on and off (disjoint write-set), a pass/fail test, not a number. A four-machine overhead table follows once the metrics system is a specimen, as in `code/logger`.
+
+## Exercises
+
+1. **A metrics system.** Add a system that every N ticks reduces the world's columns to one row - population, mean energy, min/max energy, tick duration - and appends it to a `metrics` table. The table is a time series with the same SoA shape as the world.
+2. **Prove it is read-only.** Hash the world after 1 000 ticks with the metrics system running, and again with it removed. The hashes must match ([§31](#31---disjoint-write-sets-parallelize-freely)): a disjoint write-set cannot perturb the world. If they differ, find the column the observer wrote that it should not have.
+3. **Measure the thermometer.** Time the tick with metrics on and off; show the cost is ~free. Then make the metrics system sort the energy column to report a median every tick, and watch the reported tick time climb - the measurement now changes the thing measured. Replace the sort with a streaming estimate and recover the budget.
+4. **Trace one creature.** Query the [§37](#37---the-log-is-the-world) log for a single `rid` across 100 ticks and reconstruct its life: born, ate, became hungry, died. Note that this needs no new storage - it is a filter over the log you already keep.
+5. **Ask a question logs cannot answer as strings.** Find every tick where the population fell by more than ten percent. Do it over the structured event table; then argue why the same query over `print!` text output is grep-and-pray, not a query.
+6. **An alert is a system.** Add a system whose read-set is the `metrics` table and whose output fires when population hits zero, or when tick duration exceeds the budget for T consecutive ticks. The pager is one more read-only system.
+7. **Behind the queue.** Ship the metrics out to a file or socket through the [§35](#35---the-boundary-is-the-queue) queue. Pause the sink mid-run. Show the tick rate is unaffected and samples are dropped, not stalled - observability degraded, system intact.
+8. *(stretch)* **The guaranteed metric.** For a counter you must not lose - a billing total, an audit count - apply the [§46](#46---the-log-survives-power-loss) rule: do not advance the "reported" watermark until the sink confirms the batch durable, and on restart resend from the watermark. Contrast its cost with the fire-and-forget default, and decide per metric which one it is.
+
+## What's next
+
+The system now survives the stop and reports what it is doing. The next unattended failure is quieter than either: it gives a *different answer* on a different machine. [§48](#48---reductions-dont-parallelize-freely) takes the determinism the first act earned ([§16](#16---determinism-by-order)) into the place it most easily breaks - a parallel reduction whose result depends on the core count - so that "same seed, same world" survives the move from your laptop to the server you have never seen.
+
+
+# 48 - Reductions don't parallelize freely
+
+[§31](#31---disjoint-write-sets-parallelize-freely) earned a strong claim: systems with disjoint write-sets parallelise freely, with no locks and no coordination. [§16](#16---determinism-by-order) earned another: same seed, same system order, same world, every run. Both are true. Put them under one stress the first act never applied - *a different number of cores* - and a seam opens between them. The world that hashed identically on your four-core laptop hashes differently on the thirty-two-core server. Same code, same seed, same log. Different machine, different world.
+
+This is the worst class of bug, because it passes. It passes every test you ran, because you ran them on one machine with one core count. It surfaces only after the move to the hardware you have never seen - the unattended server of [§46](#46---the-log-survives-power-loss) and [§47](#47---observation-is-a-read-only-system), where you cannot attach a debugger and the only symptom is that two nodes that should agree do not. The determinism survived everything except the deployment.
+
+The cause is one fact and one consequence.
+
+**Floating-point addition is not associative.** `(a + b) + c` is not always `a + (b + c)` in the last bits. This is not a bug in your code or your hardware; it is IEEE-754 working as specified. Each addition rounds its result to fit the mantissa, and rounding depends on the magnitudes being added. Change the grouping and you change which intermediate values get rounded, and the final bits move.
+
+**A parallel reduction groups by core count.** Split a sum of a million values across four threads and you add four partials, each a sum of 250 000 in some order, then combine the four. Across eight threads you add eight partials of 125 000. Serially you add all million in index order. Three different groupings, three different roundings, three different results in the low bits. The reduction's output is a function of how many threads computed it. Same data, same seed, more cores, different number.
+
+And it does not stay in the low bits. That last-bit difference is an input to the next tick. A simulation is a feedback loop; small differences amplify. Over enough ticks two worlds that started one ULP apart are visibly, structurally different - different creatures alive, different population. The [§16](#16---determinism-by-order) world-hash that was the bedrock of replay, distribution, and testing now depends on `nproc`. "The log is the world" ([§37](#37---the-log-is-the-world)) quietly acquired an asterisk: *on the same core count*. Distribution - two nodes converging from one log - breaks outright.
+
+The canary is precise: **hashes stable when you fix the core count, unstable when you change it.** If your world hashes match locally and diverge in CI, and the CI box has a different `nproc`, suspect a parallel floating-point reduction before anything else.
+
+The fix is not "stop parallelising." [§31](#31---disjoint-write-sets-parallelize-freely) still holds: the per-element work parallelises freely. The reduction is the one place where parallel work meets a single shared result, and that is the only place order leaks back in. So you isolate the non-determinism to the combine step and make *that* deterministic. **Determinism is a property of the combine, not the compute.** Two ways to buy it.
+
+**Fix the reduction order.** Each thread reduces its own partition into a slot indexed by a fixed partition id. Then a single serial fold walks the slots in id order and combines them. The grouping is now defined by partition id, not by which thread finished first or how many there were. The expensive part - the per-element work - still runs on all cores; only the final fold over a handful of partials is serial, and a handful is cheap. You keep the [§31](#31---disjoint-write-sets-parallelize-freely) speedup and recover the [§16](#16---determinism-by-order) guarantee. The result still rounds per addition, but it rounds the *same way every time, on every machine*.
+
+**Accumulate in integers.** Integer addition *is* associative: exact, order-independent, identical on one core or sixty-four. Scale each value to a fixed-point integer, sum exactly in any order, scale back at the end. There is no rounding to reorder because there is no rounding until the final scale-back. The price is range management - you choose the fixed-point scale, and you must not overflow the integer - so it fits best where the quantity is bounded and its precision is known, like a sum of energies. Integer accumulation is deterministic by construction; fixed-order floating-point is deterministic by discipline. Where you can bound the range, integers are the stronger guarantee.
+
+Neither is exotic, and the choice is usually easy: retrofit fixed-order onto an existing float pipeline; reach for fixed-point when the reduction is core to correctness and the range is known.
+
+One forward note. Threads are not the only reducer that reorders. A SIMD sum adds in lanes; a GPU reduction adds in a tree across thousands of lanes. Both reorder, both diverge, and both take the same two fixes. The discipline you build here is the precondition for crossing to a vector unit or an accelerator at all - the heterogeneous-compute chapter inherits it directly.
+
+The exclusion, named: this is about *reproducibility*, not *accuracy*. A fixed-order or integer reduction is not more correct in the numerical-analysis sense - it does not get you closer to the true sum - it gets you the *same* answer every time, which is what replay, distribution, and a passing test across machines require. If you need accuracy too, that is compensated summation, a separate technique layered on top.
+
+## Measurements
+
+The divergence is a demonstration, not a number: run the racy reduction at one, two, four, and eight threads and the world hashes differ - a fact you reproduce in minutes, not a benchmark. The *cost* of the fix is measurable and small: the deterministic combine adds a serial fold over the partition count (a few to a few dozen values), not over the elements, so it is a rounding error against the parallel work it guards ([§31](#31---disjoint-write-sets-parallelize-freely)'s speedup is preserved). Integer accumulation trades the float adds for integer adds of the same count - comparable within variance on every machine. A four-machine table follows once the reduction is a specimen.
+
+## Exercises
+
+1. **Make it diverge.** Sum a float column of one million values in parallel at 1, 2, 4, and 8 threads. Hash each result. Show the hashes differ, and that they are each *stable* on repeated runs at a fixed thread count. The bug is real and it is reproducible per core count.
+2. **Compound it.** Feed that reduction into the simulator (say, a global energy normalisation each tick). Run 1 000 ticks at two different thread counts from the same seed. Hash the worlds. Watch a last-bit difference become a different population.
+3. **Fix the order.** Reduce per partition into a fixed-id slot, then fold the slots serially in id order. Re-run exercise 1: the hashes are now identical across all thread counts. Time the serial fold and show it is negligible against the parallel work.
+4. **Accumulate in integers.** Scale the energies to fixed-point `i64`, sum exactly, scale back. Show the result is identical across thread counts *and* across summation orders. Find the scale where overflow begins, and the scale where precision loss begins.
+5. **Replay across core counts.** Replay one committed log ([§46](#46---the-log-survives-power-loss)) at two thread counts. Bit-identical world only with a fixed-order or integer reduction. This is the [§37](#37---the-log-is-the-world) distribution claim, made true on heterogeneous hardware.
+6. **The canary test.** Write a CI check that runs the simulator at two core counts and asserts equal world hashes. It fails today; make it pass; keep it - it is the regression guard that catches the next racy reduction before a server does.
+7. *(stretch)* **The same bug on a vector unit.** Replace the threaded reduction with a SIMD horizontal sum. Show it reorders and diverges just as a thread pool does, and that the fixed-order and integer fixes both still apply. Note what this implies for the GPU chapter ahead.
+
+## What's next
+
+Three of the four unattended questions are answered: the system survives the stop ([§46](#46---the-log-survives-power-loss)), reports what it is doing ([§47](#47---observation-is-a-read-only-system)), and gives the same answer on every machine. The last one is the hardest deadline of all. [§49](#49---the-worst-case-is-the-only-case) takes on *hard real-time* - where a missed deadline is not a dropped frame but a fault - and marks the line between the soft budgets the trunk taught ([§4](#4---cost-is-layout---and-you-have-a-budget), [§39](#39---system-of-systems)) and the worst-case-execution-time discipline a control loop demands.
+
+
+# 49 - The worst case is the only case
+
+[§4](#4---cost-is-layout---and-you-have-a-budget) gave the tick a budget: 33 ms at 30 Hz, and you spend it wisely. [§39](#39---system-of-systems) gave the long computation an anytime contract: return the best answer you have when the deadline arrives. Both are **soft** real-time. A missed deadline costs *quality* - a dropped frame, a coarser answer - and the system keeps running. You have been doing soft real-time for the whole book, and for almost everything you will build, soft is the right and sufficient discipline.
+
+This chapter marks the line where it stops. In **hard** real-time a missed deadline is not a dropped frame; it is a *fault*. The motor controller that computes the next current 200 microseconds late has already let the motor run away. The flight-control loop that skips a cycle has lost the aircraft for that cycle. The emergency stop that fires 10 ms late did not fire. When the deadline is a fault, the average case is irrelevant. A loop that meets its deadline 99.999 percent of the time has *failed* if the missing 0.001 percent is the brake.
+
+That single sentence inverts the book. Every technique so far chased the *mean*: cache-friendly layout, SoA, parallelism, branch-predictable code - all of them make the common case fast and let the rare case be slow. Hard real-time chases the *tail*. It does not care that the average tick is 2 ms if one tick in a million is 40 ms, because the one is the only one that matters. The worst case is the only case.
+
+What hard real-time demands is a different ledger.
+
+**Worst-case execution time (WCET), not average.** You must know the longest the code can *ever* take, and prove it. That means every loop has a statically known maximum iteration count, every branch's slower side is the one you count, there is no unbounded recursion, and there is no data-dependent loop without a bound. The [§4](#4---cost-is-layout---and-you-have-a-budget) budget stops being an average you usually hit and becomes a ceiling you prove you never cross.
+
+**No allocation in the inner loop.** `malloc` and `free` have unbounded worst-case time: the allocator may walk free lists, coalesce, or fall through to the OS for more pages. One hot-path allocation puts an unknowable spike in your WCET. Pre-allocate everything; the loop allocates nothing.
+
+**No blocking call in the inner loop.** A syscall, a lock, an `fsync`, a page fault - each can stall for an unbounded time while the kernel does something else. The hot loop touches only memory that is already resident and locks that are already held or never contended.
+
+**Bounded jitter.** Soft real-time asks "fast enough on average". Hard real-time asks "does the tick fire every period, on time, with bounded variance". The enemies of jitter are the very machinery that makes the average fast: the OS scheduler preempting you, interrupts, CPU frequency scaling, and the cache itself. You fight them with a real-time scheduler (`SCHED_FIFO`, `SCHED_DEADLINE`), CPU isolation and pinning (`isolcpus`), locking your pages in RAM so they never fault (`mlockall`), and pinning the clock so it does not slew.
+
+**Priority inheritance.** A high-priority task waits on a lock held by a low-priority task that has been preempted by a medium-priority one. The high-priority task now misses its deadline because of a task it outranks - priority inversion, and it has crashed real spacecraft. The fix is a mechanism: a task holding a lock temporarily inherits the priority of the highest task waiting for it.
+
+Here is the part that should reassure you: **most of this discipline you already have.** The book has avoided per-tick allocation since [§7](#7---structure-of-arrays-soa) - SoA columns are pre-sized, the [§22](#22---mutations-buffer-cleanup-is-batched) buffer is reused, [§24](#24---append-only-and-recycling) recycles slots instead of freeing. I/O lives off the hot path behind the [§35](#35---the-boundary-is-the-queue) queue and the [§37](#37---the-log-is-the-world) revolver, exactly where a syscall must not be. A system is a bounded pass over a known-size table ([§13](#13---a-system-is-a-function-over-tables)); the order is fixed and deterministic ([§16](#16---determinism-by-order)). You built these for *performance*, and they are hard-real-time preconditions for free. The data-oriented core is already most of the way to predictable.
+
+And here is the part that should sober you: **the rest is a genuine inversion, not just more of the same.** The book measured averages; hard real-time needs proven worst cases, and the measured ns/element ladder of [§27](#27---working-set-vs-cache) is an *average* over a warm cache. The [§1](#1---the-machine-model) cache staircase the book celebrates as a performance story is, here, a source of WCET *uncertainty*: a cache miss is the worst case, and code whose timing depends on cache state has a worst case far above its mean. The same is true of branch prediction, speculation, and frequency scaling - each speeds the common path and widens the gap between common and worst. Hard real-time often *disables* them, or budgets for their worst case, and runs slower on average to be predictable. That is the opposite of every instinct the book has trained. Hard real-time is not the book's techniques turned up; it is a different objective function that sometimes overrules them.
+
+The exclusion, stated as plainly as it can be, because here it is a safety matter: **this book does not build hard-real-time systems, and a soft-real-time system must never be deployed where a hard one is required.** A certified controller is a different craft - a real-time operating system, WCET analysis tools, and certification regimes (DO-178C for avionics, IEC 61508 for industrial safety) that this book does not touch. The simulator you built is a wonderful thing and it is not a brake. The value of this chapter is the line itself: knowing which side of it you are on, so you neither over-build a game loop into a control system nor, far worse, mistake your fast average for a guarantee you never made.
+
+## Measurements
+
+This is the one chapter where the book's measure-it-on-four-machines moat partly cannot reach: true WCET needs a real-time OS and formal timing analysis, not four Linux boxes, and the chapter says so rather than faking a number. *Jitter*, though, measures cleanly and is the right demonstration - record the actual period of every tick over a few million ticks on a stock scheduler and the histogram has a long, ugly tail driven by the OS, not your code. Pinning the core, raising the scheduling class, and locking pages tighten that tail visibly. The exercises build the histogram; the lesson is in the shape of the tail, and in which knobs flatten it.
+
+## Exercises
+
+1. **Measure your jitter.** Run an empty tick loop at a fixed period for a few million iterations and record the actual period each time (a monotonic clock). Plot the distribution. The mean is tight; find the tail - the p99.9 and the max - and note it is tens to hundreds of times the mean on a stock desktop.
+2. **Find the scheduler.** Re-run pinned to an isolated core (`taskset`/`isolcpus`) under `SCHED_FIFO`, with `mlockall`. Show the tail shrink. You did not make the code faster; you made the worst case smaller, which is the only thing hard real-time counts.
+3. **Hunt an unbounded operation.** Audit one system for anything without a static bound: a `HashMap` that can rehash, a `Vec` that can reallocate, a data-dependent loop, a `format!`. Each is a spike in your WCET. Replace one with a pre-sized, bounded equivalent and re-measure the tail.
+4. **Allocation is a spike.** Add one `Box::new` per tick to the hot loop and watch the tail grow; remove it and watch it shrink. Confirm the book's no-per-tick-allocation discipline ([§7](#7---structure-of-arrays-soa), [§24](#24---append-only-and-recycling)) was buying you tail latency all along.
+5. **The cache is a worst case.** Run a system over data small enough to stay in L1, then over data large enough to miss to RAM ([§27](#27---working-set-vs-cache)). Compare not the means but the *maxima*. Argue why average-case layout tuning does not give a WCET, and what would.
+6. **Soft, not hard - on purpose.** Take your anytime system ([§39](#39---system-of-systems)) and write down, honestly, its worst-case time. Show it has none you can prove. Conclude what kind of deadline it may and may not be trusted with.
+7. *(stretch)* **Priority inversion.** Build three tasks - high, medium, low - sharing one lock, and reproduce the high task missing its deadline because the low task holds the lock while the medium task runs. Then enable priority inheritance and show the deadline met. Name the mechanism that fixed it.
+
+## What's next
+
+That closes the unattended question the second act opened with ([§45](#45---living-with-it)): the system survives the stop ([§46](#46---the-log-survives-power-loss)), reports what it is doing ([§47](#47---observation-is-a-read-only-system)), gives the same answer on every machine ([§48](#48---reductions-dont-parallelize-freely)), and you now know the line past which its soft deadlines cannot be trusted. The next question is not about running it but about *changing* it. [§50] takes on schema evolution - the first save file you wrote into the world is a hostage to today's column layout, and renaming a field or splitting a column is a migration, not an edit.
 
 <!-- BOOK_END -->
 

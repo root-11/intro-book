@@ -35,9 +35,9 @@ Those three are not Rust-specific. They are not even ECS-specific. They are what
 
 ## Two acts: building it, and living with it
 
-Read back, the book had two acts. Sections 1-39 were *building something that works*: a simulator that runs deterministically, scales from a hundred creatures to streaming workloads, parallelises on disjoint writes, and persists. By the end of §39 the thing runs.
+Read back, the book has two acts. The first is *building something that works, and lasts*. Sections 1-39 made it run - deterministic, scaled from a hundred creatures past the million-entity wall, parallel on disjoint writes, persisted and replayable. Sections 40-43 made it durable to *change*: mechanism vs policy, deferred abstraction, dependency pricing, tests-are-systems - the discipline that holds four of the five costs of ownership: extendibility, maintainability, performance, and memory.
 
-Sections 40-43 and this closure were the second act: *living with it*. A different question. Once a system works you stop asking "does it run" and start asking five others - is it **extendible** (can it grow without a rewrite), is it **maintainable** (can someone who is not you change it safely), does it hold its **performance** and its **memory** as it grows, and can you **operate** it (evolve, observe, recover it in production). Mechanism vs policy, deferred abstraction, dependency pricing, and tests-are-systems are the discipline for the first four. The fifth, operations, is where the book stops and the horizon begins.
+The second act is *living with it* once it is in service - a different question entirely. The fifth cost of ownership, **operations** - recovering it, observing it, trusting it across machines and deadlines - only bites when the system is deployed and the human who used to watch it is gone. That act begins in [§45](45_living_with_it.md).
 
 ## Open questions the book did not settle
 
@@ -51,7 +51,7 @@ The book made choices. Other books make different ones. Worth knowing where you 
 
 ## The horizon: living with it at production scale
 
-The list above is choices of taste - other books choose differently. This list is not. It is where what *is* in the book leaves a real gap once the system is in service. The book builds a deterministic in-memory simulator that can persist; turning that into a system you ship, evolve, observe, and recover is the next mile, and the book does not walk it. Each gap is named here against the criterion it threatens. Together they are the reading list for whatever you build next.
+The list above is choices of taste - other books choose differently. This list is not. It is where what the first act built leaves a real gap the moment the system is in service. Turning a deterministic in-memory simulator into a system you ship, evolve, observe, and recover is the next mile - and the second act walks it. Each gap is named here against the criterion it threatens; together they are the map of the chapters ahead.
 
 - **Schema evolution** (extendibility). [§36](36_persistence_is_serialization.md) versions a save with a header byte. Renaming a column, splitting one, changing a unit, back-filling a derived column - each is a project, not a paragraph. The fast column-direct format makes every file in the wild a hostage to today's layout. The triple-store of [§37](37_log_is_world.md) is the start of a fix; schema-as-data - a column registry and a forward/back migration runner - is the rest.
 - **Crash consistency** (operations). "The log is the world" holds only while the log survives power loss. Torn writes, fsync barriers, atomic rename, idempotent replay after a half-written batch - [§38](38_storage_systems.md) names fsync once and stops. For a save-game that is fine; for a system of record it is the whole problem.
@@ -63,7 +63,7 @@ The list above is choices of taste - other books choose differently. This list i
 - **Floating-point geometry** (correctness). Data layout is orthogonal to the hard part of geometric computation: degeneracies, robust predicates, exact-versus-interval arithmetic. A perfectly SoA Delaunay triangulation can still be wrong on collinear points. The book does not need to teach robust predicates; it needs to admit they exist for the readers building CAD, GIS, or path planning.
 - **The social layer** (maintainability). Code review, ownership transfer, deprecation policy, runbooks. "Onboardable because the data is visible" is one bullet; the rest of the team-scale layer - the lone maintainer, the silent deprecation, the unwritten convention - is where every criterion above degrades fastest under turnover.
 
-The first act is the harder problem, and the book finishes it. The second act - ship, evolve, observe, recover - is the next book.
+The first act is the harder problem, and the book finishes it. The second act - ship, evolve, observe, recover - begins now, in [§45](45_living_with_it.md).
 
 ## Where to go next
 

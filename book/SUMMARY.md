@@ -121,9 +121,24 @@
 - [Tests are systems; TDD from day one](trunk/43_tests_are_systems.md)
   - [Solutions](trunk/43_tests_are_systems_solutions.md)
 
-# Closure
+# Act one closes
 
 - [What you have built](trunk/44_closure.md)
+
+# Part 11: Living with it
+
+- [Living with it](trunk/45_living_with_it.md)
+
+# Part 12: Operations
+
+- [The log survives power loss](trunk/46_log_survives_power_loss.md)
+  - [Solutions](trunk/46_log_survives_power_loss_solutions.md)
+- [Observation is a read-only system](trunk/47_observation_is_a_system.md)
+  - [Solutions](trunk/47_observation_is_a_system_solutions.md)
+- [Reductions don't parallelize freely](trunk/48_reductions_dont_parallelize_freely.md)
+  - [Solutions](trunk/48_reductions_dont_parallelize_freely_solutions.md)
+- [The worst case is the only case](trunk/49_worst_case_is_the_only_case.md)
+  - [Solutions](trunk/49_worst_case_is_the_only_case_solutions.md)
 
 ---
 
