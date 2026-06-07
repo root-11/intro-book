@@ -33,6 +33,12 @@ Those three are not Rust-specific. They are not even ECS-specific. They are what
 - **Less idiomatic Rust.** The book uses very little of Rust's type system: traits, lifetimes, and generics appear when they pay rent and not before. Idiomatic Rust looks different.
 - **A different mental model.** Engineers trained in OOP will not naturally reach for tables. The translation cost is real.
 
+## Two acts: building it, and living with it
+
+Read back, the book had two acts. Sections 1-39 were *building something that works*: a simulator that runs deterministically, scales from a hundred creatures to streaming workloads, parallelises on disjoint writes, and persists. By the end of §39 the thing runs.
+
+Sections 40-43 and this closure were the second act: *living with it*. A different question. Once a system works you stop asking "does it run" and start asking five others - is it **extendible** (can it grow without a rewrite), is it **maintainable** (can someone who is not you change it safely), does it hold its **performance** and its **memory** as it grows, and can you **operate** it (evolve, observe, recover it in production). Mechanism vs policy, deferred abstraction, dependency pricing, and tests-are-systems are the discipline for the first four. The fifth, operations, is where the book stops and the horizon begins.
+
 ## Open questions the book did not settle
 
 The book made choices. Other books make different ones. Worth knowing where you sit:
@@ -42,6 +48,22 @@ The book made choices. Other books make different ones. Worth knowing where you 
 - **Could this have been C, or Zig?** Yes. The ideas are language-independent. Rust contributes the borrow checker and zero-cost abstractions; the rest is layout discipline.
 - **What about networking and rollback?** §31-§34 covers single-machine concurrency. Distributing the world across machines is a different book - see Glenn Fiedler's GDC talks for the rollback-netcode pattern.
 - **What about types and traits?** Two of Rust's three big features barely appear in the trunk. Future work might explore where generics and traits *do* pay rent in an ECS - usually at the boundary (serialisation, debug rendering) rather than the kernel.
+
+## The horizon: living with it at production scale
+
+The list above is choices of taste - other books choose differently. This list is not. It is where what *is* in the book leaves a real gap once the system is in service. The book builds a deterministic in-memory simulator that can persist; turning that into a system you ship, evolve, observe, and recover is the next mile, and the book does not walk it. Each gap is named here against the criterion it threatens. Together they are the reading list for whatever you build next.
+
+- **Schema evolution** (extendibility). [§36](36_persistence_is_serialization.md) versions a save with a header byte. Renaming a column, splitting one, changing a unit, back-filling a derived column - each is a project, not a paragraph. The fast column-direct format makes every file in the wild a hostage to today's layout. The triple-store of [§37](37_log_is_world.md) is the start of a fix; schema-as-data - a column registry and a forward/back migration runner - is the rest.
+- **Crash consistency** (operations). "The log is the world" holds only while the log survives power loss. Torn writes, fsync barriers, atomic rename, idempotent replay after a half-written batch - [§38](38_storage_systems.md) names fsync once and stops. For a save-game that is fine; for a system of record it is the whole problem.
+- **Numerical determinism under parallelism** (operations). The parallel-reduction gotcha named in [§16](16_determinism_by_order.md): same seed, different thread count, different bits. Replay across heterogeneous hardware needs a fixed reduction order or integer accumulation, not just "no threads inside a system".
+- **Observability** (operations). "The data is visible; `print!` every column" is a debugger's story, not an on-call engineer's at 2 AM. Metrics, tracing across queue boundaries, structured logs, and alerting want to be read-only systems whose write-set is a metrics table the storage system ships out beside the log.
+- **Hard real-time** (operations). [§39](39_system_of_systems.md)'s anytime algorithms are soft real-time: a missed deadline costs quality. Hard real-time - where a missed deadline is a fault - needs WCET analysis, bounded jitter, and no allocation in the inner loop. A different discipline layered on top.
+- **Heterogeneous compute** (performance). SoA is the precondition for SIMD, GPU offload, and accelerators; the book makes the precondition and stops at one core's bandwidth. For all-pairs shortest paths on a million-node graph, the next bus is the difference between thirty minutes and thirty seconds. Its cost model - transfer bandwidth and kernel-launch latency - deserves the same dollars-and-cents treatment [§4](04_cost_and_budget.md) gives the cache hierarchy.
+- **Where SoA does not pay** (memory, maintainability). The simulator's domain - things with positions and a few scalars - is unusually friendly to columns. Recursive structures dominated by topology rather than slot order, very small N where pointer-chasing's constant factor wins, and APIs that must hand structured rows to non-ECS consumers are where columns can cost more than they save. SoA is a default, not a law.
+- **Floating-point geometry** (correctness). Data layout is orthogonal to the hard part of geometric computation: degeneracies, robust predicates, exact-versus-interval arithmetic. A perfectly SoA Delaunay triangulation can still be wrong on collinear points. The book does not need to teach robust predicates; it needs to admit they exist for the readers building CAD, GIS, or path planning.
+- **The social layer** (maintainability). Code review, ownership transfer, deprecation policy, runbooks. "Onboardable because the data is visible" is one bullet; the rest of the team-scale layer - the lone maintainer, the silent deprecation, the unwritten convention - is where every criterion above degrades fastest under turnover.
+
+The first act is the harder problem, and the book finishes it. The second act - ship, evolve, observe, recover - is the next book.
 
 ## Where to go next
 

@@ -335,7 +335,7 @@ The shape of this thinking is familiar to engineers in other domains. An electri
 1. **Pick your rates.** For each of these systems, name a plausible target rate and the resulting per-tick budget: a card game; a real-time strategy game; a market data feed; an embedded sensor controller; a web API endpoint a user is waiting for; an offline batch job that processes a billion rows.
 2. **Count an operation.** Time a single `HashMap::get` on a map of 1 000 000 entries. Note its cost in microseconds. How many can you fit in a 30 Hz tick (33 ms)? In a 1 kHz tick (1 ms)?
 3. **The layout difference.** Sum 1 000 000 `u64`s in a `Vec<u64>`. Sum 1 000 000 `u64`s in a `HashMap<u32, u64>`. Both are O(N). What is the per-element time difference (in nanoseconds)? Where did it go?
-4. **The cliff.** With your numbers from [§1 exercise 4](#1---the-machine-model#exercises), pick a `Vec` size that just fits in L2 and one that just doesn't. Time a sum loop at each size. The cliff is real.
+4. **The cliff.** With your numbers from [§1 exercise 4](#exercises), pick a `Vec` size that just fits in L2 and one that just doesn't. Time a sum loop at each size. The cliff is real.
 5. **Working backwards from the budget.** You target 60 Hz; your inner loop runs over 100 000 entities; each entity touches one cache line. Estimate the cost of the loop in microseconds and compare to your 60 Hz budget (16 666 µs). Where is your headroom?
 6. **A bad design.** Construct a design that is "obviously fast" by big-O reasoning but blows the 30 Hz budget on a million entities. (Hint: object-graph traversal with one heap allocation per node is a classic.)
 7. **Find your CPU's TDP.** Look up your CPU's rated thermal design power on the manufacturer's spec sheet, or read it locally on Linux with `sudo dmidecode -t processor | grep -i 'power\|TDP'`. Note the value. TDP is what the chip can dissipate sustained without thermal throttling - burst can be 1.5-2× higher for tens of seconds; sustained settles back to TDP.
@@ -996,6 +996,9 @@ The recipe for determinism is simple: forbid every source of non-determinism in 
 These rules are restrictive. They are also the price of every benefit listed above. Most modern programs decline to pay this price and accept the costs - flaky tests, unreproducible bugs, divergent distributed simulation. The book pays the price.
 
 The cost of determinism is not absolute. *Within* a system, the implementation is free to use whatever it likes - SIMD intrinsics, branch hints, compile-time tricks - as long as the inputs and outputs are bit-identical to what the abstract specification demands. The discipline is at the system boundary: between systems, everything must be reproducible.
+
+> [!NOTE]
+> **Parallel reductions are the exception.** "Bit-identical" is easy to lose the moment a reduction runs in parallel. Floating-point addition is not associative: `(a + b) + c` is not always `a + (b + c)` in the last bits. A parallel sum that splits the data across threads and merges the partials adds in a different grouping than a serial sum, so the *same seed with a different thread count* can produce different bits. That is the canary: if your world hashes diverge only when you change core count, suspect a parallel floating-point reduction. Two escape hatches keep determinism. Fix the reduction order: always fold the partials in a defined sequence, independent of how many threads produced them. Or accumulate in integers: scale to fixed-point, sum exactly, scale back. Integer accumulation is exact by construction; fixed-order floating-point is reproducible but still rounds. This is the determinism gotcha behind the replay-across-heterogeneous-hardware claim above - drop it and "same seed, same answer" quietly stops being true across machines with different core counts.
 
 A test for determinism is concrete. Run the simulator twice with the same seed, the same input event log, the same system order. After 1 000 ticks, hash the entire world state. If the hashes match, you are deterministic. If they do not, find the system whose output first differs, and trace the source of variability. Often: a `HashMap`, a system clock, a thread.
 
@@ -2448,6 +2451,9 @@ The deadline is the budget. The algorithm respects it. Quality is a function of 
 
 This is [§4](#4---cost-is-layout---and-you-have-a-budget) applied to a long computation: the budget is named explicitly, and the algorithm honours it. The student who has internalised the budget calculus already knows how to design these algorithms; the only new vocabulary is the *anytime* contract.
 
+> [!NOTE]
+> **Soft real-time, not hard.** The deadline here is a *budget*, not a *guarantee*. An anytime algorithm honours its deadline by returning the best answer it has when the deadline arrives; if that answer is mediocre, the system degrades gracefully but still ships a frame. That is *soft* real-time: a missed deadline costs quality, not correctness. *Hard* real-time is a different discipline. When a missed deadline is a fault - an avionics control loop, a surgical robot, motor control, an AMR's emergency stop that fails to fire in time - you need worst-case execution time (WCET) analysis, bounded jitter, no allocation and no syscall in the inner loop, and a scheduler that can enforce deadlines (`SCHED_DEADLINE`, priority-inversion avoidance). The trunk's tick budget is soft by construction. Building a hard-real-time controller on these ideas is real work the book does not do; for that frontier, start with the WCET and `SCHED_DEADLINE` literature.
+
 ## Time-sliced computation
 
 Some work cannot be made anytime - there is no "best partial answer" until the work is complete. A spatial search that has examined 20 % of the cells has a 20 % chance of having found the answer; otherwise it has nothing useful to report. For these, the pattern is *time-slicing*: divide the work across many ticks, with the system's *progress* as part of its persistent state.
@@ -2526,6 +2532,9 @@ The chapter is constructive: it names the three patterns and shows where each fi
 # 40 - Mechanism vs policy
 
 <p align="center"><img src="book/covers/phase_discipline.jpg" alt="Discipline phase" style="max-height: 380px; max-width: 100%;"></p>
+
+> [!NOTE]
+> **The book turns here.** Sections 1-39 were one job: *building something that works* - a simulator that runs deterministically, scales, parallelises, and persists. This part is the other job: *living with the code after it works*. The question changes. You stop asking "does it run" and start asking five things you only ask once a system is in service - is it **extendible** (can it grow without a rewrite), is it **maintainable** (can someone who is not you change it safely), does it hold its **performance** and its **memory** as it grows, and can you **operate** it (evolve, observe, and recover it in production). The next chapters are the discipline for the first four. The fifth, operations, is where the book stops and the [horizon](#the-horizon-living-with-it-at-production-scale) begins. Mechanism vs policy is where living-with-it starts: a kernel you can keep is a kernel whose rules can change without it.
 
 The kernel of a system exposes verbs. The rules - what's allowed, what triggers what - live at the edges. Confusing the two is how systems calcify; once a kernel knows about a rule, the rule cannot change without rewriting the kernel.
 
@@ -2770,6 +2779,12 @@ Those three are not Rust-specific. They are not even ECS-specific. They are what
 - **Less idiomatic Rust.** The book uses very little of Rust's type system: traits, lifetimes, and generics appear when they pay rent and not before. Idiomatic Rust looks different.
 - **A different mental model.** Engineers trained in OOP will not naturally reach for tables. The translation cost is real.
 
+## Two acts: building it, and living with it
+
+Read back, the book had two acts. Sections 1-39 were *building something that works*: a simulator that runs deterministically, scales from a hundred creatures to streaming workloads, parallelises on disjoint writes, and persists. By the end of §39 the thing runs.
+
+Sections 40-43 and this closure were the second act: *living with it*. A different question. Once a system works you stop asking "does it run" and start asking five others - is it **extendible** (can it grow without a rewrite), is it **maintainable** (can someone who is not you change it safely), does it hold its **performance** and its **memory** as it grows, and can you **operate** it (evolve, observe, recover it in production). Mechanism vs policy, deferred abstraction, dependency pricing, and tests-are-systems are the discipline for the first four. The fifth, operations, is where the book stops and the horizon begins.
+
 ## Open questions the book did not settle
 
 The book made choices. Other books make different ones. Worth knowing where you sit:
@@ -2779,6 +2794,22 @@ The book made choices. Other books make different ones. Worth knowing where you 
 - **Could this have been C, or Zig?** Yes. The ideas are language-independent. Rust contributes the borrow checker and zero-cost abstractions; the rest is layout discipline.
 - **What about networking and rollback?** §31-§34 covers single-machine concurrency. Distributing the world across machines is a different book - see Glenn Fiedler's GDC talks for the rollback-netcode pattern.
 - **What about types and traits?** Two of Rust's three big features barely appear in the trunk. Future work might explore where generics and traits *do* pay rent in an ECS - usually at the boundary (serialisation, debug rendering) rather than the kernel.
+
+## The horizon: living with it at production scale
+
+The list above is choices of taste - other books choose differently. This list is not. It is where what *is* in the book leaves a real gap once the system is in service. The book builds a deterministic in-memory simulator that can persist; turning that into a system you ship, evolve, observe, and recover is the next mile, and the book does not walk it. Each gap is named here against the criterion it threatens. Together they are the reading list for whatever you build next.
+
+- **Schema evolution** (extendibility). [§36](#36---persistence-is-table-serialization) versions a save with a header byte. Renaming a column, splitting one, changing a unit, back-filling a derived column - each is a project, not a paragraph. The fast column-direct format makes every file in the wild a hostage to today's layout. The triple-store of [§37](#37---the-log-is-the-world) is the start of a fix; schema-as-data - a column registry and a forward/back migration runner - is the rest.
+- **Crash consistency** (operations). "The log is the world" holds only while the log survives power loss. Torn writes, fsync barriers, atomic rename, idempotent replay after a half-written batch - [§38](#38---storage-systems-bandwidth-and-iops) names fsync once and stops. For a save-game that is fine; for a system of record it is the whole problem.
+- **Numerical determinism under parallelism** (operations). The parallel-reduction gotcha named in [§16](#16---determinism-by-order): same seed, different thread count, different bits. Replay across heterogeneous hardware needs a fixed reduction order or integer accumulation, not just "no threads inside a system".
+- **Observability** (operations). "The data is visible; `print!` every column" is a debugger's story, not an on-call engineer's at 2 AM. Metrics, tracing across queue boundaries, structured logs, and alerting want to be read-only systems whose write-set is a metrics table the storage system ships out beside the log.
+- **Hard real-time** (operations). [§39](#39---system-of-systems)'s anytime algorithms are soft real-time: a missed deadline costs quality. Hard real-time - where a missed deadline is a fault - needs WCET analysis, bounded jitter, and no allocation in the inner loop. A different discipline layered on top.
+- **Heterogeneous compute** (performance). SoA is the precondition for SIMD, GPU offload, and accelerators; the book makes the precondition and stops at one core's bandwidth. For all-pairs shortest paths on a million-node graph, the next bus is the difference between thirty minutes and thirty seconds. Its cost model - transfer bandwidth and kernel-launch latency - deserves the same dollars-and-cents treatment [§4](#4---cost-is-layout---and-you-have-a-budget) gives the cache hierarchy.
+- **Where SoA does not pay** (memory, maintainability). The simulator's domain - things with positions and a few scalars - is unusually friendly to columns. Recursive structures dominated by topology rather than slot order, very small N where pointer-chasing's constant factor wins, and APIs that must hand structured rows to non-ECS consumers are where columns can cost more than they save. SoA is a default, not a law.
+- **Floating-point geometry** (correctness). Data layout is orthogonal to the hard part of geometric computation: degeneracies, robust predicates, exact-versus-interval arithmetic. A perfectly SoA Delaunay triangulation can still be wrong on collinear points. The book does not need to teach robust predicates; it needs to admit they exist for the readers building CAD, GIS, or path planning.
+- **The social layer** (maintainability). Code review, ownership transfer, deprecation policy, runbooks. "Onboardable because the data is visible" is one bullet; the rest of the team-scale layer - the lone maintainer, the silent deprecation, the unwritten convention - is where every criterion above degrades fastest under turnover.
+
+The first act is the harder problem, and the book finishes it. The second act - ship, evolve, observe, recover - is the next book.
 
 ## Where to go next
 

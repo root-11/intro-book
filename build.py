@@ -323,7 +323,15 @@ def _rewrite_chapter_links(text: str, anchor_map: dict[str, str]) -> str:
         anchor = anchor_map.get(stem)
         if not anchor:
             return m.group(0)
-        return f"[{label}](#{anchor}{frag})"
+        if frag:
+            # Link to a sub-heading: in the single-file README every heading
+            # lives in one document, so the fragment is already its own anchor.
+            # Prepending the chapter anchor would yield an invalid double-anchor
+            # (#chapter#frag). (A bare fragment resolves to the first heading
+            # with that slug, so cross-chapter sub-heading targets must be
+            # unique or the earliest occurrence - both current ones are.)
+            return f"[{label}]({frag})"
+        return f"[{label}](#{anchor})"
     return _CHAPTER_LINK_RE.sub(repl, text)
 
 

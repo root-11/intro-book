@@ -4,6 +4,9 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 40](../../concepts/glossary.md#40--mechanism-vs-policy).*
 
+> [!NOTE]
+> **The book turns here.** Sections 1-39 were one job: *building something that works* - a simulator that runs deterministically, scales, parallelises, and persists. This part is the other job: *living with the code after it works*. The question changes. You stop asking "does it run" and start asking five things you only ask once a system is in service - is it **extendible** (can it grow without a rewrite), is it **maintainable** (can someone who is not you change it safely), does it hold its **performance** and its **memory** as it grows, and can you **operate** it (evolve, observe, and recover it in production). The next chapters are the discipline for the first four. The fifth, operations, is where the book stops and the [horizon](44_closure.md#the-horizon-living-with-it-at-production-scale) begins. Mechanism vs policy is where living-with-it starts: a kernel you can keep is a kernel whose rules can change without it.
+
 The kernel of a system exposes verbs. The rules - what's allowed, what triggers what - live at the edges. Confusing the two is how systems calcify; once a kernel knows about a rule, the rule cannot change without rewriting the kernel.
 
 The principle is older than ECS. It is named in operating-system kernel design (Mach, X11, Plan 9 all teach this rule), in network-protocol design (TCP is mechanism, congestion control is policy), and in file-system design (read/write/seek is mechanism, access control is policy). The same shape applies to ECS systems.

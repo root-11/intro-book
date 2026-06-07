@@ -35,6 +35,9 @@ The deadline is the budget. The algorithm respects it. Quality is a function of 
 
 This is [§4](04_cost_and_budget.md) applied to a long computation: the budget is named explicitly, and the algorithm honours it. The student who has internalised the budget calculus already knows how to design these algorithms; the only new vocabulary is the *anytime* contract.
 
+> [!NOTE]
+> **Soft real-time, not hard.** The deadline here is a *budget*, not a *guarantee*. An anytime algorithm honours its deadline by returning the best answer it has when the deadline arrives; if that answer is mediocre, the system degrades gracefully but still ships a frame. That is *soft* real-time: a missed deadline costs quality, not correctness. *Hard* real-time is a different discipline. When a missed deadline is a fault - an avionics control loop, a surgical robot, motor control, an AMR's emergency stop that fails to fire in time - you need worst-case execution time (WCET) analysis, bounded jitter, no allocation and no syscall in the inner loop, and a scheduler that can enforce deadlines (`SCHED_DEADLINE`, priority-inversion avoidance). The trunk's tick budget is soft by construction. Building a hard-real-time controller on these ideas is real work the book does not do; for that frontier, start with the WCET and `SCHED_DEADLINE` literature.
+
 ## Time-sliced computation
 
 Some work cannot be made anytime - there is no "best partial answer" until the work is complete. A spatial search that has examined 20 % of the cells has a 20 % chance of having found the answer; otherwise it has nothing useful to report. For these, the pattern is *time-slicing*: divide the work across many ticks, with the system's *progress* as part of its persistent state.
