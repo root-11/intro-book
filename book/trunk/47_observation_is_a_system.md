@@ -1,5 +1,7 @@
 # 47 - Observation is a read-only system
 
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 47](../../concepts/glossary.md#47---observation-is-a-read-only-system).*
+
 [§46](46_log_survives_power_loss.md) made the log survive the stop: the system comes back from a crash to a world that existed. The next thing the missing human took with them is softer and just as fatal - knowing what the system is *doing*. [§13](13_system_as_function.md) said the data is visible: `print!` any column and look. That is true and useful, and it is a *debugger's* answer - you, at your desk, world paused, stepping through one moment. At 2 AM the world is not paused, you are not at your desk, and there is no `print!` you can add to a process that is already running and already wrong.
 
 The reflex is to reach for a logging library and bolt strings onto the hot path. Resist it. Observability is not a thing you sprinkle on a system; *it is a system*, in the exact sense the book has used the word since [§13](13_system_as_function.md). A function over tables. Its read-set is the world; its write-set is a small set of tables it owns and nothing else touches. Everything built for simulation systems applies to it unchanged, and that reuse is the whole trick.

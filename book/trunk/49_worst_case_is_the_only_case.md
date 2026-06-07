@@ -1,5 +1,7 @@
 # 49 - The worst case is the only case
 
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 49](../../concepts/glossary.md#49---the-worst-case-is-the-only-case).*
+
 [§4](04_cost_and_budget.md) gave the tick a budget: 33 ms at 30 Hz, and you spend it wisely. [§39](39_system_of_systems.md) gave the long computation an anytime contract: return the best answer you have when the deadline arrives. Both are **soft** real-time. A missed deadline costs *quality* - a dropped frame, a coarser answer - and the system keeps running. You have been doing soft real-time for the whole book, and for almost everything you will build, soft is the right and sufficient discipline.
 
 This chapter marks the line where it stops. In **hard** real-time a missed deadline is not a dropped frame; it is a *fault*. The motor controller that computes the next current 200 microseconds late has already let the motor run away. The flight-control loop that skips a cycle has lost the aircraft for that cycle. The emergency stop that fires 10 ms late did not fire. When the deadline is a fault, the average case is irrelevant. A loop that meets its deadline 99.999 percent of the time has *failed* if the missing 0.001 percent is the brake.

@@ -67,7 +67,7 @@ With a racy reduction this fails and the [§37](37_log_is_world.md) "distributio
 fn deterministic_across_core_counts() {
     let seed = 42;
     let a = run_sim(seed, /*threads=*/ 1);
-    let b = run_sim(seed, /*threads=*/ num_cpus::get());
+    let b = run_sim(seed, /*threads=*/ std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1));
     assert_eq!(hash_world(&a), hash_world(&b));
 }
 ```

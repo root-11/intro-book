@@ -1,5 +1,7 @@
 # 46 - The log survives power loss
 
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 46](../../concepts/glossary.md#46---the-log-survives-power-loss).*
+
 [§37](37_log_is_world.md) made the load-bearing claim of the persistence story: the log is the world, and the world is the log replayed. [§45](45_living_with_it.md) took away the human who used to be watching. Put those two together and a crack opens that the first act never had to look at. "The log is the world" carries an unstated precondition: *the log is intact*. On a clean shutdown it always is - the program flushes its buffers and exits in its own time. Unattended, the program does not get to choose how it stops. A power loss, an out-of-memory kill, a `kill -9`, a kernel panic: each halts the process between one instruction and the next, buffers half-flushed and the last write half-done. If the log is the world, a torn log is a torn world.
 
 This chapter earns the precondition. The property it builds has a name once it is built: **crash consistency** - the guarantee that after *any* stop, at *any* instant, the system recovers to a world that actually existed, never to a corrupt halfway state.

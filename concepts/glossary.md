@@ -530,3 +530,51 @@ Each entry has four parts:
 **Anti-pattern.** Testing as a separate concern bolted on at the end. The tests then live in their own world, mirroring the real code with mocks and stubs and a separate vocabulary. Testing systems-as-systems makes the tests grow with the code, not against it.
 
 **See also.** 13 (system as function), 16 (determinism by order), 37 (the log is the world), 41 (deferred abstraction).
+
+---
+
+## 46 - The log survives power loss
+
+**Definition.** Crash consistency: after any stop at any instant - power loss, `kill -9`, panic - the system recovers to a world that existed, never a half-written one. Three facts underlie it: a write is not atomic (it can tear mid-record), `fsync` is the barrier that makes a buffered write durable, and `rename` is the one atomic filesystem operation. From them follow a checksummed write-ahead log with a per-batch commit marker, batch `fsync`, atomic-rename snapshots, and idempotent replay. The commit marker doubles as the acknowledgement boundary - nothing downstream is told "done" before the marker is durable.
+
+**Example.** The §22 cleanup batch is written, then a trailing marker (length + CRC). On restart, replay scans from the last snapshot and discards a trailing batch whose marker is missing or whose checksum fails; that batch "did not happen". Snapshots are written temp-then-`rename`, so a crash mid-write leaves the previous snapshot whole.
+
+**Anti-pattern.** Acknowledging a write before it is durable. A crash between the page cache and `fsync` loses data the sender believes was accepted - "paid" announced before the bank confirms.
+
+**See also.** 16 (determinism by order), 22 (mutations buffer), 37 (the log is the world), 38 (storage systems).
+
+---
+
+## 47 - Observation is a read-only system
+
+**Definition.** Observability is not bolted-on logging; it is a system in the §13 sense - a function whose read-set is the world and whose write-set is a small set of tables it alone owns. Two properties follow: it cannot perturb what it measures (a disjoint write-set leaves the world bit-identical, §31), and it must be cheap (a sequential column read plus a reduction, §7/§27) or it changes the timing it reports. Metrics, traces, structured logs, and alerting are that one shape pointed four ways.
+
+**Example.** A metrics system reduces the world's columns to one row per N ticks - population, mean energy, tick duration - and appends it to a `metrics` table, a time series in the same SoA shape. An alert is another read-only system whose read-set is that table; a trace is the §37 log filtered to one entity id.
+
+**Anti-pattern.** `print!` on the hot path, and metrics shipped on a blocking send. The log is lossless because the world depends on it; metrics are lossy by choice - drop a sample, never stall a tick to emit one.
+
+**See also.** 13 (system as function), 31 (disjoint write-sets parallelize), 35 (boundary is the queue), 37 (the log is the world).
+
+---
+
+## 48 - Reductions don't parallelize freely
+
+**Definition.** Disjoint write-sets parallelize freely (§31), but a reduction is the one place parallel work meets a single result, and there order leaks back in. Floating-point addition is not associative, so a parallel sum grouped by thread count gives different low bits per core count - same seed, different hardware, different world, the §16 contract broken. The fix is not to stop parallelising but to make the *combine* deterministic: a fixed reduction order (per-partition partials folded in id order), or integer/fixed-point accumulation (associative, exact).
+
+**Example.** Summing a column across 4 vs 8 threads yields different bit patterns; fed back into the tick, one ULP amplifies into a different population. Reducing each partition into a fixed-id slot and folding the slots serially restores identical hashes across all core counts while keeping the parallel speedup. SIMD and GPU reductions reorder the same way and take the same fix.
+
+**Anti-pattern.** A naive parallel float `sum` whose result feeds the simulation, with a world hash used for replay or distribution. It passes every test on one machine and diverges on a box with a different core count.
+
+**See also.** 16 (determinism by order), 31 (disjoint write-sets parallelize), 33 (false sharing).
+
+---
+
+## 49 - The worst case is the only case
+
+**Definition.** The trunk's budgets (§4) and anytime algorithms (§39) are *soft* real-time: a missed deadline costs quality. *Hard* real-time is where a missed deadline is a fault, and there only the worst case counts, never the average. It demands worst-case execution time (WCET) analysis, no allocation or blocking call in the inner loop, bounded jitter (real-time scheduler, core isolation, locked pages), and priority inheritance. The data-oriented core already supplies most of the preconditions - no per-tick allocation, I/O off the hot path - but proving the worst case, and accepting that caches and speculation widen it, is a different discipline the book does not certify.
+
+**Example.** An empty tick loop on a stock scheduler has a tight mean and a long jitter tail driven by the OS; pinning to an isolated core under `SCHED_FIFO` with `mlockall` shrinks the tail without changing the mean. A `HashMap` rehash or a hot-path `Box::new` is invisible in the average and a spike in the WCET.
+
+**Anti-pattern.** Treating a fast average as a guarantee, and deploying a soft-real-time system where a hard one is required - a control loop, a safety interlock. The book builds soft real-time and says so; a certified controller is a different craft (RTOS, WCET tools, DO-178C / IEC 61508).
+
+**See also.** 4 (cost and budget), 16 (determinism by order), 27 (working set vs cache), 39 (system of systems).

@@ -1,5 +1,7 @@
 # 48 - Reductions don't parallelize freely
 
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 48](../../concepts/glossary.md#48---reductions-dont-parallelize-freely).*
+
 [§31](31_disjoint_writes_parallelize.md) earned a strong claim: systems with disjoint write-sets parallelise freely, with no locks and no coordination. [§16](16_determinism_by_order.md) earned another: same seed, same system order, same world, every run. Both are true. Put them under one stress the first act never applied - *a different number of cores* - and a seam opens between them. The world that hashed identically on your four-core laptop hashes differently on the thirty-two-core server. Same code, same seed, same log. Different machine, different world.
 
 This is the worst class of bug, because it passes. It passes every test you ran, because you ran them on one machine with one core count. It surfaces only after the move to the hardware you have never seen - the unattended server of [§46](46_log_survives_power_loss.md) and [§47](47_observation_is_a_system.md), where you cannot attach a debugger and the only symptom is that two nodes that should agree do not. The determinism survived everything except the deployment.
