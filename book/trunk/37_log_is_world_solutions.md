@@ -93,8 +93,8 @@ For events with sparse fields (a `DIE` event uses only `creature_id`; an `EAT` e
 
 [`science/simlog/logger.py`](../simlog/logger.py) implements the triple-store shape directly:
 
-- `rids: Vec<u32>` - which entity (the row id)
-- `keys: Vec<u16>` - which column (a numeric code)
+- `rids: Vec<u32>` - which entity: the stable id, not the slot
+- `keys: Vec<u16>` - which cell: a code for `table.column` (which table and column the value writes to)
 - `vals: Vec<f64>` - the value, as 8 bytes (integers up to 2⁵³ round-trip exactly; strings are codebook-encoded to integers, then stored as the integer)
 
 On read, these are densified into per-field `Vec`s plus presence masks. The same shape that was on disk is now in memory, ready for systems to iterate. The library does not need to know what an "event" is; it stores triples and lets the consumer interpret them. The §17/§37 structural pattern in working code.

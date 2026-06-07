@@ -25,11 +25,13 @@ A column `energy: Vec<f32>` is the result of starting from an empty `Vec` plus t
 
 In the most explicit form - the *triple-store* shape - the log is a sequence of `(rid, key, val)` triples:
 
-- `rid` = which entity (the row id)
-- `key` = which column (a numeric code, or string mapped to a code)
-- `val` = the value to write
+- `rid` = which entity: the stable [id](10_stable_ids_and_generations.md), not the slot
+- `key` = which cell: a code for `table.column` (e.g. `creatures.energy`)
+- `val` = the value written there
 
-The triples form the log; transposed, they form the columns. Transposition is the only translation. There is no impedance mismatch because there is no model gap.
+Read one triple as a sentence: *entity `rid`, cell `table.column`, becomes `val`*. The key is best read as `table.column` - it names the table *and* the column, so `(rid, table.column)` is a fully-qualified address of one cell anywhere in the world. That `table.column` form is what makes the log uniform: every state change, in every table, is the same three fields, and replay is the mechanical `world.table.column[id_to_slot[rid]] = val` applied over the log in order. The codebook stores each distinct `table.column` string once and the per-event key as a small integer code, so the log never carries the string. (This is a write-ahead log: `table.column`, row-by-id, value.)
+
+Three stable handles, one moving thing left out. The entity id is *identity* - it survives relocation and the save ([§26](26_subscription_tables.md)). The `table.column` is the *schema address* - stable as long as the schema is. The value is the write. The *slot* - the entity's momentary position in the columns - is never logged, because it is the one part that moves; replay re-derives it through `id_to_slot` ([§23](23_index_maps.md)). The triples form the log; transposed, they form the columns. Transposition is the only translation. There is no impedance mismatch because there is no model gap.
 
 ### A working specimen: simlog
 
