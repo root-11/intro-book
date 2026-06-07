@@ -91,7 +91,7 @@ For events with sparse fields (a `DIE` event uses only `creature_id`; an `EAT` e
 
 ## Exercise 6 - A working specimen
 
-[`science/simlog/logger.py`](../simlog/logger.py) implements the triple-store shape directly:
+[`code/logger`](https://github.com/root-11/intro-book/tree/main/code/logger) implements the triple-store shape directly:
 
 - `rids: Vec<u32>` - which entity: the stable id, not the slot
 - `keys: Vec<u16>` - which cell: a code for `table.column` (which table and column the value writes to)
