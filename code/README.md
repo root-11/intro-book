@@ -6,6 +6,7 @@ Working implementations and measurement binaries that back the §1-§10 chapters
 
 - `deck/` - the through-line program for §5-§10. SoA card deck with shuffle, sort, deal, query, single-writer reorder, and stable-id lookup. Tests cover the contracts.
 - `measurement/` - eleven binaries, one per measurement-bearing exercise group.
+- `logger/` - the dependency-free Rust analogue of `book/simlog/logger.py` (§37). Triple-store COO + evolving string codebook + `f64` type inference + a double-buffered background-writer revolver; raw little-endian column-byte chunks (no `.npz`, no `serde`). Tests cover the contracts; a `benchmark` bin reproduces the throughput numbers.
 - `sim/` - specification only (`SPEC.md`); the simulator chapters (§11+) live here when written.
 
 ## Running
@@ -36,6 +37,9 @@ cargo run --release --bin l1_sweet_spot      # §27.6 (L1 vs L2 streaming motion
 cargo run --release --bin ebp_partition      # §24, §26 (subscription vs scan, slot vs id keying, locality, lifecycle)
 cargo run --release --bin proximity          # §28 (all-pairs vs bolt-on hash vs dense binning; pack-leader cohesion)
 cargo run --release --bin power_loop -- sequential   # §4.9 (run perf in another terminal)
+
+# §37 logger (the simlog analogue)
+cd logger && cargo test && cargo run --release --bin benchmark   # log() ns/call at 5 and 11 fields
 ```
 
 ## Cross-machine results

@@ -1,0 +1,23 @@
+[package]
+name = "logger"
+version = "0.0.1"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+
+# A self-contained, dependency-free Rust analogue of book/simlog/logger.py (§37).
+# Triple-store COO + evolving string codebook + f64 type inference + a
+# double-buffered background-writer revolver. Disk format: raw little-endian
+# column bytes (no .npz, no serde) - "tables serialise themselves" (§36).
+
+[lib]
+name = "logger"
+path = "src/lib.rs"
+
+[[bin]]
+name = "benchmark"
+path = "src/bin/benchmark.rs"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
