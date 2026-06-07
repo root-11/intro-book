@@ -140,6 +140,10 @@
 - [The worst case is the only case](trunk/49_worst_case_is_the_only_case.md)
   - [Solutions](trunk/49_worst_case_is_the_only_case_solutions.md)
 
+# Closure
+
+- [It runs without you](trunk/50_it_runs_without_you.md)
+
 ---
 
 # For lecturers

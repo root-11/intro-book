@@ -51,7 +51,7 @@ The book made choices. Other books make different ones. Worth knowing where you 
 
 ## The horizon: living with it at production scale
 
-The list above is choices of taste - other books choose differently. This list is not. It is where what the first act built leaves a real gap the moment the system is in service. Turning a deterministic in-memory simulator into a system you ship, evolve, observe, and recover is the next mile - and the second act walks it. Each gap is named here against the criterion it threatens; together they are the map of the chapters ahead.
+The list above is choices of taste - other books choose differently. This list is not. It is where what the first act built leaves a real gap the moment the system is in service. Turning a deterministic in-memory simulator into a system you ship, evolve, observe, and recover is the next mile - and the second act sets out on it. Each gap is named here against the criterion it threatens; together they are the map of the road ahead.
 
 - **Schema evolution** (extendibility). [§36](36_persistence_is_serialization.md) versions a save with a header byte. Renaming a column, splitting one, changing a unit, back-filling a derived column - each is a project, not a paragraph. The fast column-direct format makes every file in the wild a hostage to today's layout. The triple-store of [§37](37_log_is_world.md) is the start of a fix; schema-as-data - a column registry and a forward/back migration runner - is the rest.
 - **Crash consistency** (operations). "The log is the world" holds only while the log survives power loss. Torn writes, fsync barriers, atomic rename, idempotent replay after a half-written batch - [§38](38_storage_systems.md) names fsync once and stops. For a save-game that is fine; for a system of record it is the whole problem.
@@ -64,14 +64,3 @@ The list above is choices of taste - other books choose differently. This list i
 - **The social layer** (maintainability). Code review, ownership transfer, deprecation policy, runbooks. "Onboardable because the data is visible" is one bullet; the rest of the team-scale layer - the lone maintainer, the silent deprecation, the unwritten convention - is where every criterion above degrades fastest under turnover.
 
 The first act is the harder problem, and the book finishes it. The second act - ship, evolve, observe, recover - begins now, in [§45](45_living_with_it.md).
-
-## Where to go next
-
-- **Read Mike Acton's "Data-Oriented Design and C++"** (CppCon 2014). Forty-five minutes; the most concentrated case for this approach you will find.
-- **Read Casey Muratori's *Handmade Hero*** episodes on grid storage and cache locality. Another route to the same conclusions.
-- **Open Bevy's `bevy_ecs` crate.** You will recognise every pattern. The names will differ; the shapes are identical.
-- **Extend the simulator.** The genetics and predator-prey extensions flagged in the [simulator spec](../../code/sim/SPEC.md) break new ground without leaving the framework you have already built.
-
-<p align="center"><img src="../illustrations/model_real_world.jpg" alt="Model the real world." style="max-height: 300px; max-width: 100%;"></p>
-
-The book ends here. The simulator does not - it runs as long as you keep the discipline.
