@@ -17,24 +17,28 @@ The function does not look up by id; it looks up by *slot*. With a fresh deck th
 ## Exercise 2 - Mishandle the alignment
 
 ```rust
-suits.sort();          // reorders only `suits`
-let (s, r, l) = row(&suits, &ranks, &locations, 17);
-println!("row 17 (corrupted): suit={s} rank={r} location={l}");
+// `suits` is already sorted by construction, so `suits.sort()` would change nothing.
+// Sort `ranks` in isolation to actually reorder a column:
+ranks.sort();
+for i in [5, 17] {
+    let (s, r, l) = row(&suits, &ranks, &locations, i);
+    println!("row {i}: suit={s} rank={r} location={l}");
+}
 ```
 
-Slot 17 now holds: the suit that ended up at sorted-position 17 (probably one of the hearts), the rank that originally was at position 17 (5 of diamonds), and the location originally at 17 (still 0 = deck). Three fields from three different cards. This is the alignment violation in pure form.
+After `ranks.sort()`, slot 5 still reads suit 0 and location 0 - those columns were untouched, so they are card 5's - but its rank is now 1, dragged in from a different card. The row no longer describes any real card. Slot 17 reads suit 1, rank 4, location 0, exactly as before: the four rank-4 cards occupy slots 16 through 19 both before and after the sort, so this one slot survives by coincidence. Note that only one column moved, so a broken row mixes *two* cards, not three; the real danger is that inspecting a single lucky slot like 17 would tell you nothing is wrong.
 
 ## Exercise 3 - Lockstep sort
 
 ```rust
 let mut order: Vec<usize> = (0..52).collect();
-order.sort_by_key(|&i| suits[i]);
+order.sort_by_key(|&i| ranks[i]);
 suits     = order.iter().map(|&i| suits[i]).collect();
 ranks     = order.iter().map(|&i| ranks[i]).collect();
 locations = order.iter().map(|&i| locations[i]).collect();
 ```
 
-After the lockstep sort, slot 17 is whichever original card landed at sorted-position 17 - but whatever that card is, all three of its fields move together.
+Every column is rebuilt through the *same* `order`, so whichever card lands in slot 5 or 17 brings its suit, rank, and location with it. The slot's three fields agree on one card again. The fix is structural: one order vector, applied to every column, can never produce the mismatch from exercise 2.
 
 ## Exercises 4-6 - Sketches
 
