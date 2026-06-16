@@ -30,7 +30,7 @@ The exclusion, named: observability is not debugging. A debugger stops the world
 
 ## Measurements
 
-The observer's cost is a sequential read plus a reduction plus an append - the cheapest pass there is ([§7](07_structure_of_arrays.md), [§27](27_working_set_vs_cache.md)) - so the claim is that a per-tick metrics system is ~free against the tick budget; the exercise measures the tick with it on and off. The correctness claim is non-perturbation: the world hash is identical with metrics on and off (disjoint write-set), a pass/fail test, not a number. A four-machine overhead table follows once the metrics system is a specimen, as in `code/logger`.
+The observer's cost is a sequential read plus a reduction plus an append - the cheapest pass there is ([§7](07_structure_of_arrays.md), [§27](27_working_set_vs_cache.md)) - so the claim is that a per-tick metrics system is ~free against the tick budget, and the correctness claim is non-perturbation: the world is identical with metrics on and off, because the write-set is disjoint ([§31](31_disjoint_writes_parallelize.md)). The specimen is the simulator's own `inspect` - a read-only system that reads the subscriptions and writes only the population table - exercised by `observe`: the world recovers bit-identical live-id sets with `inspect` on and off (a pass/fail test, not a number), and at ~60k live the metrics pass is 0.025 ms against a 4.7 ms tick: 0.5% of the tick, 0.07% of the 33 ms budget. A four-machine overhead table follows in the style of `code/logger`; the shape - non-perturbing and ~free - is what the specimen already shows.
 
 ## Exercises
 

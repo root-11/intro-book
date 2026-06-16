@@ -18,7 +18,7 @@ The canary is precise: **hashes stable when you fix the core count, unstable whe
 
 The fix is not "stop parallelising." [§31](31_disjoint_writes_parallelize.md) still holds: the per-element work parallelises freely. The reduction is the one place where parallel work meets a single shared result, and that is the only place order leaks back in. So you isolate the non-determinism to the combine step and make *that* deterministic. **Determinism is a property of the combine, not the compute.** Two ways to buy it.
 
-**Fix the reduction order.** Each thread reduces its own partition into a slot indexed by a fixed partition id. Then a single serial fold walks the slots in id order and combines them. The grouping is now defined by partition id, not by which thread finished first or how many there were. The expensive part - the per-element work - still runs on all cores; only the final fold over a handful of partials is serial, and a handful is cheap. You keep the [§31](31_disjoint_writes_parallelize.md) speedup and recover the [§16](16_determinism_by_order.md) guarantee. The result still rounds per addition, but it rounds the *same way every time, on every machine*.
+**Fix the reduction order.** Choose a *fixed* number of partitions, independent of the thread count - say sixty-four - and reduce each into a slot indexed by its partition id. The threads share those fixed partitions however the scheduler likes; the partials land in id order regardless of which thread computed which, and a single serial fold walks the slots in id order. The grouping is now defined by the fixed partition count, not by how many threads ran. The easy mistake - and it is the obvious one - is to make the partition count *equal* the thread count, giving each thread its own partition: that changes the grouping right back, and the result still moves with `nproc`. The number of partials must be fixed, not the number of threads. The expensive per-element work still runs on all cores; only the fold over a handful of partials is serial, and a handful is cheap. You keep the [§31](31_disjoint_writes_parallelize.md) speedup and recover the [§16](16_determinism_by_order.md) guarantee - the result still rounds per addition, but it rounds the *same way every time, on every machine*.
 
 **Accumulate in integers.** Integer addition *is* associative: exact, order-independent, identical on one core or sixty-four. Scale each value to a fixed-point integer, sum exactly in any order, scale back at the end. There is no rounding to reorder because there is no rounding until the final scale-back. The price is range management - you choose the fixed-point scale, and you must not overflow the integer - so it fits best where the quantity is bounded and its precision is known, like a sum of energies. Integer accumulation is deterministic by construction; fixed-order floating-point is deterministic by discipline. Where you can bound the range, integers are the stronger guarantee.
 
@@ -30,7 +30,18 @@ The exclusion, named: this is about *reproducibility*, not *accuracy*. A fixed-o
 
 ## Measurements
 
-The divergence is a demonstration, not a number: run the racy reduction at one, two, four, and eight threads and the world hashes differ - a fact you reproduce in minutes, not a benchmark. The *cost* of the fix is measurable and small: the deterministic combine adds a serial fold over the partition count (a few to a few dozen values), not over the elements, so it is a rounding error against the parallel work it guards ([§31](31_disjoint_writes_parallelize.md)'s speedup is preserved). Integer accumulation trades the float adds for integer adds of the same count - comparable within variance on every machine. A four-machine table follows once the reduction is a specimen.
+The divergence is a demonstration, not a benchmark. Measured (`reduction_divergence`, one million harmonic values), the low bits of the parallel float sum change with the thread count:
+
+| threads | racy (partition = threads) | fixed-order (64 partitions) | integer (i128) |
+|---|---|---|---|
+| 1 | `…1df0d6` | `…1df271` | `…025a920c` |
+| 2 | `…1df2a6` | `…1df271` | `…025a920c` |
+| 4 | `…1df2c6` | `…1df271` | `…025a920c` |
+| 8 | `…1df234` | `…1df271` | `…025a920c` |
+
+The racy column is a different result at every thread count; the fixed-order and integer columns are bit-identical across all four. (The fixed-order value differs from the racy one-thread value in the low bits, because a 64-partition grouping rounds differently from index order - it is *reproducible*, not more accurate, exactly the exclusion named below.) The cost of the fix is the serial fold over the partition count - a few dozen values against the parallel work it guards, a rounding error on the [§31](31_disjoint_writes_parallelize.md) speedup. This is a single-machine reproduction; cross-machine numbers are pending, but the divergence and the two fixes are machine-independent facts (IEEE-754 non-associativity and integer associativity), not measurements that vary by box.
+
+The simulator gives the complementary evidence: `forage` parallelised across one to eight threads is bit-identical to serial (measured, `forage_scaling`), precisely because it is a per-element map with *no* reduction across targets - the safe case. Add a global energy sum each tick (exercise 2) and you are in the trap.
 
 ## Exercises
 

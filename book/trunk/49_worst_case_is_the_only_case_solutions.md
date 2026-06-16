@@ -70,3 +70,11 @@ medium runs freely, starving low, so low never releases, so high misses its dead
 ```
 
 Reproduce it with `SCHED_FIFO` priorities and a `Mutex` held briefly by `low` while `medium` spins. `high` misses. Then enable priority inheritance (a `PTHREAD_PRIO_INHERIT` mutex): `low` temporarily inherits `high`'s priority while holding the lock, runs ahead of `medium`, releases, and `high` makes its deadline. The mechanism that fixed it is priority inheritance - the lock lends its waiter's priority to whoever holds it.
+
+## Exercise 8 - Degrade gracefully (the soft side)
+
+The priority order is not arbitrary: shed in increasing order of how much the world depends on the work. The inspection system writes nothing the simulation reads, so it goes first and costs nothing but a stale dashboard. The GC's cadence can stretch because dead slots linger harmlessly for a few more ticks. Deferring reproduction is the strongest lever because it is *back-pressure*: the births are what grow the population that overran the budget, so deferring them reduces the next tick's load - the shed attacks the cause, and the system walks itself back under budget instead of fighting the symptom forever.
+
+Two properties have to hold or the degradation is worse than the overrun. First, **integrity survives**: because mutation is buffered ([§22](22_mutations_buffer.md)) and committed at the tick boundary, a long or shed tick still applies a whole, consistent world - you observe a late world, never a torn one. Second, **the run still replays**: the shed must be a logged decision, not a branch on `if over_budget`, or the run stops being a function of its inputs and the [§37](37_log_is_world.md)/[§48](48_reductions_dont_parallelize_freely.md) replay guarantee evaporates - and that bug is invisible until the multi-hour run on the slower machine sheds differently and diverges. Log the decision; replay applies the identical shed.
+
+Bounded staleness is the last check: each deferral has a fixed horizon (a system skipped this tick runs next tick; a region foraged every other tick is at most one tick stale), so the degraded world is never more than a known distance from the budget-met world, and it heals when the load drops. Soft real-time managed this way is not "it got slow"; it is "it chose, predictably and reversibly, what to slow."

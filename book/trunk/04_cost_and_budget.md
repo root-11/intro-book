@@ -2,7 +2,11 @@
 
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 4](../../concepts/glossary.md#4---cost-is-layout---and-you-have-a-budget).*
 
-A program runs at some *target rate*. A game runs at 30 Hz or 60 Hz; an audio loop at 48 kHz; a control loop at 1 kHz; an interactive shell at "as fast as a human can type". The target rate sets a *budget* - the time available for one tick of work.
+A system is not handed a target rate; it chooses one. Work arrives as a stream - frames to draw, packets to route, sensor samples to fold in - and the only real decision is how finely to cut that stream into batches. Each batch is one *tick*, and the rate is the grain of the cut. Cut at one operation per tick and nothing batches: every operation carries its fixed overhead alone, and at a 1 GHz tick the budget is a few nanoseconds, too little to work in. Cut at one tick for all pending work and efficiency is maximal but nothing is answered until everything is: a tick a minute has no perceptible responsiveness. Every useful rate sits between those ends, balancing responsiveness against the efficiency of batching.
+
+Two different things bound that band. Whether you can keep up at all is fixed by the per-item cost against the arrival rate: if work lands at rate λ and each item costs `c`, you survive only when `λ · c ≤ 1`, and `c` is a layout fact ([§3](03_the_vec_is_a_table.md)), not a scheduling one. The rate itself is the second, separate choice: a faster tick means smaller batches and lower latency with less to amortise each fixed cost over; a slower tick means larger batches, better amortisation, and more latency. Batching only ever pays because there are fixed costs to spread - a dispatch, a cache warmup, a syscall, a kernel launch - which is the same amortisation [§8](08_where_theres_one_theres_many.md) names over data, here run along time.
+
+The responsiveness floor is set by whoever consumes the output. Roughly 24 to 30 frames a second is where discrete frames read as continuous motion for passive viewing, which is why film sits there; interactive rendering wants 60, and head-mounted VR wants 90 to 120 to stay comfortable. A control loop runs as fast as its plant needs a correction, often 1 kHz; an audio loop is pinned to its 48 kHz sample rate; an interactive shell answers as fast as a human can type. Different consumers, different floors, one calculus. The rate you choose is the coarsest batch its floor will tolerate, and it sets a *budget* - the time available for one tick of work. What you then spend against that budget is governed by layout, which is where the rest of this chapter goes.
 
 |     Target rate | Budget per tick |
 |----------------:|----------------:|
@@ -33,6 +37,14 @@ The shape of this thinking is familiar to engineers in other domains. An electri
 >
 > *Time is one budget. Power is another.* Cache hits are energetically nearly free - the data is already next to the arithmetic units. Cache misses fire up the memory controller, the bus drivers, sometimes a DRAM refresh; that is where the watts go. A loop that fits in L2 spends most of its time on cheap arithmetic; a loop that pointer-chases through RAM spends most of its time *waiting*, and during the waiting the CPU drops clocks and the chip stays cool. The same SoA-and-sequential-access discipline that fits the time budget also fits a power budget. For embedded, mobile, control, and battery-powered work, power is the *primary* budget; time is downstream of it. The "millivolts and microamps" line above is literal, not metaphor.
 
+## The budget is a curve, not a cliff
+
+So far the budget has been a single number: name the rate, get the time per tick. But the work in a tick is rarely fixed. It grows with the problem - more entities to step, more packets to route, more rows to fold - and if the per-item cost holds, the tick time grows with it. So the rate you can actually sustain is not a constant either; it falls as the work rises, roughly as one over the size for a loop that costs O(N). Thirty hertz is not a wall you meet at some population and shatter against. It is one point on a slope that reads thirty, twenty-five, twenty, fifteen as the work climbs.
+
+That moves the engineering question. It is seldom "does it hit thirty hertz" and almost always "where does the curve fall, and is that fall tolerable". A control loop specified at thirty may be well served by twenty under a heavier load; a visualisation at fifteen is still watchable. So the useful design conversation names two numbers, not one: the target rate, and the *tolerance* - the slowest rate the consumer will accept - then reads off the scale at which the curve crosses the tolerance. You characterise the budget around the target instead of slamming into it, and "how many can we handle" becomes a number you read off a measured curve rather than a guess you defend in a meeting.
+
+Part II puts real numbers on this slope, measured on the simulator across two orders of magnitude of scale, where a tick that holds comfortably above the target at one size slides to a fraction of the rate at a hundred times the work - all along the same one-over-N curve.
+
 ## Exercises
 
 1. **Pick your rates.** For each of these systems, name a plausible target rate and the resulting per-tick budget: a card game; a real-time strategy game; a market data feed; an embedded sensor controller; a web API endpoint a user is waiting for; an offline batch job that processes a billion rows.
@@ -47,6 +59,8 @@ The shape of this thinking is familiar to engineers in other domains. An electri
 
    While you are there: from `power_loop`'s iteration count, compute your sequential read bandwidth - `iterations × 10⁷ × 8 / 45` gives bytes per second - and compare to the published peak of your DDR generation. If you get within a factor of two of peak, your inner loop is *bandwidth-bound* (the regime named in the prose). The `random` mode's iteration count, divided into wall time, gives your effective per-element latency in nanoseconds; that is the *latency-bound* regime.
 10. *(stretch)* **Joules per access.** Approximate energies per memory read: L1 hit ≈ 0.1 nJ, L2 ≈ 1 nJ, RAM ≈ 30 nJ (rough; published numbers vary by chip and process). Estimate the total energy of summing 10⁷ `u64`s sequentially (mostly prefetched, near-L1 cost) versus by random indices (mostly RAM misses). Convert both to milliwatt-hours and express as a fraction of a 50 Wh battery. The absolute numbers are tiny; the *ratio* is what your battery life and your data-centre electricity bill care about.
+
+11. **The budget is a curve.** Take the loop from exercise 5 (100 000 entities, one cache line each, 60 Hz). Hold the per-entity cost fixed and sweep the entity count: 100 000, 300 000, 1 000 000, 3 000 000. Compute the tick time and the sustained rate at each. At what size does the sustainable rate cross 30 Hz? 15 Hz? Plot rate against size and confirm the one-over-N shape, then name the largest scale that still meets a 15 Hz tolerance. (This is the curve Part II measures on the simulator; here you derive it from the per-item cost.)
 
 Reference notes in [04_cost_and_budget_solutions.md](04_cost_and_budget_solutions.md).
 

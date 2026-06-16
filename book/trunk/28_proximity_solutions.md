@@ -120,3 +120,11 @@ fn morton_2d(x: u16, y: u16) -> u32 {
 ```
 
 Binning finds the candidates, but the neighbour query still gathers their positions from scattered slots - that is the bulk of the ~513 ms. Order the [§24](24_append_only_and_recycling.md) compaction by Morton cell so a cell's creatures sit on adjacent cache lines, and the gather streams ([§26](26_subscription_tables.md)'s measured ~4x for scattered-vs-dense). The compaction runs on the GC's slow cadence, not as a separate per-tick sort: §28 decides *which cell*; the compaction makes *reading a cell* sequential.
+
+## Exercise 8 - The density wall and the representative
+
+In a fixed world, growing the population grows the *density*: a cell of fixed size holds more creatures, so the 3x3 block a query reads holds O(N) of them, and the per-query cost is O(N) - over all targets, O(N²). The dense bin did not buy O(N); it bought O(N) *at constant density*. Sweeping 100K -> 300K -> 1M in a fixed world, the per-query time grows faster than 3x per step (the reference forage grew ~8x then ~11x) - the quadratic, with the grid in place.
+
+The representative breaks it. Keep one occupant per cell (the first scattered in is deterministic and fine); a query reads at most nine representatives regardless of how full the cells are, so the work is O(targets) - linear even at fixed world (the reference held ~3x per 3x). The catch is that you have answered a slightly different question: "the nearest *representative*," not "the nearest creature." But both the kept and the dropped occupants of a cell sit inside the same cell, so the representative is within one cell-width of the true nearest - and the cell is already the resolution at which the grid knows position. Counting the mismatches, you find a large fraction differ under crowding yet none by more than a cell. The approximation is bounded by the grid you already chose; for "eat what you can reach," that is free.
+
+Two routes back to O(N), then, and they differ in kind: hold the density (grow the world with the population - a constraint on the simulation), or collapse the cell to a representative (a change to the query). The first keeps the exact nearest; the second trades a within-cell approximation for O(N) in a world that does not grow. Part II measures both on the simulator at scale.

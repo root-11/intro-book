@@ -166,3 +166,20 @@ As a fraction of a 50 Wh battery (50 × 3600 = 180,000 J):
 - Random: 300 × 10⁻³ J / 180,000 J ≈ **1.7 × 10⁻⁶** of a charge - still small per run.
 
 The absolute numbers are tiny; the *ratio* is what scales. Run that loop ten million times a day across a fleet of devices and the choice of layout becomes the difference between a noticeable cooling-fan hum and a silent machine - and, at data-centre scale, a measurable line item on the electricity bill.
+
+## Exercise 11 - The budget is a curve
+
+From exercise 5, the per-tick cost is one cache line per entity. Hold that fixed and the tick time is linear in the count: if 100 000 entities cost `c` per tick, then `N` entities cost `c · N / 100 000`, and the sustainable rate is `1 / tick_time`, which falls as one over `N`.
+
+Take a round example: say the 100 000-entity loop runs in 2 ms (well inside the 16.7 ms / 60 Hz budget). Then:
+
+| entities | tick time | sustainable rate |
+|---------:|----------:|-----------------:|
+|  100 000 |    2 ms   |    500 Hz        |
+|  300 000 |    6 ms   |    167 Hz        |
+| 1 000 000|   20 ms   |     50 Hz        |
+| 3 000 000|   60 ms   |   ~17 Hz         |
+
+The rate crosses 30 Hz between 1M and 1.7M entities (33.3 ms / (2 ms / 100 000) ≈ 1.67M); it crosses 15 Hz at about 3.3M (66.7 ms ÷ 20 ns per entity). Plotted, rate against size is a `1/N` hyperbola - halve nothing, double the work, halve the rate.
+
+The point is the shape, not the exact numbers (your `c` depends on your machine): a budget is a curve, and "the largest scale that still meets 15 Hz" is a number you read off it. This is the same curve Part II measures directly on the simulator, where the per-entity cost is whatever the tick actually does rather than an assumed cache line; the slope is the same.

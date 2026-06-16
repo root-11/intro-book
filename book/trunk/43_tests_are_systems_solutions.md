@@ -111,3 +111,11 @@ fn test_main() {
 ```
 
 The two binaries differ in *which* systems they include. The scheduler, the world, and every system itself is the same code. Most of the binary is shared.
+
+## Exercise 7 - The scale sweep (a test for cost)
+
+The minimum of repetitions, not the mean: interference (a scheduler tick, a migration, a thermal blip) only ever *adds* time, so the smallest sample is the closest you get to the machine's intrinsic cost. The mean drags toward whatever else the box was doing; the minimum is the one statistic stable enough to compare across runs and machines.
+
+Laying the budget across the curve, the crossing scale is the system's ceiling. It is a curve to read, not a threshold to pass: the only one-sided, falsifiable claim a wall-clock number supports is that *even the unimpeded minimum is over budget* - then it is definitively too slow. Anything where the minimum is under and the mean is over is a measurement under variance, not a failure.
+
+Making it lie is the lesson. Hold foragers fixed and grow only targets, and forager density stays constant, so the binned neighbourhood stays small and the curve looks linear - while the real system, growing both, is quadratic. The axis a sweep must grow on is the one production grows on; a sweep on any other axis reports a confident, precise, wrong number, and you believe it because it came with a chart. A benchmark that does not scale the way the system scales is worse than none.

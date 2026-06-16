@@ -43,6 +43,8 @@ There is a single scenario where grouping fields would still pay. A hot loop tha
 
 A subscription is earned by a system that genuinely processes a subset. "Most creatures are not hungry on most ticks, so `hungry` is far smaller than the population" is a sound reason to build one. "Every creature is always in `alive`, but other engines keep an alive-set" is not. A subscription that holds the whole population is a scan-all with extra bookkeeping, and the measurement says so: at full participation the subscription loop is marginally *slower* than a plain scan. The subscription wins in proportion to how much it excludes, and not otherwise.
 
+**The payoff is not only speed; it is extensibility.** An entity's character is just the set of subscriptions that hold it - a grazer is "the herd-motion table plus the graze-forage edge," no more - so a new *kind* of entity is a new subscription, not a new type threaded through the code. The reference simulator adds a predator exactly this way: register a `predators` subscription, wire two systems (herd-motion and a forage edge onto grazers), and the pass that maintains subscriptions never learns a predator exists, because it maintains every one of them the same way. Diff the `sim2` binary against `sim` and a whole trophic level costs about six lines, with nothing existing edited. Composition, not surgery - the extensibility the architecture keeps promising, made literal and measurable in a `diff`.
+
 ## Measurements
 
 The prose quotes the modern-desktop figure; the spread across the reference machines is below. The amortized keying verdict (slot vs id) favours slot keys at every subscription count `S` and interval `G` on every machine. Full per-machine output: `ebp_partition` in `code/README.md`.
