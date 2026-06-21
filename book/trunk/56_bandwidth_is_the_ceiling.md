@@ -1,7 +1,6 @@
-<!-- DRAFT, §56, last chapter of the "where SoA does not pay" arc (§52-§56), built on the
+<!-- §56, last chapter of the "where SoA does not pay" arc (§52-§56), built on the
 reference crate code/heterogeneous. Concept-node line, glossary node, DAG node are placeholders. CPU numbers are dev-box (Ryzen 9 270, 16 threads);
-cross-machine capture is pending. The GPU figures are a LABELLED cost model with assumed
-constants - there is no GPU on the dev box; a real GPU run is pending a GPU host. The CAP
+cross-machine numbers are in code/README.md. GPU round-trip + resident numbers from a community run (RTX 4070 Ti, PCIe 3.0, Ryzen 7 5800X host). The CAP
 sidebar is Bjorn's to write (flagged against framing-overclaim); left as a placeholder. -->
 
 # 56 - The ceiling is bandwidth, not cores
@@ -38,11 +37,11 @@ Now the GPU argument falls apart on its own terms. The claim is that a billion-n
 
 ## When the bus is the bottleneck
 
-And when the active set genuinely is too big for the box - when you really do have more work than one machine's memory can feed in time - is the GPU the answer even then? For a pass like this one, often not, and the cost model says why.
+And when the active set genuinely is too big for the box - when you really do have more work than one machine's memory can feed in time - is the GPU the answer even then? For a pass like this one, often not, and the numbers say why.
 
 To run the pass on the GPU you must first ship the data across the bus to it and read the result back. For this pass that round trip moves about the same number of bytes the computation itself needs, so the comparison is really the bus against the machine's own memory, and the cross-machine numbers make that literal. On a box whose memory feeds the pass faster than the bus moves it - the Ryzen and the 2012 i7 measured here - the round trip costs *more* per element than doing the pass in place, and offloading loses.<sup>4</sup> On a bandwidth-poorer box the simple model tips the other way: the 2015 i3's memory runs near 10 GB/s, below an assumed 16 GB/s bus, so the model reports the transfer as the cheaper option. That tip is the tell, not a win - the model charges only the bus and forgets that feeding the bus still reads the array out of that same slow memory first, so a real offload of resident data is dearer still. Either way the rule that survives every machine is the one to keep: offloading pays only when the data already lives on the GPU, or when there is enough arithmetic per byte that the compute, not the transfer, dominates. For a memory-bound elementwise pass, neither holds.
 
-(These GPU figures are a cost model with assumed bus and launch numbers, not a measurement: the reference machines have only integrated GPUs, which share the memory channel and so inherit its ceiling rather than crossing a bus. The discrete-GPU case the model assumes is an open invitation - run [`code/gpu_probe`](https://github.com/root-11/intro-book/tree/main/code/gpu_probe) on yours (it is `wgpu`, so any Vulkan/Metal/DX12 card works) and post the numbers; it is the one cell these machines cannot fill.)
+(The reference machines carry only integrated GPUs, which share the memory channel and so inherit its ceiling rather than crossing a bus. A reviewer contributed with a run of [`code/gpu_probe`](https://github.com/root-11/intro-book/tree/main/code/gpu_probe) on an RTX 4070 Ti, PCIe 3.0, hosted on a Ryzen 7 5800X: CPU all-core 0.882 ns/elem at 27.2 GB/s; GPU round-trip 5.836 ns/elem, 6.6x the CPU pass; GPU resident 0.118 ns/elem, 7.5x faster than the CPU pass. The silicon is fast when data already lives in VRAM. The bus crossing is what loses.)
 
 <!-- Sidebar (Bjorn to write; flagged against framing-overclaim): fixate on the conditions
 under which a problem occurs, not the problem itself. The "you must choose" tradeoffs often
@@ -55,14 +54,14 @@ That closes the arc. Five chapters of where the column default does not simply t
 
 ## Measurements
 
-CPU figures: dev box (Ryzen 9 270, 16 threads), `--release`, median of 5; the cross-machine numbers (2012 i7, 2015 i3, Pi 4) are in [`code/README.md`](https://github.com/root-11/intro-book/blob/main/code/README.md). GPU figures are a labelled cost model, not a measurement.
+CPU figures: dev box (Ryzen 9 270, 16 threads), `--release`, median of 5; the cross-machine numbers (2012 i7, 2015 i3, Pi 4) are in [`code/README.md`](https://github.com/root-11/intro-book/blob/main/code/README.md). GPU figure (row 4) from a community run on RTX 4070 Ti, PCIe 3.0, Ryzen 7 5800X host.
 
 | # | what | measured |
 |---|---|---|
 | 1 | one core's pass, in cache vs in main memory | ~190 GB/s vs ~23 GB/s |
 | 2 | the same pass across cores (RAM-resident) | 1 / 2 / 4 / 8 / 16 threads -> 1.0x / 1.2x / 2.0x / 2.2x / 2.2x; plateaus at the memory channel |
 | 3 | active set kept current per 33 ms frame | ~32 M (one core), ~70 M (all cores) |
-| 4 | GPU offload of a memory-bound pass (cost model) | the round-trip-vs-CPU comparison tracks memory bandwidth, not GPU vs CPU (costs more on Ryzen/i7, tips on the i3's ~10 GB/s RAM); offload pays only when data is resident or arithmetic-heavy |
+| 4 | GPU offload of a memory-bound pass | RTX 4070 Ti, PCIe 3.0: round-trip 5.836 ns/elem (6.6x CPU); resident 0.118 ns/elem (7.5x faster than CPU); offload pays only when data is resident or arithmetic-heavy |
 
 ## Exercises
 
