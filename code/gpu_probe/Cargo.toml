@@ -1,0 +1,12 @@
+[package]
+name = "gpu_probe"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+wgpu = "0.20"
+pollster = "0.3"
+bytemuck = "1"
+
+[profile.release]
+opt-level = 3

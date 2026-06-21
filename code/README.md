@@ -62,6 +62,9 @@ cd fpfragility && cargo test --release && cargo run --release # summation order,
 
 # Part II project E - where SoA does not pay
 cd heterogeneous && cargo test --release && cargo run --release # one-box reach, scaling ceiling, GPU model
+
+# §56 discrete-GPU probe (separate crate; pulls wgpu via its Cargo.lock)
+cd gpu_probe && cargo run --release            # CPU vs GPU round-trip vs GPU resident, on a real GPU
 ```
 
 ## Cross-machine results
@@ -164,6 +167,8 @@ Static `musl` binaries (`x86_64` and `aarch64`, cross-linked with the bundled `r
 The Pi 4 has no heatsink. Under sustained load it reaches its soft thermal limit (~84 C) and frequency-caps, so its §56 cells are a throttled floor: one Cortex-A72 core already saturates the ~3 GB/s LPDDR4 channel, so "more cores do not help" holds regardless - the throttle only lowers the absolute GB/s, not the conclusion.
 
 Two cells depend on memory bandwidth rather than being portable constants, and both are now phrased that way in the prose (§53, §56): the recompute-dirty **crossover** (the dev box is the fast-memory, conservative end; slower memory makes recompute-dirty win further) and the **GPU cost model** (it is bus-versus-memory: the assumed 16 GB/s bus beats the i3 and Pi's slower RAM, so the simple model tips there - the durable rule is that offload pays only when data is device-resident or arithmetic-heavy).
+
+The discrete-GPU measurement is the one cell these machines cannot fill: all four reference machines have only integrated GPUs that share the memory channel. `code/gpu_probe` runs the motion pass on any Vulkan/Metal/DX12 card (no CUDA toolkit) and prints CPU vs GPU round-trip vs GPU resident; contributed numbers from a discrete GPU are welcome.
 
 | Test | Pi 4 (Cortex-A72, 4 GB) | i7-3610QM (2012, 8 GB) | i3-5010U (2015, 8 GB) | Ryzen 9 270 |
 |---|---:|---:|---:|---:|
