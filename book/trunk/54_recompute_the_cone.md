@@ -6,7 +6,7 @@ sectioned so each idea stands alone. -->
 
 # 54 - A spreadsheet is a dependency graph
 
-> *Concept node: DAG and glossary entry to be added.*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 54](../../concepts/glossary.md#54---a-spreadsheet-is-a-dependency-graph).*
 
 <p align="center"><img src="../illustrations/oom_spreadsheet.png" alt="A mouse and a spreadsheet too big for memory - a dependency graph recomputed in dirty cones, streamed in pegged tiles." style="max-height: 300px; max-width: 100%;"></p>
 

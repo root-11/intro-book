@@ -578,3 +578,63 @@ Each entry has four parts:
 **Anti-pattern.** Treating a fast average as a guarantee, and deploying a soft-real-time system where a hard one is required - a control loop, a safety interlock. The book builds soft real-time and says so; a certified controller is a different craft (RTOS, WCET tools, DO-178C / IEC 61508).
 
 **See also.** 4 (cost and budget), 16 (determinism by order), 27 (working set vs cache), 39 (system of systems).
+
+---
+
+## 52 - Flattening a tree is compiling it
+
+**Definition.** A recursive structure - an expression tree - can be stored three ways: a pointer tree (`Box`), a flat arena with `u32` child indices, or a post-order list run on a value stack. Only the last pulls ahead, and not because it is flat but because it is read straight through; the arena buys nothing because its evaluator still hops in tree order. Writing a tree out as a run-it-straight list *is* compiling it - a stack machine / RPN bytecode - trading a cheap structural edit for a fast, repeatable traversal. The win is the access pattern, not the array, and it only appears once the tree outgrows cache.
+
+**Example.** `(x + 2) * 3` becomes the program `x 2 + 3 *`. Past cache the straight walk beats the pointer tree (about 1.25x at 131K nodes, ~1.9x at 2M); inside a cache-resident band of a few hundred nodes it loses (~0.85x). The edit-to-evaluate break-even is about one edit per four evaluations, and barely moves with tree size.
+
+**Anti-pattern.** Assuming a flat layout is automatically faster - the index-arena is not - or compiling a tree whose shape changes more often than it is traversed, paying the O(N) re-linearisation for nothing.
+
+**See also.** 3 (the Vec is a table), 14 (systems compose into a DAG), 27 (working set vs cache), 53 (staleness flows downhill).
+
+---
+
+## 53 - Staleness flows downhill
+
+**Definition.** In a hierarchy, changing a node makes its world value and every descendant's stale, and nothing else. Recompute everything as one flat top-down sweep, or recompute only the dirty subtree. Which wins is a crossover in the dirty fraction; a second axis matters more - recomputing the stale part pays only when it is *packed* (a contiguous subtree), so the recompute streams instead of hopping. A tree gives that packing for free, because every node has exactly one parent; a graph (52) takes it away.
+
+**Example.** A jointed arm: swing the elbow and the hand follows, the shoulder does not. The flat sweep beats a pointer-tree walk 2.3x-2.8x; recompute-dirty wins ~900x at 0.1% dirty and loses past roughly 40-50%; a contiguous dirty subtree recomputes ~13x faster than the same node count scattered.
+
+**Anti-pattern.** Recomputing a scattered dirty set (as slow as a full sweep, plus the bookkeeping), or carrying the incremental path when most of the tree changed - sweep instead.
+
+**See also.** 24 (append-only and recycling), 28 (proximity is a property of position), 52 (flattening is compiling), 54 (a spreadsheet is a dependency graph).
+
+---
+
+## 54 - A spreadsheet is a dependency graph
+
+**Definition.** When one cell feeds many, dependencies form a graph, not a tree, and "what went stale" is the transitive *cone* of an edit, recomputed in topological order (14). Three lessons follow: an aggregate is not incremental just because one input changed (a `SUM` re-reads the whole column); *validation is cheaper than recomputation* (stop propagating where a recomputed value did not change); and at scale the program flattens to one template per column, the data to disk, and the working set to a pegged tile - so out-of-memory cannot happen.
+
+**Example.** Editing a below-maximum cell under a `MAX` feeding 100K dashboard cells recomputes 16 cells with the cutoff and 200K without (~54x). A billion-cell sheet is ~2 KB of templates, not ~160 GB of per-cell formula objects; a dirty-column disk patch reads a few hundred MB instead of the whole 36 GB file (~16 s down to ~0.1 s).
+
+**Anti-pattern.** Following the cone blindly (no early cutoff); trusting a delta-maintained aggregate forever (it drifts, 55); holding one formula object per cell at scale.
+
+**See also.** 14 (systems compose into a DAG), 22 (mutations buffer), 53 (staleness flows downhill), 55 (the same numbers, a different total).
+
+---
+
+## 55 - The same numbers, a different total
+
+**Definition.** Floating-point addition is not associative - the order decides the sum - and no memory layout fixes it. A naive sequential sum over an ill-conditioned column can lose the entire answer; pairwise (tree) and compensated (Kahan/Neumaier) sums recover it, and the pairwise sum is also *faster* than the dependent naive chain. A delta-maintained running total drifts from a fresh recompute and never re-matches, worst in relative terms when the true total cancels. Correctness is orthogonal to layout: a perfectly columnar geometric predicate is still wrong on near-degenerate input.
+
+**Example.** `1e16 + 1 + (-1e16)` is 1 or 0 depending on order. A naive ledger sum reports ~0 where the truth was the accumulated small entries. A near-collinear orientation test in `f64` gives the wrong sign ~99% of the time; computed exactly in `i128` it is always right, at about the same cost.
+
+**Anti-pattern.** `acc += x` over a real column and trusting the total; patching a sum by add-new/subtract-old forever; computing an orientation or in-circle predicate in `f64` on large coordinates.
+
+**See also.** 2 (numbers), 16 (determinism by order), 48 (reductions don't parallelize freely), 54 (a spreadsheet is a dependency graph).
+
+---
+
+## 56 - The ceiling is bandwidth, not cores
+
+**Definition.** A memory-bound pass - advance positions, two multiply-adds and ~24 bytes moved per element - runs at memory speed, not core speed. Adding cores stops helping once they saturate the single memory channel, so the way to go faster is to *touch less data*, not add compute. One box keeps a bounded *active set* current per frame; you reach for an accelerator only when that active set itself outgrows the box, never to brute-force away staleness an incremental design (53, 54) already avoids. For such a pass, shipping the data across the bus to a device and back costs more than doing it in place.
+
+**Example.** The pass runs near 190 GB/s in cache and about 23 GB/s in main memory; across cores it plateaus near 2.2x at the channel limit. One core keeps ~32M elements current per 33 ms frame, all cores ~70M. For two flops per 24 bytes, a GPU offload's round-trip transfer costs more than the CPU pass (a cost model, since the reference machine has no GPU).
+
+**Anti-pattern.** Adding cores or an accelerator to a bandwidth-bound elementwise pass; recomputing the whole world when only the active cone changed.
+
+**See also.** 7 (structure of arrays), 27 (working set vs cache), 31 (disjoint writes parallelize), 53 (staleness flows downhill).

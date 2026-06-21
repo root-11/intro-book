@@ -4,7 +4,7 @@ capture is pending, so the Measurements table has one column. -->
 
 # 53 - Staleness flows downhill
 
-> *Concept node: DAG and glossary entry to be added.*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 53](../../concepts/glossary.md#53---staleness-flows-downhill).*
 
 <p align="center"><img src="../illustrations/dirty_markers.png" alt="A mouse marking the stale nodes below a moved joint - staleness flowing downhill through a hierarchy." style="max-height: 300px; max-width: 100%;"></p>
 

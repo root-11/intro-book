@@ -5,7 +5,7 @@ the arc and the finale land, §50's "The book ends here" line moves to the final
 
 # 52 - Flattening a tree is compiling it
 
-> *Concept node: DAG and glossary entry to be added.*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 52](../../concepts/glossary.md#52---flattening-a-tree-is-compiling-it).*
 
 <p align="center"><img src="../illustrations/ast.png" alt="A mouse with an expression tree - the same tree as boxes-and-arrows, as one array, and written out in order to run straight through." style="max-height: 300px; max-width: 100%;"></p>
 

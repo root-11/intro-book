@@ -6,7 +6,7 @@ sidebar is Bjorn's to write (flagged against framing-overclaim); left as a place
 
 # 56 - The ceiling is bandwidth, not cores
 
-> *Concept node: DAG and glossary entry to be added.*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 56](../../concepts/glossary.md#56---the-ceiling-is-bandwidth-not-cores).*
 
 <p align="center"><img src="../illustrations/bandwidth.png" alt="A mouse at the memory channel - the ceiling that more cores cannot raise." style="max-height: 300px; max-width: 100%;"></p>
 

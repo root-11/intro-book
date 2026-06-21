@@ -4,7 +4,7 @@ the timings are dev-box (Ryzen 9 270) and cross-machine capture is pending. -->
 
 # 55 - The same numbers, a different total
 
-> *Concept node: DAG and glossary entry to be added.*
+> *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 55](../../concepts/glossary.md#55---the-same-numbers-a-different-total).*
 
 <p align="center"><img src="../illustrations/fp_err.png" alt="A mouse and a floating-point error - the same numbers adding up to a different total." style="max-height: 300px; max-width: 100%;"></p>
 
