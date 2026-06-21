@@ -1,5 +1,7 @@
 # 48 - Reductions don't parallelize freely
 
+<p align="center"><img src="../illustrations/floats.png" alt="A mouse puzzling over 0.1 + 0.2 - floats are tricky, and the order of the additions decides the answer." style="max-height: 300px; max-width: 100%;"></p>
+
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 48](../../concepts/glossary.md#48---reductions-dont-parallelize-freely).*
 
 [§31](31_disjoint_writes_parallelize.md) earned a strong claim: systems with disjoint write-sets parallelise freely, with no locks and no coordination. [§16](16_determinism_by_order.md) earned another: same seed, same system order, same world, every run. Both are true. Put them under one stress the first act never applied - *a different number of cores* - and a seam opens between them. The world that hashed identically on your four-core laptop hashes differently on the thirty-two-core server. Same code, same seed, same log. Different machine, different world.
@@ -34,10 +36,10 @@ The divergence is a demonstration, not a benchmark. Measured (`reduction_diverge
 
 | threads | racy (partition = threads) | fixed-order (64 partitions) | integer (i128) |
 |---|---|---|---|
-| 1 | `…1df0d6` | `…1df271` | `…025a920c` |
-| 2 | `…1df2a6` | `…1df271` | `…025a920c` |
-| 4 | `…1df2c6` | `…1df271` | `…025a920c` |
-| 8 | `…1df234` | `…1df271` | `…025a920c` |
+| 1 | `...1df0d6` | `...1df271` | `...025a920c` |
+| 2 | `...1df2a6` | `...1df271` | `...025a920c` |
+| 4 | `...1df2c6` | `...1df271` | `...025a920c` |
+| 8 | `...1df234` | `...1df271` | `...025a920c` |
 
 The racy column is a different result at every thread count; the fixed-order and integer columns are bit-identical across all four. (The fixed-order value differs from the racy one-thread value in the low bits, because a 64-partition grouping rounds differently from index order - it is *reproducible*, not more accurate, exactly the exclusion named below.) The cost of the fix is the serial fold over the partition count - a few dozen values against the parallel work it guards, a rounding error on the [§31](31_disjoint_writes_parallelize.md) speedup. This is a single-machine reproduction; cross-machine numbers are pending, but the divergence and the two fixes are machine-independent facts (IEEE-754 non-associativity and integer associativity), not measurements that vary by box.
 

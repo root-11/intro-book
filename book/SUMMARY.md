@@ -139,10 +139,25 @@
   - [Solutions](trunk/48_reductions_dont_parallelize_freely_solutions.md)
 - [The worst case is the only case](trunk/49_worst_case_is_the_only_case.md)
   - [Solutions](trunk/49_worst_case_is_the_only_case_solutions.md)
+- [It runs without you](trunk/50_it_runs_without_you.md)
+
+# Part 13: Knowing the limits
+
+- [Knowing the limits](trunk/51_knowing_the_limits.md)
+- [Flattening a tree is compiling it](trunk/52_flattening_is_compiling.md)
+  - [Solutions](trunk/52_flattening_is_compiling_solutions.md)
+- [Staleness flows downhill](trunk/53_dirty_propagation.md)
+  - [Solutions](trunk/53_dirty_propagation_solutions.md)
+- [A spreadsheet is a dependency graph](trunk/54_recompute_the_cone.md)
+  - [Solutions](trunk/54_recompute_the_cone_solutions.md)
+- [The same numbers, a different total](trunk/55_floating_point_fragility.md)
+  - [Solutions](trunk/55_floating_point_fragility_solutions.md)
+- [The ceiling is bandwidth, not cores](trunk/56_bandwidth_is_the_ceiling.md)
+  - [Solutions](trunk/56_bandwidth_is_the_ceiling_solutions.md)
 
 # Closure
 
-- [It runs without you](trunk/50_it_runs_without_you.md)
+- [What cannot happen](trunk/57_what_cannot_happen.md)
 
 ---
 

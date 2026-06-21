@@ -1,5 +1,7 @@
 # 49 - The worst case is the only case
 
+<p align="center"><img src="../illustrations/budget.png" alt="A mouse with a budget sheet and a contingency line - planning for the worst case." style="max-height: 300px; max-width: 100%;"></p>
+
 > *Concept node: see the [DAG](../../concepts/dag.md) and [glossary entry 49](../../concepts/glossary.md#49---the-worst-case-is-the-only-case).*
 
 [§4](04_cost_and_budget.md) gave the tick a budget: 33 ms at 30 Hz, and you spend it wisely. [§39](39_system_of_systems.md) gave the long computation an anytime contract: return the best answer you have when the deadline arrives. Both are **soft** real-time. A missed deadline costs *quality* - a dropped frame, a coarser answer - and the system keeps running. You have been doing soft real-time for the whole book, and for almost everything you will build, soft is the right and sufficient discipline.

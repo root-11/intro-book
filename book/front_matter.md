@@ -5,7 +5,12 @@ _updated: 2026-06-06_
 
 > **Read online:** [Codeberg](https://root-11.codeberg.page/intro-book/) · [GitHub Pages](https://root-11.github.io/intro-book/)
 >
-> **Clone source** (the public default branch is the rendered book; the runnable code lives on `main`): `git clone --branch main https://codeberg.org/root-11/intro-book.git` · `git clone --branch main https://github.com/root-11/intro-book.git`
+> **Clone source** (the public default branch is the rendered book; the runnable code lives on `main`): 
+```
+git clone --branch main https://codeberg.org/root-11/intro-book.git
+or
+git clone --branch main https://github.com/root-11/intro-book.git
+```
 >
 > **Issues:** [Codeberg](https://codeberg.org/root-11/intro-book/issues) · [GitHub](https://github.com/root-11/intro-book/issues)
 
@@ -76,4 +81,4 @@ The threshold between *playground* and *local* is fuzzy by intent. A reader on a
 
 ## The companion edition
 
-If you want to read the same book in a slow language and see what *discipline* must replace what the type system here enforces for you, the [Python edition](https://root-11.codeberg.page/intro-book-python/) covers the same forty-four sections in Python and `numpy`. The architecture is identical; the language differs. Many readers find Python a useful contrast: every borrow-check error here is a runtime mistake there, and the per-chapter Python commentary names the cost.
+If you want to read the same book in a slow language and see what *discipline* must replace what the type system here enforces for you, the **Python edition** ([codeberg](https://root-11.codeberg.page/intro-book-python/),[github](https://root-11.github.io/intro-book-python/)) covers the same forty-four sections in Python and `numpy`. The architecture is identical; the language differs. Many readers find Python a useful contrast: every borrow-check error here is a runtime mistake there, and the per-chapter Python commentary names the cost.

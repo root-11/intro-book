@@ -1,5 +1,7 @@
 # 50 - It runs without you
 
+<p align="center"><img src="../illustrations/runs_without_you.png" alt="A mouse with its feet up under 'ALL SYSTEMS OK' - it runs without you." style="max-height: 300px; max-width: 100%;"></p>
+
 [§45](45_living_with_it.md) opened the second act with five questions. The four chapters since answered the first one - *can you run it unattended* - and it is worth stopping to see that they were not four tricks. They were one move, made four times.
 
 [§46](46_log_survives_power_loss.md): the system survives the stop. [§47](47_observation_is_a_system.md): it says what it is doing. [§48](48_reductions_dont_parallelize_freely.md): it gives the same answer on every machine. [§49](49_worst_case_is_the_only_case.md): you know the deadline it can and cannot promise. Listed flat they look unrelated. They are not. Each one removed a dependency on the human who used to stand next to the machine.

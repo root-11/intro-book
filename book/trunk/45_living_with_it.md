@@ -1,5 +1,7 @@
 # 45 - Living with it
 
+<p align="center"><img src="../illustrations/opex_capex.png" alt="Two mice at a blackboard weighing OPEX against CAPEX - operating cost paid forever versus capital paid once." style="max-height: 300px; max-width: 100%;"></p>
+
 [§44](44_closure.md) closed the first act. The simulator runs: deterministic, scaled past the 1M wall, parallel on disjoint writes, persisted to disk and replayable from its log. On your machine, today, with you watching, it works.
 
 That sentence has three load-bearing qualifiers. *On your machine. Today. With you watching.* The first act earns the verb "works" and stops exactly where those qualifiers bite. The second act is what it costs to remove them - to run the thing on a machine you have never seen, a year from now, while you are asleep.

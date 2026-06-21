@@ -17,7 +17,12 @@ _updated: 2026-06-06_
 
 > **Read online:** [Codeberg](https://root-11.codeberg.page/intro-book/) · [GitHub Pages](https://root-11.github.io/intro-book/)
 >
-> **Clone source** (the public default branch is the rendered book; the runnable code lives on `main`): `git clone --branch main https://codeberg.org/root-11/intro-book.git` · `git clone --branch main https://github.com/root-11/intro-book.git`
+> **Clone source** (the public default branch is the rendered book; the runnable code lives on `main`): 
+```
+git clone --branch main https://codeberg.org/root-11/intro-book.git
+or
+git clone --branch main https://github.com/root-11/intro-book.git
+```
 >
 > **Issues:** [Codeberg](https://codeberg.org/root-11/intro-book/issues) · [GitHub](https://github.com/root-11/intro-book/issues)
 
@@ -88,7 +93,7 @@ The threshold between *playground* and *local* is fuzzy by intent. A reader on a
 
 ## The companion edition
 
-If you want to read the same book in a slow language and see what *discipline* must replace what the type system here enforces for you, the [Python edition](https://root-11.codeberg.page/intro-book-python/) covers the same forty-four sections in Python and `numpy`. The architecture is identical; the language differs. Many readers find Python a useful contrast: every borrow-check error here is a runtime mistake there, and the per-chapter Python commentary names the cost.
+If you want to read the same book in a slow language and see what *discipline* must replace what the type system here enforces for you, the **Python edition** ([codeberg](https://root-11.codeberg.page/intro-book-python/),[github](https://root-11.github.io/intro-book-python/)) covers the same forty-four sections in Python and `numpy`. The architecture is identical; the language differs. Many readers find Python a useful contrast: every borrow-check error here is a runtime mistake there, and the per-chapter Python commentary names the cost.
 
 
 # Nomenclature
@@ -299,7 +304,11 @@ Order of magnitude (60-200×) is the durable claim; the exact factor widens with
 
 # 4 - Cost is layout - and you have a budget
 
-A program runs at some *target rate*. A game runs at 30 Hz or 60 Hz; an audio loop at 48 kHz; a control loop at 1 kHz; an interactive shell at "as fast as a human can type". The target rate sets a *budget* - the time available for one tick of work.
+A system is not handed a target rate; it chooses one. Work arrives as a stream - frames to draw, packets to route, sensor samples to fold in - and the only real decision is how finely to cut that stream into batches. Each batch is one *tick*, and the rate is the grain of the cut. Cut at one operation per tick and nothing batches: every operation carries its fixed overhead alone, and at a 1 GHz tick the budget is a few nanoseconds, too little to work in. Cut at one tick for all pending work and efficiency is maximal but nothing is answered until everything is: a tick a minute has no perceptible responsiveness. Every useful rate sits between those ends, balancing responsiveness against the efficiency of batching.
+
+Two different things bound that band. Whether you can keep up at all is fixed by the per-item cost against the arrival rate: if work lands at rate λ and each item costs `c`, you survive only when `λ · c ≤ 1`, and `c` is a layout fact ([§3](#3---the-vec-is-a-table)), not a scheduling one. The rate itself is the second, separate choice: a faster tick means smaller batches and lower latency with less to amortise each fixed cost over; a slower tick means larger batches, better amortisation, and more latency. Batching only ever pays because there are fixed costs to spread - a dispatch, a cache warmup, a syscall, a kernel launch - which is the same amortisation [§8](#8---where-theres-one-theres-many) names over data, here run along time.
+
+The responsiveness floor is set by whoever consumes the output. Roughly 24 to 30 frames a second is where discrete frames read as continuous motion for passive viewing, which is why film sits there; interactive rendering wants 60, and head-mounted VR wants 90 to 120 to stay comfortable. A control loop runs as fast as its plant needs a correction, often 1 kHz; an audio loop is pinned to its 48 kHz sample rate; an interactive shell answers as fast as a human can type. Different consumers, different floors, one calculus. The rate you choose is the coarsest batch its floor will tolerate, and it sets a *budget* - the time available for one tick of work. What you then spend against that budget is governed by layout, which is where the rest of this chapter goes.
 
 |     Target rate | Budget per tick |
 |----------------:|----------------:|
@@ -330,6 +339,14 @@ The shape of this thinking is familiar to engineers in other domains. An electri
 >
 > *Time is one budget. Power is another.* Cache hits are energetically nearly free - the data is already next to the arithmetic units. Cache misses fire up the memory controller, the bus drivers, sometimes a DRAM refresh; that is where the watts go. A loop that fits in L2 spends most of its time on cheap arithmetic; a loop that pointer-chases through RAM spends most of its time *waiting*, and during the waiting the CPU drops clocks and the chip stays cool. The same SoA-and-sequential-access discipline that fits the time budget also fits a power budget. For embedded, mobile, control, and battery-powered work, power is the *primary* budget; time is downstream of it. The "millivolts and microamps" line above is literal, not metaphor.
 
+## The budget is a curve, not a cliff
+
+So far the budget has been a single number: name the rate, get the time per tick. But the work in a tick is rarely fixed. It grows with the problem - more entities to step, more packets to route, more rows to fold - and if the per-item cost holds, the tick time grows with it. So the rate you can actually sustain is not a constant either; it falls as the work rises, roughly as one over the size for a loop that costs O(N). Thirty hertz is not a wall you meet at some population and shatter against. It is one point on a slope that reads thirty, twenty-five, twenty, fifteen as the work climbs.
+
+That moves the engineering question. It is seldom "does it hit thirty hertz" and almost always "where does the curve fall, and is that fall tolerable". A control loop specified at thirty may be well served by twenty under a heavier load; a visualisation at fifteen is still watchable. So the useful design conversation names two numbers, not one: the target rate, and the *tolerance* - the slowest rate the consumer will accept - then reads off the scale at which the curve crosses the tolerance. You characterise the budget around the target instead of slamming into it, and "how many can we handle" becomes a number you read off a measured curve rather than a guess you defend in a meeting.
+
+Part II puts real numbers on this slope, measured on the simulator across two orders of magnitude of scale, where a tick that holds comfortably above the target at one size slides to a fraction of the rate at a hundred times the work - all along the same one-over-N curve.
+
 ## Exercises
 
 1. **Pick your rates.** For each of these systems, name a plausible target rate and the resulting per-tick budget: a card game; a real-time strategy game; a market data feed; an embedded sensor controller; a web API endpoint a user is waiting for; an offline batch job that processes a billion rows.
@@ -344,6 +361,8 @@ The shape of this thinking is familiar to engineers in other domains. An electri
 
    While you are there: from `power_loop`'s iteration count, compute your sequential read bandwidth - `iterations × 10⁷ × 8 / 45` gives bytes per second - and compare to the published peak of your DDR generation. If you get within a factor of two of peak, your inner loop is *bandwidth-bound* (the regime named in the prose). The `random` mode's iteration count, divided into wall time, gives your effective per-element latency in nanoseconds; that is the *latency-bound* regime.
 10. *(stretch)* **Joules per access.** Approximate energies per memory read: L1 hit ≈ 0.1 nJ, L2 ≈ 1 nJ, RAM ≈ 30 nJ (rough; published numbers vary by chip and process). Estimate the total energy of summing 10⁷ `u64`s sequentially (mostly prefetched, near-L1 cost) versus by random indices (mostly RAM misses). Convert both to milliwatt-hours and express as a fraction of a 50 Wh battery. The absolute numbers are tiny; the *ratio* is what your battery life and your data-centre electricity bill care about.
+
+11. **The budget is a curve.** Take the loop from exercise 5 (100 000 entities, one cache line each, 60 Hz). Hold the per-entity cost fixed and sweep the entity count: 100 000, 300 000, 1 000 000, 3 000 000. Compute the tick time and the sustained rate at each. At what size does the sustainable rate cross 30 Hz? 15 Hz? Plot rate against size and confirm the one-over-N shape, then name the largest scale that still meets a 15 Hz tolerance. (This is the curve Part II measures on the simulator; here you derive it from the per-item cost.)
 
 ## What's next
 
@@ -708,7 +727,7 @@ A program's life has a shape:
 - **Save and load** - the in-memory state is preserved to disk so a future run can resume from where this one left off. Optional, but if you want it, it lives here.
 - **Exit** - resources are returned to the kernel. Memory, file handles, sockets, lockfiles. Failure to do this cleanly is called a *memory leak* (or a stale lock, or a broken socket).
 
-This section is about the step. The step is where the time budget binds, where the system DAG runs, where determinism either holds or breaks. The other phases are real and important - the book returns to save and load when persistence is named at [§36](#36---persistence-is-table-serialization), and exit is mostly the operating system's job - but the inner step is what makes or breaks every other property the book builds on.
+This section is about the step. The step is where the time budget binds, where the [systems](#13---a-system-is-a-function-over-tables) - the functions that read and write the world's tables - run in the order set by their [DAG](#14---systems-compose-into-a-dag), where determinism either holds or breaks. The other phases are real and important - the book returns to save and load when persistence is named at [§36](#36---persistence-is-table-serialization), and exit is mostly the operating system's job - but the inner step is what makes or breaks every other property the book builds on.
 
 Each step is a *tick*. State at the start of a tick is read; state at the end is written; nothing is half-updated mid-tick. Even an interactive program - a card game waiting for the next move, a text editor waiting for a keystroke - is a tick loop, just with an external trigger driving it. A program that does a single pass over a file and exits is a degenerate tick loop with one tick: it has the same start-of-tick / end-of-tick contract, just with N=1.
 
@@ -747,6 +766,8 @@ The §0 simulator runs time-driven. The card game from §5 ran turn-based - ever
 
 Within each tick, the systems run in an order specified by the system DAG ([§14](#14---systems-compose-into-a-dag)'s topic). Each tick has a *budget*: 33 ms at 30 Hz, the ms-per-move in a card game played at human speed. The budget binds the design: at 30 Hz with 1 000 000 creatures, each motion update has 33 nanoseconds, which only fits if the data layout cooperates ([§4](#4---cost-is-layout---and-you-have-a-budget) made this precise).
 
+When a tick runs long, the budget has a visible failure mode: the frame is *dropped*. The loop wakes late, the rate sags below its contract, and downstream something stutters. That visibility is worth instrumenting from the first day, because it is the cheapest operations tool you will ever have. Time each tick, and when it overruns the budget, *raise* in development so a regression stops the build, and *warn and count* in production so a degraded run is recorded rather than silent. The count of late ticks is the first number an operator reads when asked whether the thing is keeping up. The book returns to this in Part II as the front of the operations toolkit; here it is just a habit, that a tick which can blow its budget should be able to say so.
+
 A subtle pitfall worth naming. Mixing turn-based and time-driven thinking in the same loop produces *drift*: the turn-based subsystem's pace bleeds into the time-driven subsystem's budget. The fix is to keep the two cleanly separated - typically, one outer loop and the other as an event source feeding it.
 
 A tick is the unit of forward motion in any program that has forward motion. The next sections name what *fits* in one tick, in what order, and what does not.
@@ -757,7 +778,7 @@ You will need a minimal Rust project for these. `cargo new tick_lab` is enough.
 
 1. **A 30 Hz time-driven loop.** Write a `main` that loops at 30 Hz. Each iteration, print the elapsed time since program start. Sleep between ticks to maintain the rate. Run it for 10 seconds. Did you actually get 300 iterations?
 2. **The naive sleep mistake.** Replace your sleep logic with `std::thread::sleep(Duration::from_millis(33))` (no measurement). Run for 30 seconds. Does the program drift over time? Why?
-3. **Dropped frames.** Inside the loop, sleep for 50 ms - longer than the budget. The loop is now running at 20 Hz; it has *missed frames*. Print a warning when this happens.
+3. **Dropped frames.** Inside the loop, sleep for 50 ms - longer than the budget. The loop is now running at 20 Hz; it has *missed frames*. Print a warning when this happens, and keep a running count of late ticks - that count is the first number an operator reads when asked whether the loop is keeping up.
 4. **A turn-based loop.** Write a tiny REPL: print `> `, read a line, print `you said: <line>`. Each line is one tick. Run it. Note that the loop has no fixed rate - its pace is your typing.
 5. **Mixing the two.** Modify exercise 4 so that, while waiting for input, the program also prints the current second once per second. (Hint: spawn a thread, use a non-blocking read, or interleave with timeouts.) Note how mixing the two patterns adds complexity quickly.
 6. *(stretch)* **A discrete-event tick loop.** Maintain a `Vec<(f64, String)>` of `(timestamp, message)` events. Pop the smallest-timestamp event, advance a "simulation clock" to that timestamp, print the message, repeat until the queue is empty. This is the structure of a discrete-event simulator and a preview of [§12](#12---event-time-is-separate-from-tick-time).
@@ -903,7 +924,15 @@ flowchart TB
 
 This is the same shape as a *query plan* in a database. The query optimiser takes a SQL statement, builds a graph of relational operations (each one a system!), and topo-sorts them into an execution plan. A simulator is a query plan running every tick.
 
-The reason the graph must be acyclic is that a cycle is a contradiction. Suppose system A writes table T, system B reads T and writes U, system A reads U. Now A both produces T (which B reads) and consumes U (which B writes). A and B cannot both run before each other in the same tick. A cycle in the system graph is a design bug; it must be broken - usually by buffering one system's write so it is consumed *next* tick instead of *this* tick.
+The reason the graph must be acyclic is that a cycle is a contradiction. Suppose system A writes table T, system B reads T and writes U, system A reads U. Now A both produces T (which B reads) and consumes U (which B writes). A and B cannot both run before each other in the same tick.
+
+```mermaid
+flowchart LR
+    A -->|"T (A writes, B reads)"| B
+    B -->|"U (B writes, A reads)"| A
+```
+
+A cycle in the system graph is a design bug; it must be broken - usually by buffering one system's write so it is consumed *next* tick instead of *this* tick.
 
 Designing system order is therefore the same problem as designing a database query plan. Each system is a stage; the DAG is the plan; the program executes the plan. Students who follow this thread end up writing their own minimal query engine without realising it.
 
@@ -1161,6 +1190,7 @@ The shape EBP produces in code is also a clue. A system that uses EBP looks like
 
 ```rust,no_run
 fn drive_hunger(hungry: &[u32], energy: &mut [f32], dt: f32) {
+    // `hungry` holds slots (column positions), not entity ids
     for &i in hungry {
         energy[i as usize] -= HUNGER_BURN_RATE * dt;
     }
@@ -1169,7 +1199,7 @@ fn drive_hunger(hungry: &[u32], energy: &mut [f32], dt: f32) {
 
 Read-set: `hungry`. Write-set: `energy` (only the slots listed in `hungry`). The signature is the contract - exactly the contract from [§13](#13---a-system-is-a-function-over-tables). EBP is not a separate idea; it is the natural shape that a system takes when its inputs are presence tables.
 
-Because `hungry` holds slots, each entry indexes the columns directly - there is no id-to-slot lookup inside the loop. That directness is the whole point of keying the table by slot; [§26](#26---subscription-tables-keyed-by-slot) measures what it is worth (and why the table holds slots, not ids), once the lifecycle in [§24](#24---append-only-and-recycling) makes slots stable enough to store.
+Because `hungry` holds slots, each entry indexes the columns directly - there is no id-to-slot lookup inside the loop. An entity-id list would not work here: it would need the [§10](#10---stable-ids-and-generations) id-to-slot hop, and worse, it would read the wrong rows after any sort or `swap_remove` ([§9](#9---sort-breaks-indices)). That directness is the whole point of keying the table by slot; [§26](#26---subscription-tables-keyed-by-slot) measures what it is worth (and why the table holds slots, not ids), once the lifecycle in [§24](#24---append-only-and-recycling) makes slots stable enough to store.
 
 EBP also composes cleanly with parallelism. A million creatures with 100 000 hungry can be split across eight threads - each thread takes a 12 500-row slice of `hungry` and does its work. The threads never need to consult creatures that are not hungry; their loads do not interfere. [§31](#31---disjoint-write-sets-parallelize-freely) develops this.
 
@@ -1634,6 +1664,8 @@ There is a single scenario where grouping fields would still pay. A hot loop tha
 
 A subscription is earned by a system that genuinely processes a subset. "Most creatures are not hungry on most ticks, so `hungry` is far smaller than the population" is a sound reason to build one. "Every creature is always in `alive`, but other engines keep an alive-set" is not. A subscription that holds the whole population is a scan-all with extra bookkeeping, and the measurement says so: at full participation the subscription loop is marginally *slower* than a plain scan. The subscription wins in proportion to how much it excludes, and not otherwise.
 
+**The payoff is not only speed; it is extensibility.** An entity's character is just the set of subscriptions that hold it - a grazer is "the herd-motion table plus the graze-forage edge," no more - so a new *kind* of entity is a new subscription, not a new type threaded through the code. The reference simulator adds a predator exactly this way: register a `predators` subscription, wire two systems (herd-motion and a forage edge onto grazers), and the pass that maintains subscriptions never learns a predator exists, because it maintains every one of them the same way. Diff the `sim2` binary against `sim` and a whole trophic level costs about six lines, with nothing existing edited. Composition, not surgery - the extensibility the architecture keeps promising, made literal and measurable in a `diff`.
+
 ## Measurements
 
 The prose quotes the modern-desktop figure; the spread across the reference machines is below. The amortized keying verdict (slot vs id) favours slot keys at every subscription count `S` and interval `G` on every machine. Full per-machine output: `ebp_partition` in `code/README.md`.
@@ -1750,6 +1782,11 @@ for i in 0..n { let c = cell[i] as usize; items[cursor[c] as usize] = i as u32; 
 
 The sharpest number is the build itself. Rebuilding the *entire* spatial structure from scratch costs **around one percent of the query it serves**<sup>3</sup>. So the whole reason a bolt-on index exists, "don't pay to rebuild," is optimising about one percent of the work. You do not maintain proximity across ticks. You recompute it from the position stream each tick, for free, in the pass motion already makes. *Recompute from the stream* beats *maintain a structure*, and the old question of how often to re-sort the world simply evaporates: there is no kept structure to schedule.
 
+> [!WARNING]
+> "Binning is O(N)" hides an assumption: *constant density*. The query reads a 3x3 block of cells, which is cheap only while a cell holds a roughly fixed number of creatures. In a fixed world more creatures means fuller cells, so the block you scan grows with N and the whole pass is O(N²) again, with the grid still in place. The words missing from "O(N)" are "at constant density," and density is a design choice. Measured on the reference forage (`forage_scaling`, modern desktop): in a fixed world, cost grew ~8x then ~11x for each 3x increase in population - quadratic; with the world grown to hold density constant, the same query grew ~3-4x - linear. Binning moves the wall, it does not remove it.
+
+**When you only need one answer, ask the cell once.** The chapter opened with a creature eating the nearest food in reach - one answer per creature, not a list. So you never need every occupant of the 3x3 block; you need one. Collapse each cell to a single *representative* - the first occupant will do - and a query reads at most nine representatives whatever the density, which restores O(N) even in a fixed world. The price is an approximation: a creature takes its cell's representative, not provably the nearest of a crowded cell. But the error is bounded by one cell, and the cell is already the resolution the grid quantises position to, so the approximation sits below what the model can see. Measured, the representative held linear (~3x per 3x population) exactly where the exhaustive 3x3 scan went quadratic. The cell stops being a bucket you search and becomes a lookup you read: ask the cell who is in it, do not measure every pair.
+
 **The gather still scatters, and that is [§26](#26---subscription-tables-keyed-by-slot)'s job.** Binning finds the *candidates* cheaply, but reading their positions jumps around the columns. Making that gather dense is the compaction from [§24](#24---append-only-and-recycling)/[§26](#26---subscription-tables-keyed-by-slot): the same batch pass that reclaims dead slots can reorder the survivors *by cell* (a Z-order curve keeps neighbouring cells adjacent in memory), so a cell's creatures land on adjacent cache lines. That reorder is the GC's slow-cadence pass, not a separate spatial sort with its own knob. §28 says *which cell*; §26 makes *reading the cell* stream.
 
 ```rust,no_run
@@ -1761,13 +1798,16 @@ fn cell_of(px: f32, py: f32, cell_size: f32) -> u32 {
 }
 ```
 
+> [!NOTE]
+> Binning answers *who is near now*, at the sampled positions of this tick. Reusing it for collision smuggles in an assumption: that motion between samples is linear and the step is small. When the step is large, or event-driven with variable length ([§12](#12---event-time-is-separate-from-tick-time)), two fast movers can swap sides inside one step - a long travel vector crossing a short one - and share no cell at any sampled instant. The bin never sees them meet; they tunnel through each other. A finer grid does not fix it; swept (continuous) detection does: solve for the time within the step at which the two linear paths first come within radius. That solve is a quadratic in `t`, and its root is an event time, not a sample. Binning still earns its keep by handing you the candidate pairs cheaply; the closest-approach solve turns a candidate into a dated collision event.
+
 **The same lesson at the global scale: the pack-leader.** Swarming beasts look coordinated, but if every beast accounts for every other - cohesion, alignment, separation against all N - the cost is O(N²) (~240 ms at twenty thousand). The way the old games did it: put an abstract, invisible leader at the centre of the pack. The leader does the one expensive thing, deciding where the pack goes; each beast subscribes to the leader and steers relative to it. One centroid pass, every member reads one value: O(N), some 9000x cheaper at the same twenty thousand on a modern desktop<sup>4</sup> (thousands of times on every machine), and the gap grows with N. Lifelike swarm behaviour, no all-pairs accounting. The "who is near the group" question, like "who is near me," is answered by a single pass over position, not by a structure every agent maintains.
 
 The meta-lesson is the one worth keeping. Twice now the cheap path was to refuse the obvious data structure - the `id_to_slot` hop in [§26](#26---subscription-tables-keyed-by-slot), the spatial index here - and instead let the system that already owns the data produce the answer in the pass it already makes. Ask what the problem *is* before reaching for a structure to make it fit. Proximity is position; position is already in hand.
 
 ## Measurements
 
-The prose quotes the modern-desktop figure; the spread across the reference machines is below. Full per-machine output: `proximity` in `code/README.md`.
+The prose quotes the modern-desktop figure; the spread across the reference machines is below. Full per-machine output: `proximity` in `code/README.md`. The density-wall and representative figures come from `forage_scaling` on the modern desktop; cross-machine measurement is pending, but the shape they show - quadratic at fixed world, linear once density is held or the cell is collapsed to a representative - does not depend on the machine.
 
 | # | measurement | Ryzen 9 (modern) | i7-3610QM (2012) | i3-5010U (2015) | Pi 4 |
 |---|---|---|---|---|---|
@@ -1785,6 +1825,7 @@ The prose quotes the modern-desktop figure; the spread across the reference mach
 5. **Recompute beats maintain.** Measure the dense bin's build as a fraction of its query. Confirm it is roughly 1%. Argue why maintaining a spatial index incrementally (to "save" the rebuild) optimises the wrong thing.
 6. **The pack-leader.** Steer N agents toward the group two ways: each averaging the other N-1 positions (all-pairs), and each reading one centroid computed in a single pass. Time both; reproduce the O(N²) vs O(N) gap. Argue why the leader gives swarm-like behaviour without any agent knowing about any other.
 7. *(stretch)* **Z-order and the compaction.** Replace the stripe pack with a Z-order (Morton) hash. Then order the [§24](#24---append-only-and-recycling) compaction by cell and re-time the neighbour query's gather (§26). How much of the remaining query cost was the scattered gather?
+8. **The density wall and the representative.** Take your dense-bin query from exercise 3. Grow the population in a *fixed* world (100K, 300K, 1M) and confirm the per-query cost grows faster than linearly - the 3x3 block is filling, the grid is quadratic again. Now answer the one-nearest query by keeping a single representative per cell (the first occupant) and reading the nine neighbour representatives; re-time the sweep and confirm it holds linear. Then measure how often the representative differs from the true nearest, and confirm every difference lies within one cell - the approximation is bounded by the grid's own resolution.
 
 ## What's next
 
@@ -2722,6 +2763,12 @@ The discipline pays off three ways:
 - **Inspection and testing are the same code.** The InspectionSystem pattern from [§13](#13---a-system-is-a-function-over-tables) is identical to the test pattern: read-only access to all tables, output a report. In production, inspection is absent; in test, it is present and asserting. Same source code, different schedule.
 - **Determinism makes tests trustworthy.** [§16](#16---determinism-by-order)'s rule means tests are reproducible. A test that fails with seed `0xCAFE` fails with `0xCAFE` every time, on every machine. No flakiness.
 
+## Tests are systems - and so is the budget
+
+A test asserts a property of *logic* and passes or fails. Cost wants the same vigilance but cannot take that form: you cannot assert "this tick takes under 33 ms" as pass or fail, because a wall-clock number carries the machine, the scheduler, and the thermal state - run it twice and it disagrees with itself. The cost side is a *benchmark*, not a verdict. The analogy is still exact, `unit test : logic :: scale sweep : cost`: a scale sweep is a test-shaped system aimed at cost. Run each system across log-spaced scales, take the *minimum* of a few repetitions at each (the OS only ever adds time, so the minimum is the machine's floor with interference subtracted out), and watch where each curve crosses the budget. The system that crosses first is the binding constraint; improve it, re-sweep, watch the crossing move out. You characterise the envelope rather than assert a threshold - the one falsifiable, one-sided claim is that *even the unimpeded minimum exceeds the budget*, which is definitively too slow; everything above that floor is variance, read as a curve and not a red light.
+
+Two habits keep the sweep honest, and both are where intuition lies. You do not know where the time goes - the hotspot is as often a sort you did not need as the arithmetic you expected - so you profile to find the binding line rather than guess it. And a benchmark that does not grow the way production grows reports a confident, precise, wrong number; scale it on the axis the system actually will, or it lies with a chart attached. The per-chapter measurements in this book are the baseline of that envelope: "the dense bin streams," "the representative holds linear" are not claims you trust once but curves you watch hold as the code changes. Measurement, made a tracked instrument rather than a one-time exhibit.
+
 The book is closing.
 
 Forty-two concepts; nine phases; one through-line simulator. The disciplines named in this last phase - mechanism vs policy, deferred abstraction, you-can-only-fix-what-you-wrote, tests-are-systems - are the rules that hold the rest together. They are not new architecture. They are how the architecture earlier chapters built stays maintainable.
@@ -2738,6 +2785,7 @@ That is the data-oriented program. That is the book.
 4. **TDD a new system.** Pick a piece of behaviour you have not built - say, "creatures with energy above 50 grow more slowly". Write the test first: what's the smallest case (one creature)? Largest (a million)? Then write the system. Confirm the test passes.
 5. **The InspectionSystem connection.** Take the test from exercise 1 and the inspection-system idea from [§13](#13---a-system-is-a-function-over-tables). Argue why they are structurally identical - same read-set, same lack of write-set, same scheduling slot.
 6. *(stretch)* **A test runner that *is* the simulator's scheduler.** Implement a tiny test runner whose only difference from the simulator's scheduler is *which* systems it includes in the DAG: production systems for live runs, test-and-inspection systems for test runs. The two binaries share most of their code; the difference is the systems list.
+7. **The scale sweep (a test for cost).** Time one system across log-spaced scales (10K, 100K, 1M), taking the *minimum* of three repetitions at each. Lay your budget across the curve and find the scale where it crosses. Then make the same measurement lie: hold one input fixed while growing another so a hidden quantity (density, fan-out) stays constant, and watch the curve flatten into a falsely linear shape. State the axis a sweep must grow on for your system, and the one falsifiable claim a wall-clock number actually supports.
 
 ## What's next
 
@@ -2814,6 +2862,8 @@ The first act is the harder problem, and the book finishes it. The second act - 
 
 # 45 - Living with it
 
+<p align="center"><img src="book/illustrations/opex_capex.png" alt="Two mice at a blackboard weighing OPEX against CAPEX - operating cost paid forever versus capital paid once." style="max-height: 300px; max-width: 100%;"></p>
+
 [§44](#44---what-you-have-built) closed the first act. The simulator runs: deterministic, scaled past the 1M wall, parallel on disjoint writes, persisted to disk and replayable from its log. On your machine, today, with you watching, it works.
 
 That sentence has three load-bearing qualifiers. *On your machine. Today. With you watching.* The first act earns the verb "works" and stops exactly where those qualifiers bite. The second act is what it costs to remove them - to run the thing on a machine you have never seen, a year from now, while you are asleep.
@@ -2867,6 +2917,8 @@ The first chapter of the second act takes the unattended question head-on: [§46
 
 # 46 - The log survives power loss
 
+<p align="center"><img src="book/illustrations/logs_no_lie.png" alt="A mouse and a system log surviving a power loss - the log does not lie." style="max-height: 300px; max-width: 100%;"></p>
+
 [§37](#37---the-log-is-the-world) made the load-bearing claim of the persistence story: the log is the world, and the world is the log replayed. [§45](#45---living-with-it) took away the human who used to be watching. Put those two together and a crack opens that the first act never had to look at. "The log is the world" carries an unstated precondition: *the log is intact*. On a clean shutdown it always is - the program flushes its buffers and exits in its own time. Unattended, the program does not get to choose how it stops. A power loss, an out-of-memory kill, a `kill -9`, a kernel panic: each halts the process between one instruction and the next, buffers half-flushed and the last write half-done. If the log is the world, a torn log is a torn world.
 
 This chapter earns the precondition. The property it builds has a name once it is built: **crash consistency** - the guarantee that after *any* stop, at *any* instant, the system recovers to a world that actually existed, never to a corrupt halfway state.
@@ -2895,7 +2947,7 @@ The exclusion, named plainly: crash consistency is *not* backup, and it is *not*
 
 ## Measurements
 
-The cost of crash consistency is the cost of `fsync` at the batch boundary, already measured in [§38](#38---storage-systems-bandwidth-and-iops): batching the `fsync` across a tick's records instead of paying it per record is the 14-256x batched-vs-unbatched span on the four reference machines, and a durable log widens it further because each unbatched record would pay a real `fsync`, not a buffered write. Crash *correctness* is not a throughput number; it is a pass/fail test - inject a torn write, recover, compare the world hash to the pre-crash hash. The exercises build that test; a four-machine recovery-throughput table follows once the specimen exists, in the style of `code/logger`.
+The cost of crash consistency is the cost of `fsync` at the batch boundary, already measured in [§38](#38---storage-systems-bandwidth-and-iops): batching the `fsync` across a tick's records instead of paying it per record is the 14-256x batched-vs-unbatched span on the four reference machines, and a durable log widens it further because each unbatched record would pay a real `fsync`, not a buffered write. Crash *correctness* is not a throughput number; it is a pass/fail test, and the specimen (`crash_consistency`) runs it: write a hundred committed batches plus a torn one, recover, and the recovered world equals the last committed world with the torn batch discarded - never a halfway state. The same specimen demonstrates the acknowledgement rule - acknowledging before the marker over-acknowledges by exactly the torn batch (the sender holds an "ok" for a record the log lost), while acknowledging after the marker never does. The recovery-*throughput* number - how fast a real log replays - is a separate four-machine table, still pending, in the style of `code/logger`.
 
 ## Exercises
 
@@ -2915,6 +2967,8 @@ The log now survives the stop. The next unattended question is the next thing th
 
 
 # 47 - Observation is a read-only system
+
+<p align="center"><img src="book/illustrations/observation.png" alt="A mouse at a microscope - observation is a read-only system." style="max-height: 300px; max-width: 100%;"></p>
 
 [§46](#46---the-log-survives-power-loss) made the log survive the stop: the system comes back from a crash to a world that existed. The next thing the missing human took with them is softer and just as fatal - knowing what the system is *doing*. [§13](#13---a-system-is-a-function-over-tables) said the data is visible: `print!` any column and look. That is true and useful, and it is a *debugger's* answer - you, at your desk, world paused, stepping through one moment. At 2 AM the world is not paused, you are not at your desk, and there is no `print!` you can add to a process that is already running and already wrong.
 
@@ -2944,7 +2998,7 @@ The exclusion, named: observability is not debugging. A debugger stops the world
 
 ## Measurements
 
-The observer's cost is a sequential read plus a reduction plus an append - the cheapest pass there is ([§7](#7---structure-of-arrays-soa), [§27](#27---working-set-vs-cache)) - so the claim is that a per-tick metrics system is ~free against the tick budget; the exercise measures the tick with it on and off. The correctness claim is non-perturbation: the world hash is identical with metrics on and off (disjoint write-set), a pass/fail test, not a number. A four-machine overhead table follows once the metrics system is a specimen, as in `code/logger`.
+The observer's cost is a sequential read plus a reduction plus an append - the cheapest pass there is ([§7](#7---structure-of-arrays-soa), [§27](#27---working-set-vs-cache)) - so the claim is that a per-tick metrics system is ~free against the tick budget, and the correctness claim is non-perturbation: the world is identical with metrics on and off, because the write-set is disjoint ([§31](#31---disjoint-write-sets-parallelize-freely)). The specimen is the simulator's own `inspect` - a read-only system that reads the subscriptions and writes only the population table - exercised by `observe`: the world recovers bit-identical live-id sets with `inspect` on and off (a pass/fail test, not a number), and at ~60k live the metrics pass is 0.025 ms against a 4.7 ms tick: 0.5% of the tick, 0.07% of the 33 ms budget. A four-machine overhead table follows in the style of `code/logger`; the shape - non-perturbing and ~free - is what the specimen already shows.
 
 ## Exercises
 
@@ -2964,6 +3018,8 @@ The system now survives the stop and reports what it is doing. The next unattend
 
 # 48 - Reductions don't parallelize freely
 
+<p align="center"><img src="book/illustrations/floats.png" alt="A mouse puzzling over 0.1 + 0.2 - floats are tricky, and the order of the additions decides the answer." style="max-height: 300px; max-width: 100%;"></p>
+
 [§31](#31---disjoint-write-sets-parallelize-freely) earned a strong claim: systems with disjoint write-sets parallelise freely, with no locks and no coordination. [§16](#16---determinism-by-order) earned another: same seed, same system order, same world, every run. Both are true. Put them under one stress the first act never applied - *a different number of cores* - and a seam opens between them. The world that hashed identically on your four-core laptop hashes differently on the thirty-two-core server. Same code, same seed, same log. Different machine, different world.
 
 This is the worst class of bug, because it passes. It passes every test you ran, because you ran them on one machine with one core count. It surfaces only after the move to the hardware you have never seen - the unattended server of [§46](#46---the-log-survives-power-loss) and [§47](#47---observation-is-a-read-only-system), where you cannot attach a debugger and the only symptom is that two nodes that should agree do not. The determinism survived everything except the deployment.
@@ -2980,7 +3036,7 @@ The canary is precise: **hashes stable when you fix the core count, unstable whe
 
 The fix is not "stop parallelising." [§31](#31---disjoint-write-sets-parallelize-freely) still holds: the per-element work parallelises freely. The reduction is the one place where parallel work meets a single shared result, and that is the only place order leaks back in. So you isolate the non-determinism to the combine step and make *that* deterministic. **Determinism is a property of the combine, not the compute.** Two ways to buy it.
 
-**Fix the reduction order.** Each thread reduces its own partition into a slot indexed by a fixed partition id. Then a single serial fold walks the slots in id order and combines them. The grouping is now defined by partition id, not by which thread finished first or how many there were. The expensive part - the per-element work - still runs on all cores; only the final fold over a handful of partials is serial, and a handful is cheap. You keep the [§31](#31---disjoint-write-sets-parallelize-freely) speedup and recover the [§16](#16---determinism-by-order) guarantee. The result still rounds per addition, but it rounds the *same way every time, on every machine*.
+**Fix the reduction order.** Choose a *fixed* number of partitions, independent of the thread count - say sixty-four - and reduce each into a slot indexed by its partition id. The threads share those fixed partitions however the scheduler likes; the partials land in id order regardless of which thread computed which, and a single serial fold walks the slots in id order. The grouping is now defined by the fixed partition count, not by how many threads ran. The easy mistake - and it is the obvious one - is to make the partition count *equal* the thread count, giving each thread its own partition: that changes the grouping right back, and the result still moves with `nproc`. The number of partials must be fixed, not the number of threads. The expensive per-element work still runs on all cores; only the fold over a handful of partials is serial, and a handful is cheap. You keep the [§31](#31---disjoint-write-sets-parallelize-freely) speedup and recover the [§16](#16---determinism-by-order) guarantee - the result still rounds per addition, but it rounds the *same way every time, on every machine*.
 
 **Accumulate in integers.** Integer addition *is* associative: exact, order-independent, identical on one core or sixty-four. Scale each value to a fixed-point integer, sum exactly in any order, scale back at the end. There is no rounding to reorder because there is no rounding until the final scale-back. The price is range management - you choose the fixed-point scale, and you must not overflow the integer - so it fits best where the quantity is bounded and its precision is known, like a sum of energies. Integer accumulation is deterministic by construction; fixed-order floating-point is deterministic by discipline. Where you can bound the range, integers are the stronger guarantee.
 
@@ -2992,7 +3048,18 @@ The exclusion, named: this is about *reproducibility*, not *accuracy*. A fixed-o
 
 ## Measurements
 
-The divergence is a demonstration, not a number: run the racy reduction at one, two, four, and eight threads and the world hashes differ - a fact you reproduce in minutes, not a benchmark. The *cost* of the fix is measurable and small: the deterministic combine adds a serial fold over the partition count (a few to a few dozen values), not over the elements, so it is a rounding error against the parallel work it guards ([§31](#31---disjoint-write-sets-parallelize-freely)'s speedup is preserved). Integer accumulation trades the float adds for integer adds of the same count - comparable within variance on every machine. A four-machine table follows once the reduction is a specimen.
+The divergence is a demonstration, not a benchmark. Measured (`reduction_divergence`, one million harmonic values), the low bits of the parallel float sum change with the thread count:
+
+| threads | racy (partition = threads) | fixed-order (64 partitions) | integer (i128) |
+|---|---|---|---|
+| 1 | `...1df0d6` | `...1df271` | `...025a920c` |
+| 2 | `...1df2a6` | `...1df271` | `...025a920c` |
+| 4 | `...1df2c6` | `...1df271` | `...025a920c` |
+| 8 | `...1df234` | `...1df271` | `...025a920c` |
+
+The racy column is a different result at every thread count; the fixed-order and integer columns are bit-identical across all four. (The fixed-order value differs from the racy one-thread value in the low bits, because a 64-partition grouping rounds differently from index order - it is *reproducible*, not more accurate, exactly the exclusion named below.) The cost of the fix is the serial fold over the partition count - a few dozen values against the parallel work it guards, a rounding error on the [§31](#31---disjoint-write-sets-parallelize-freely) speedup. This is a single-machine reproduction; cross-machine numbers are pending, but the divergence and the two fixes are machine-independent facts (IEEE-754 non-associativity and integer associativity), not measurements that vary by box.
+
+The simulator gives the complementary evidence: `forage` parallelised across one to eight threads is bit-identical to serial (measured, `forage_scaling`), precisely because it is a per-element map with *no* reduction across targets - the safe case. Add a global energy sum each tick (exercise 2) and you are in the trap.
 
 ## Exercises
 
@@ -3011,9 +3078,13 @@ Three of the four unattended questions are answered: the system survives the sto
 
 # 49 - The worst case is the only case
 
+<p align="center"><img src="book/illustrations/budget.png" alt="A mouse with a budget sheet and a contingency line - planning for the worst case." style="max-height: 300px; max-width: 100%;"></p>
+
 [§4](#4---cost-is-layout---and-you-have-a-budget) gave the tick a budget: 33 ms at 30 Hz, and you spend it wisely. [§39](#39---system-of-systems) gave the long computation an anytime contract: return the best answer you have when the deadline arrives. Both are **soft** real-time. A missed deadline costs *quality* - a dropped frame, a coarser answer - and the system keeps running. You have been doing soft real-time for the whole book, and for almost everything you will build, soft is the right and sufficient discipline.
 
-This chapter marks the line where it stops. In **hard** real-time a missed deadline is not a dropped frame; it is a *fault*. The motor controller that computes the next current 200 microseconds late has already let the motor run away. The flight-control loop that skips a cycle has lost the aircraft for that cycle. The emergency stop that fires 10 ms late did not fire. When the deadline is a fault, the average case is irrelevant. A loop that meets its deadline 99.999 percent of the time has *failed* if the missing 0.001 percent is the brake.
+Soft does not mean unmanaged. When the work outgrows the budget - more entities than you planned, a load spike, a heavier tick - you choose, in advance, *how* to miss. The rule is to **shed fidelity, never integrity**: the systems that keep the world *valid* run every tick, exact; the systems that keep it *fresh and fine* are the ones you cut. The buffered commit ([§22](#22---mutations-buffer-cleanup-is-batched)) is what makes that safe - a tick that runs long still applies a whole world at the boundary, never a half-updated one, so the cost of an overrun is latency, not corruption. Within that, you degrade in a fixed priority order: drop the pure observers first, stretch the GC's cadence, defer the slow-moving systems, and - the best lever - apply back-pressure to whatever *creates* the load, because deferring growth attacks the cause, not the symptom. Two disciplines keep it honest. The degradation is a *logged decision*, not a wall-clock branch, so a degraded run still replays ([§37](#37---the-log-is-the-world), [§48](#48---reductions-dont-parallelize-freely)); a shed that depends on how fast the machine happened to be running stops being a function of its inputs. And the staleness is bounded and self-healing: each shed defers work by a known number of ticks and catches up when the load drops. This is the budget read as a curve ([§4](#4---cost-is-layout---and-you-have-a-budget)): past the comfortable scale the rate slides, and graceful degradation is how you choose what slides.
+
+This chapter marks the line where that stops. In **hard** real-time a missed deadline is not a dropped frame; it is a *fault*. The motor controller that computes the next current 200 microseconds late has already let the motor run away. The flight-control loop that skips a cycle has lost the aircraft for that cycle. The emergency stop that fires 10 ms late did not fire. When the deadline is a fault, the average case is irrelevant. A loop that meets its deadline 99.999 percent of the time has *failed* if the missing 0.001 percent is the brake.
 
 That single sentence inverts the book. Every technique so far chased the *mean*: cache-friendly layout, SoA, parallelism, branch-predictable code - all of them make the common case fast and let the rare case be slow. Hard real-time chases the *tail*. It does not care that the average tick is 2 ms if one tick in a million is 40 ms, because the one is the only one that matters. The worst case is the only case.
 
@@ -3048,6 +3119,7 @@ This is the one chapter where the book's measure-it-on-four-machines moat partly
 5. **The cache is a worst case.** Run a system over data small enough to stay in L1, then over data large enough to miss to RAM ([§27](#27---working-set-vs-cache)). Compare not the means but the *maxima*. Argue why average-case layout tuning does not give a WCET, and what would.
 6. **Soft, not hard - on purpose.** Take your anytime system ([§39](#39---system-of-systems)) and write down, honestly, its worst-case time. Show it has none you can prove. Conclude what kind of deadline it may and may not be trusted with.
 7. *(stretch)* **Priority inversion.** Build three tasks - high, medium, low - sharing one lock, and reproduce the high task missing its deadline because the low task holds the lock while the medium task runs. Then enable priority inheritance and show the deadline met. Name the mechanism that fixed it.
+8. **Degrade gracefully (the soft side).** Overload the tick - more entities than the budget allows. Implement a priority-ordered shed: drop the inspection system first, stretch the GC cadence, then defer reproduction (back-pressure on the thing creating the load). Show two things hold: the world stays consistent every tick (the [§22](#22---mutations-buffer-cleanup-is-batched) buffered commit), and a degraded run still replays bit-for-bit because each shed was logged, not branched on the wall clock. Confirm the staleness is bounded - nothing is deferred more than a fixed number of ticks.
 
 ## What's next
 
@@ -3055,6 +3127,8 @@ That answers the last of the four unattended questions: the system survives the 
 
 
 # 50 - It runs without you
+
+<p align="center"><img src="book/illustrations/runs_without_you.png" alt="A mouse with its feet up under 'ALL SYSTEMS OK' - it runs without you." style="max-height: 300px; max-width: 100%;"></p>
 
 [§45](#45---living-with-it) opened the second act with five questions. The four chapters since answered the first one - *can you run it unattended* - and it is worth stopping to see that they were not four tricks. They were one move, made four times.
 
@@ -3064,11 +3138,578 @@ The human who restarted it after a crash became the commit marker and the replay
 
 And the move was the same shape every time: **take a failure that used to be a person's vigilance to catch, and turn it into a property the system holds and a test you can run.** A torn write stopped being "hope the power doesn't go out" and became a commit marker you assert on. "Is it healthy" stopped being a feeling and became a metrics table you query. "Same seed, same world" stopped being true-on-my-machine and became a CI check across core counts. A missed deadline stopped being "it felt sluggish" and became a jitter histogram with a bound. Operations is not a toolbox. It is the systematic conversion of *someone is watching* into *something is asserted*.
 
+The same move answers a question the four chapters circled without naming: *will it survive its own success?* A system that holds at today's load meets a different wall at ten times the load, and another at a hundred - the tick that crossed the budget, the cores that stopped helping, the memory that ran out. Left to a human, each is a 3 AM discovery. Converted, it is a **scale sweep**: run every system across the decades of scale you might see, in development, and read where each curve crosses the budget. The walls stop being surprises and become a map - this system binds first, at this size, and here is the lever. Measured on the simulator, the tick holds comfortably above 30 Hz out to a few hundred thousand entities and slides toward a single hertz by a few million - the one-over-N curve [§4](#4---cost-is-layout---and-you-have-a-budget) named, now with numbers behind it (a modern desktop; the slope is machine-independent, the absolute scale is not). "Will it scale" stops being a flinch in a meeting and becomes a curve you read off a chart, which is the vigilance-into-assertion move once more, spent on scale.
+
+The walls are not all the same kind of failure, and that is what makes the map worth drawing. Most degrade *softly* - slower, coarser, fewer entities, but still running and still consistent, the graceful degradation of [§49](#49---the-worst-case-is-the-only-case). One does not: run out of memory and the process is killed and the world is gone. So the discipline reduces to a single rule, **never meet the hard wall by surprise**. Map the staircase once, in development, so every step down in production is one you chose with a known margin, not a wall you discovered with nobody in the room. The cheap capital expense of the sweep buys the expensive operating expense of the calm descent - the [§45](#45---living-with-it) bargain, paid down one more time.
+
 That conversion is the whole economic point from [§45](#45---living-with-it), paid down. A system that needs a human in the loop costs a salary for as long as it runs; a system that runs without one costs almost nothing to operate. Each chapter in this group retired a recurring cost - not a feature added, a person's standing attention no longer required. That is operating cost falling straight through to margin, exactly as promised, and it is why the unattended question was worth four chapters.
 
-It is also the hardest of the second act's five promises to keep, which is why it came first. The system now survives, reports, agrees, and respects its deadlines. It is still, though, frozen in the shape you shipped it in. The remaining questions are about *change*: the schema it persists drifts the moment the world does; the single core it runs on is not the only hardware in the building; the advice this book has given has limits worth knowing before you trust it past them; and one day someone who is not you will own it. Those are the rest of the map - the [horizon](#the-horizon-living-with-it-at-production-scale) this book has charted and not yet walked, the road ahead for you or for a later volume.
+It is also the hardest of the second act's five promises to keep, which is why it came first. The system now survives, reports, agrees, and respects its deadlines. It is still, though, frozen in the shape you shipped it in, and it has been handed one rule hard: lay the data out flat and stream it. Two of the remaining questions press on exactly that, and this book still walks them: where the flat-and-stream default stops paying ([§51](#51---knowing-the-limits) opens the limits arc), and what to actually reach for when one core is not enough ([§56](#56---the-ceiling-is-bandwidth-not-cores)). Two are for a later volume: the schema drifts the moment the world does, and one day someone who is not you will own it. That is the [horizon](#the-horizon-living-with-it-at-production-scale) this book charted, now partly walked.
 
-The operations leg, though, is walked. The machine in the next room is running, nobody is watching it, and that is precisely the point.
+The operations leg is done. The machine in the next room is running, nobody is watching it, and that is precisely the point. [§51](#51---knowing-the-limits) picks up the last leg: the honest limits of the discipline that got you this far.
+
+<p align="center"><img src="book/illustrations/model_real_world.jpg" alt="Model the real world." style="max-height: 300px; max-width: 100%;"></p>
+
+
+# 51 - Knowing the limits
+
+<p align="center"><img src="book/illustrations/software_limits.png" alt="A professor mouse lecturing on the limits of software." style="max-height: 300px; max-width: 100%;"></p>
+
+[§45](#45---living-with-it) put five questions to a system that has to survive, and the fourth was the one that turns the book on itself: do you know where your own advice stops? For forty chapters the advice was to lay the data out flat and stream it, and on the simulator it has been right every time. This part is where you find the edge of it, and finding that edge is the whole job.
+
+The simulator itself cannot show you the edge, because its world is the one structure-of-arrays was built for: rows of positions and a few scalars, read in bulk. Put the question to it and it answers, honestly, that flat-and-stream never breaks down, because for that shape it does not. The limits live on shapes the simulator never has, so the only way to reach them is to go and build those shapes on purpose.
+
+That is what the five chapters here do. Each one leaves the simulator for a small, self-contained project in a domain the trunk never visited - a weekend's work, with its own reference crate - and each was chosen because it is a place the flat-and-stream default meets a genuine limitation.
+
+| The project | Where the default meets a limit |
+|---|---|
+| An expression evaluator | A recursive structure is all shape and no rows. Flat storage on its own buys nothing; the win is the order you walk the data, not the array it sits in. |
+| A scenegraph | A hierarchy whose shape changes every frame. Recomputing only the part that moved beats recomputing all of it, but only up to a point, and only when the moved part is packed together. |
+| A spreadsheet | Dependencies that form a graph rather than a tree. The stale set becomes a cone you have to compute, and an aggregate stays expensive even when a single cell changed. |
+| A floating-point ledger | A column ill-conditioned enough that the total comes out wrong. The order of the additions decides the answer, and no layout corrects it. |
+| A bandwidth wall | Work that outgrows one core. The ceiling is the memory channel, not the core count, and reaching for more hardware is rarely what helps. |
+
+Every chapter has the same shape. You take something small enough to hold in your head - an expression, a jointed arm, a five-cell sheet, three numbers, one pass over memory - work it through by hand, and then measure where it bends. The project is the experiment and the measurement is the verdict, so you end up watching the limit happen rather than taking it on trust.
+
+What the measurement gives back is a crossover. The columnar layout wins up to some size, or some rate of change, and past that point it stops winning; each chapter finds where, and prints the number. A default you can bound that way is one you can keep trusting. Knowing where "lay it out flat and stream it" stops paying is the rest of what it means to own the advice instead of merely repeating it.
+
+The five build on one another. The expression evaluator shows that flattening a structure is really compiling it, which holds until the structure starts to change; the scenegraph picks up what happens when it changes a little; the spreadsheet, when that little runs through a graph; the ledger, when the sums underneath all of it were wrong to begin with; and the last, when the work finally outgrows the single machine. Each one closes on the difficulty the next one opens with.
+
+## What's next
+
+[§52](#52---flattening-a-tree-is-compiling-it) begins with the smallest of the five: one arithmetic expression, three ways to hold it in memory, and the discovery that the layout you choose matters far less than the order you read it in.
+
+
+<!-- DRAFT, §52, first chapter of the "where SoA does not pay" arc (§52-§56), built on the
+reference crate code/exprtree. Concept-node line, glossary entry, DAG node are placeholders to be filled. Numbers are the dev-box (Ryzen 9 270) figures;
+cross-machine capture (Pi/i7/i3) is pending, so the Measurements table has one column. When
+the arc and the finale land, §50's "The book ends here" line moves to the finale. -->
+
+# 52 - Flattening a tree is compiling it
+
+<p align="center"><img src="book/illustrations/ast.png" alt="A mouse with an expression tree - the same tree as boxes-and-arrows, as one array, and written out in order to run straight through." style="max-height: 300px; max-width: 100%;"></p>
+
+[§3](#3---the-vec-is-a-table) said the Vec is a table, and the trunk took it as a default: lay the data out flat and stream it. That earned its place across forty chapters of rows-of-scalars. But the simulator's world is unusually kind to columns, and the honest question this arc asks is where the default stops paying. Start with the structure that looks least like a table: a tree.
+
+Take a small arithmetic expression, `(x + 2) * 3`. It is a tree:
+
+```
+        ( * )
+       /     \
+    ( + )    [ 3 ]
+   /     \
+ [ x ]   [ 2 ]
+```
+
+To evaluate it you work from the bottom up, because every node needs its children's values before it can do its own bit of arithmetic. At `x = 4`: the `x` is 4, the `2` is 2, the `+` makes 6, the `3` is 3, the `*` makes 18.
+
+There are three honest ways to store that tree and walk it, and the differences between them are the chapter. Take them one at a time.
+
+**Boxes and arrows.** Each node is a little record sitting wherever the allocator happened to put it, holding *arrows* (pointers) to its children.
+
+```rust,no_run
+enum Expr {
+    Const(f64),
+    Var,
+    Add(Box<Expr>, Box<Expr>),
+    Mul(Box<Expr>, Box<Expr>),
+    // ...
+}
+```
+
+To evaluate the `*`, you follow its arrow to the `+` node - somewhere else in memory - evaluate that (which follows two more arrows, to `x` and `2`), then follow the arrow to `3`. You hop around memory chasing arrows. This is the representation most people reach for, and the one the trunk taught you to be wary of.
+
+**The same shape, in one array.** Put all the nodes in a single `Vec`, and let each node name its children by their *position* in that Vec instead of by an arrow.
+
+```rust,no_run
+struct Node { tag: Tag, lhs: u32, rhs: u32, val: f64 } // children are indices
+```
+
+The nodes now sit together in memory, which is the layout the trunk prefers. But evaluating still hops from a node to its children in tree order, jumping around the array by index. The arrows became indices; the hopping stayed.
+
+**The steps, written in the order you do them.** Here is the different idea. Instead of storing the tree and walking it, write the nodes down in the order you would actually compute them, every child before its parent:
+
+```
+x   2   +   3   *
+```
+
+Now you do not walk a tree at all. You read that list straight through, left to right, with a scratch pad - a *stack*, which just means you add to the top and take from the top:
+
+```
+x  ->  push its value           pad: [4]
+2  ->  push                     pad: [4, 2]
++  ->  pop two, add, push        pad: [6]
+3  ->  push                     pad: [6, 3]
+*  ->  pop two, multiply, push   pad: [18]
+```
+
+The answer is what is left on the pad. No hopping: you touched the list once, front to back. If you have ever used a calculator with an "Enter" key, you have run a list like this; it has a name, but the mechanic is the point.
+
+All three compute 18. That they agree, bit for bit, on every input is the floor this whole chapter stands on.<sup>1</sup>
+
+## The array on its own buys nothing
+
+You would expect the two flat layouts to beat the boxes-and-arrows tree; the trunk spent forty chapters showing that contiguous beats scattered. Measured, only one of them does.
+
+The **one-array version does not beat the pointer tree at any size**.<sup>2</sup> Putting the nodes side by side bought nothing, because the walk still jumps from a node to its children in tree order. It just jumps by index now, and pays a bounds check on top. Index-hopping is pointer-hopping in a different coat.
+
+The **written-in-order version** is the one that pulls ahead: about 1.25x faster at a hundred thousand nodes, widening to nearly 2x at two million,<sup>2</sup> because it is the one that stops hopping and reads straight through.
+
+The lesson, then, is **the access pattern, not the array**. A flat layout walked in a scattered order is scattered access with extra steps. The win was never the Vec; it was the straight-through walk.
+
+## The win has a floor and a cliff
+
+The straight-through version does not win everywhere, and where it loses is worth being exact about.
+
+In a band from roughly a few hundred to a thousand nodes, the straight-through version is a little *slower* than the pointer tree.<sup>2</sup> The whole tree fits in cache there, so hopping between nodes is nearly free, and the scratch-pad's push and pop is overhead with nothing to hide behind. Below the band, at a few dozen nodes, everything is small enough that the tight straight loop wins again. Above it, once the tree outgrows cache, every hop pays a cache-miss tax the straight walk avoids, and it pulls away for good.
+
+The carve-out is usually stated as "small trees", but it is really a **cache-resident band**: a tree that fits in cache does not care how you lay it out, because the expensive thing, going to memory, is free while everything is close. The flat layout starts paying only once the data is big enough that the trip to memory costs something.
+
+## That third form is compiled code
+
+Look again at the written-in-order version. Nodes in compute order, run straight through with a scratch stack: that is a *stack machine*, and the list is its program. Writing a tree out as a run-it-straight list is **compiling** it, turning something you walk into something you run.
+
+Compiled code has a famous weakness: you cannot edit it in place. Change the tree and the boxes-and-arrows version swings a single arrow, in time set by how deep the changed node sits - about 150 nanoseconds.<sup>3</sup> The one-array version is cheaper still, an index repointed in about 18 nanoseconds. The written-in-order version has no cheap edit: any change to the shape breaks the order, so you write the whole list out again, about half a millisecond at a hundred thousand nodes<sup>3</sup> - thousands of times the cost of swinging one arrow.
+
+So the choice turns on what you *do* with the tree: **how often do you change its shape, versus how often do you just compute it?**
+
+## The crossover
+
+Put a number on it. Any real workload is some edits and some evaluations. The pointer tree has the cheap edit and the slow walk; the compiled list has the slow edit and the fast walk. They break even at the point where the list's faster walks stop paying back its expensive rebuilds. On this machine, that is about **one edit for every four evaluations**.<sup>4</sup> Change the shape more often than that, keep the pointers. Compute it more often than that, compile it.
+
+The break-even barely moves as the tree grows, because both the walk savings and the rebuild cost scale with the number of nodes; their ratio does not. So it is a fact about your *workload*, not your tree size. A spreadsheet formula typed once and recomputed on every edit elsewhere, a database query planned once and run over millions of rows, a shader built once and run per pixel: all sit far out at the compute-many end, which is exactly where the compiled form wins and exactly why those systems compile.
+
+That is the first place the column default does not simply carry over, and a tree is what makes you say what you actually do with it. The flat array on its own buys nothing; the straight-through walk buys a lot, but only once the tree outgrows cache, and only if you will recompile when its shape changes. The reference crate is [`code/exprtree`](https://github.com/root-11/intro-book/tree/main/code/exprtree); the prose here is the shape of its output, and the exercises are how you make it yours.
+
+The catch is the word "recompile." It assumes the shape changes rarely, and all at once. The next chapter is what happens when it changes a little, and constantly.
+
+## Measurements
+
+Dev box: Ryzen 9 270, rustc 1.94.0, `--release`, median of 5. Cross-machine capture (the Pi 4 / i7 / i3 columns the rest of `code/` carries) is pending, so treat the shape as the claim, not the digits.
+
+| # | what | measured |
+|---|---|---|
+| 1 | all three forms agree, bit for bit | contract test passes |
+| 2 | straight-through vs pointer tree: tiny / cache-resident band / past cache | ~1.5x / **0.85x** / 1.25x at 131K nodes, ~1.9x at 2M |
+| 2 | one-array (arena) vs pointer tree | does not beat it at any size |
+| 3 | one shape-change: pointer / one-array / straight-through (131K nodes) | 150 ns / 18 ns / ~496,000 ns |
+| 4 | edit-to-evaluation break-even (straight-through vs pointer) | ~1 edit per 4 evaluations, ~size-independent |
+
+## Exercises
+
+1. **Three forms, one number.** Build the boxes-and-arrows tree, the one-array version, and the written-in-order list for the same small expression. Write the evaluator for each and check all three return the same value, bit for bit, at many values of `x`. Every later exercise leans on this agreement; if it ever breaks, you are timing three different sums.
+2. **Trace the stack by hand.** For `(x + 2) * 3`, write out the run-in-order list and trace the scratch pad step by step, as in the chapter. Then do it for an expression of your own with at least one subtraction. Convince yourself the list never needs to look back.
+3. **The size sweep.** Evaluate each form in bulk across tree sizes from a few dozen nodes to a few million. Plot nanoseconds per evaluation. Find the three regimes: the straight-through form winning when tiny, losing in a cache-resident band of a few hundred nodes, and winning more and more once the tree is too big for cache.
+4. **The array is the control.** Confirm the one-array version does not beat the pointer tree at any size. In one sentence, say why putting the nodes side by side bought nothing - what does its evaluator still do on every node? Then say, in one sentence, what the actual win was.
+5. **The cost of editing compiled code.** Implement the same shape-change - swap out a subtree - on each form, and time it at a hundred thousand nodes. Reproduce the arrow-swing, the index-repoint, and the full rewrite. Explain why the run-in-order form has no cheap edit.
+6. **The break-even.** From your edit and evaluation timings, work out the edit fraction where the run-in-order form stops being worth it. Reproduce the roughly one-edit-per-four-evaluations figure. Then, from how each cost grows with the number of nodes, argue why that break-even hardly depends on tree size.
+7. *(stretch)* **Find the regime in the wild.** Name three real things made of expression trees (a spreadsheet cell, a database query, a shader) and place each on the change-it-versus-compute-it line. For one, build it once and evaluate it a million times; confirm you are far out at the compute-many end, where the one-time cost of writing the list out has long since paid for itself.
+
+## What's next
+
+The run-in-order form assumes the shape changes rarely and all at once. [§53](#53---staleness-flows-downhill) is what happens when it changes a little and often: a hierarchy where one node moves and only the nodes beneath it go stale. Recomputing everything is the compiled form's only move; recomputing *just the stale part* is the next discipline - and it has a break-even of its own.
+
+
+<!-- DRAFT, §53, second chapter of the "where SoA does not pay" arc (§52-§56), built on the
+reference crate code/scenegraph. Concept-node line, glossary entry, DAG node are placeholders. Numbers are the dev-box (Ryzen 9 270) figures; cross-machine
+capture is pending, so the Measurements table has one column. -->
+
+# 53 - Staleness flows downhill
+
+<p align="center"><img src="book/illustrations/dirty_markers.png" alt="A mouse marking the stale nodes below a moved joint - staleness flowing downhill through a hierarchy." style="max-height: 300px; max-width: 100%;"></p>
+
+[§52](#52---flattening-a-tree-is-compiling-it) left on a catch: compiling a tree is worth it only when the shape changes rarely and all at once. This chapter is the other case, the common one - the shape changes a little, and constantly.
+
+Picture a jointed arm: a shoulder, an elbow hanging off it, a hand hanging off the elbow. Each joint knows only where it sits *relative to its parent* - its *local* offset. Where it actually is in the room - its *world* position - is its parent's world position plus its own local offset. Lay it out and compute it bottom of the chain to top:
+
+```
+shoulder   local 0    world 0
+  elbow    local +2    world 2     (0 + 2)
+    hand   local +1    world 3     (2 + 1)
+```
+
+Now swing the elbow out: change its local offset from +2 to +5.
+
+```
+shoulder   local 0    world 0      (unchanged)
+  elbow    local +5    world 5      (0 + 5)   <- moved
+    hand   local +1    world 6      (5 + 1)   <- dragged along
+```
+
+The elbow moved, and the hand moved with it, because the hand hangs off the elbow. The shoulder did not move at all. **A change flows downhill to everything beneath it, and stops there.** That is the whole idea of this chapter. (Real scenes compose full rotate-scale-translate transforms instead of adding offsets, but the shape is identical: a node's world position depends only on itself and the chain of parents above it.)
+
+Every frame, things move, and the world positions below them go stale. There are two ways to set them right.
+
+**Recompute everything.** Walk the whole hierarchy top-down and recompute every world position from scratch. If you store the nodes flat in top-down order - every parent before its children, the [§52](#52---flattening-a-tree-is-compiling-it) trick again - this is a single straight sweep: each node reads a parent that was already done a moment ago. Branchless, sequential, cache-friendly.
+
+**Recompute only the stale part.** When the elbow moves, mark the elbow and everything beneath it as *dirty*, and recompute only those. The flat top-down layout has a gift here: lay the nodes out so a node is immediately followed by all of its descendants, and a whole subtree becomes a *contiguous slice*. "Everything beneath the elbow" is then just a range of array positions - easy to find, and packed together in memory.
+
+Which one wins? It depends on how much went stale, and the answer is a crossover, not a rule.
+
+## The straight sweep wins again
+
+[§52](#52---flattening-a-tree-is-compiling-it)'s lesson reappears first. Recomputing *everything* the flat top-down way, one straight sweep, beats walking the same hierarchy as a boxes-and-arrows pointer tree by **2.3x to 2.8x** from a hundred thousand to a million nodes.<sup>1</sup> Same work, same answers; the flat sweep just reads memory in order while the pointer walk hops around it. Even the dumb option, recompute-all, is cheap because of the layout. Hold that as the baseline.
+
+## Recompute-only-what-moved has a ceiling
+
+Now mark a fraction of the tree dirty and recompute only that part, against recomputing all of it. When little has moved, recomputing only the stale part wins enormously: at a tenth of a percent dirty it is about **900x** faster, at ten percent about **5.7x**, at twenty percent about **1.7x**.<sup>2</sup>
+
+It does not win forever. Past roughly **forty to fifty percent dirty**, recompute-everything takes the lead.<sup>2</sup> Recomputing only the dirty part means carrying a list of which nodes are dirty and skipping the rest, and that bookkeeping costs more than it saves once you are touching most of the tree anyway. At a hundred percent dirty the incremental version is *slower* than the straight sweep: all the same work, plus the bookkeeping. **Recompute only what changed is a default with a ceiling** - when most of it changed, stop being clever and sweep.
+
+## Whether it pays depends on whether the stale set is packed
+
+A second axis matters more for the next chapter. Take the *same number* of dirty nodes and arrange them two ways: as one contiguous subtree (a joint and everything below it), and scattered all over the tree (a dirty leaf here, a dirty leaf there).
+
+The contiguous subtree recomputes about **13x faster than a full sweep**. The same count of scattered leaves is about **as slow as a full sweep** - the two arrangements are more than **10x apart**, at identical work.<sup>3</sup> The dirty *count* was the same; only the *packing* differed. Recomputing the stale part pays only when the stale part is packed together in memory, so the recompute streams instead of hopping. That sharpens [§28](#28---proximity-is-a-property-of-position)'s "recompute beats maintain": recompute beats maintain *when the thing you recompute is local*.
+
+A scenegraph is kind to this. It is a tree: every node has exactly one parent, so "everything beneath a node" is one packed slice, and the common edit - move a joint - dirties exactly such a slice. The reference crate is [`code/scenegraph`](https://github.com/root-11/intro-book/tree/main/code/scenegraph).
+
+But that kindness is the tree's, not the world's. The moment a thing can feed *many* things instead of hanging off one parent - the moment your dependencies form a graph rather than a tree - there is no single "everything beneath it," no contiguous slice to recompute, and the packing you just relied on is gone. That graph is a spreadsheet, and it is the next chapter.
+
+## Measurements
+
+Dev box: Ryzen 9 270, rustc 1.94.0, `--release`, median of 5. Cross-machine capture is pending; treat the shape as the claim.
+
+| # | what | measured |
+|---|---|---|
+| 1 | full recompute, flat straight sweep vs pointer-tree walk (100K-1M nodes) | 2.3x - 2.8x |
+| 2 | recompute-dirty vs recompute-all, by how much is dirty | ~900x at 0.1%, 5.7x at 10%, 1.7x at 20%, **loses past ~40-50%** |
+| 2 | recompute-dirty at 100% dirty | 0.77x (slower than the sweep: pure bookkeeping overhead) |
+| 3 | same dirty count: one contiguous subtree vs scattered leaves | 13x vs ~1x against full; ~10x apart from each other |
+
+## Exercises
+
+1. **Move a joint by hand.** Take the three-node arm from the chapter. Pick local offsets, compute the world positions, then change one joint's local offset and recompute by hand. Write down which world positions changed and which did not, and state the rule in one sentence.
+2. **Flat, top-down.** Store a hierarchy as flat arrays with each node's parent recorded, laid out so every parent comes before its children. Write the full recompute as a single forward loop. Confirm each node's parent is always already done by the time you reach it.
+3. **The straight sweep vs the pointer walk.** Build the same hierarchy a second way, as boxes-and-arrows. Recompute both at a hundred thousand and a million nodes and reproduce the roughly 2.3x-2.8x gap. Say in one line why it appears, in the words of [§52](#52---flattening-a-tree-is-compiling-it).
+4. **The subtree is a slice.** With the top-down layout, show that a subtree occupies a contiguous range of positions. Given a node, find "everything beneath it" as a slice, with no tree-walking.
+5. **The dirty crossover.** Mark a fraction of the tree dirty (a joint and everything below it), recompute only that, and compare against a full sweep. Sweep the fraction and find where recompute-everything takes over. Explain why the incremental version is slower than the sweep when everything is dirty.
+6. **Packed versus scattered.** Hold the dirty count fixed and compare one contiguous subtree against the same number of scattered single nodes. Reproduce the order-of-magnitude gap. State the condition under which recomputing the stale part is worth doing at all.
+7. *(stretch)* **Break the tree.** Let one node be read by two parents (so it is no longer a tree). Show that "everything beneath a node" is no longer a single contiguous slice, and that the packed recompute you relied on no longer applies. You have just discovered the next chapter's problem.
+
+## What's next
+
+In a tree, the stale set is always one packed slice, because everything has exactly one parent. [§54](#54---a-spreadsheet-is-a-dependency-graph) is what happens when that is no longer true: a spreadsheet, where one cell feeds many, the dependencies form a graph, and "what went stale" is a shape you have to compute rather than a slice you can point at.
+
+
+<!-- DRAFT, §54, third chapter of the "where SoA does not pay" arc (§52-§56), built on the
+reference crate code/spreadsheet (incl. the `scale` binary). Concept-node line, glossary
+node, DAG node are placeholders. Numbers are dev-box (Ryzen 9
+270 + NVMe); cross-machine capture is pending. This is the longest chapter of the arc; it is
+sectioned so each idea stands alone. -->
+
+# 54 - A spreadsheet is a dependency graph
+
+<p align="center"><img src="book/illustrations/oom_spreadsheet.png" alt="A mouse and a spreadsheet too big for memory - a dependency graph recomputed in dirty cones, streamed in pegged tiles." style="max-height: 300px; max-width: 100%;"></p>
+
+[§53](#53---staleness-flows-downhill) ended where the tree did: in a hierarchy, "everything beneath a node" is one packed slice, because each thing has exactly one parent. Take that away - let one thing feed *many* - and you have a spreadsheet.
+
+Here is a tiny one. Two inputs and three formulas:
+
+```
+A1 = 2            (an input you type)
+A2 = 3            (an input you type)
+B1 = A1 * A2      = 6
+B2 = B1 + A1      = 8
+T  = B1 + B2      = 14
+```
+
+Draw who-reads-whom and it is not a tree: `A1` feeds *both* `B1` and `B2`, `B1` feeds both `B2` and `T`. It is a graph - a *dependency graph*. Now edit `A1` from 2 to 10. What has to be recomputed?
+
+```
+A1  changed
+B1  uses A1   -> stale
+B2  uses B1 and A1   -> stale
+T   uses B1 and B2   -> stale
+A2  uses nothing that changed   -> still correct
+```
+
+Three of the four formulas go stale. Not because they sit "below" `A1` in some layout - there is no below in a graph - but because the change *reaches* them along the feeds-into edges. That reachable set is the **cone** of the edit. And you must recompute it in the right order: `B1` before `B2` before `T`, because each needs the fresh value of the ones it reads. Recomputing a spreadsheet is exactly that - sorting the cells so every cell comes after the ones it depends on, then computing them in that order. ([§14](#14---systems-compose-into-a-dag) called this a topological sort and said the program *is* one; a recalc engine is that sentence made literal.)
+
+So the move from [§53](#53---staleness-flows-downhill) survives: recompute only the stale part. But "the stale part" is no longer a slice you point at. It is a cone you compute.
+
+## The change has a shape the UI gives you
+
+[§53](#53---staleness-flows-downhill) could scatter dirt anywhere across the tree. A spreadsheet cannot. The only edits a person can make are a single cell, or a *fill-down* - drag a formula down a contiguous run of cells. So the dirty set is never random; it is the cone of one of those edits, and its size is set by how the formulas are wired, not by chance.
+
+That is what to sweep, then: a fill-down of `k` cells, a real action, growing the cone. And the result is the familiar shape - recomputing the cone wins big when `k` is small, and the win shrinks as the fill-down covers more of the sheet, until somewhere near "most of it" the plain full recompute takes over again.<sup>1</sup> Same crossover as the scenegraph, driven this time by how much you actually edited.
+
+## "Incremental" does not make a sum incremental
+
+The cone hides a twist, and it is the most useful thing in the chapter. Add one ordinary feature, a column total `=SUM(B1:B1000000)`, and edit *one* cell in that column.
+
+The cone is tiny: the one cell, the total, and whatever reads the total, a handful of cells. Recomputing it should be almost free, but recomputing the total means reading the **entire** column again, because a sum keeps no memory of its old value - one changed cell forces a million additions. The cone was small in *count* and huge in *work*.<sup>2</sup>
+
+This is why "just recompute what changed" is not the end of the story for aggregates. A real engine either keeps the sum up to date by hand as cells change (add the new value, subtract the old - and watch [§55](#55---the-same-numbers-a-different-total) for why that is dangerous), or it accepts the re-scan and makes the re-scan cheap (the streaming patch at the end of this chapter). Either way, the lesson stands: **an aggregate is not incremental just because you only touched one input.** A cone can be cheap to find and expensive to pay.
+
+## Early cutoff: do not push a change that did not happen
+
+The sharpest version replaces the sum with a `MAX`. Suppose the formula downstream is a `MAX` over a column, feeding a dashboard of a hundred thousand cells that all read that maximum, and you edit a cell that is *not* the maximum, to a value still below it.
+
+Walk the cone the obvious way and you recompute the `MAX`, find it feeds the dashboard, and recompute all hundred thousand dashboard cells. But the `MAX` *did not change* - you edited a number below it. None of the dashboard needed touching. So add one check: when you recompute a cell, if its new value equals its old value, **stop** - do not mark its dependents stale, because nothing reached them. The change was absorbed.
+
+Measured, on exactly that sheet: the obvious cone recomputes two hundred thousand cells; with the cutoff it recomputes sixteen, and runs about **54x faster**.<sup>3</sup> The principle is worth a name: **validation is cheaper than recomputation.** Checking "did this actually change?" costs almost nothing; recomputing everything downstream on the assumption that it did costs everything. Following the cone blindly would have recomputed the lot; the cutoff is what saves it.
+
+## At a billion cells, the program goes flat
+
+A million cells is small. A billion is where this gets honest, and it forces a change that is itself the lesson.
+
+The natural way to hold a formula is as a little tree of its own (it is an [§52](#52---flattening-a-tree-is-compiling-it) expression, after all), one object per cell. At a billion cells that is roughly **160 GB** of formula objects before a single value - it cannot be built. So you do what a real big sheet already is: you notice that a billion cells are not a billion different formulas. They are a *handful of formulas stamped across huge ranges* - a fill-down is one formula, repeated. Store the formula once per column - a *template* - and the cells become plain columns of numbers. A billion-cell sheet's entire "program" is then a few hundred templates, a couple of kilobytes.<sup>4</sup>
+
+That is the arc's whole thesis turning up one level higher than expected. [§52](#52---flattening-a-tree-is-compiling-it) flattened the *data*; at scale you flatten the *program* too - the formula graph collapses from a tree-per-cell into a template-per-column, and the dependency graph from a stored list of edges into an implicit rule ("this column reads that one, row by row"). Columns are the default for the program, not just the data.
+
+## Leave the RAM, and peg the memory
+
+A billion `f32` values is four gigabytes; bigger sheets are bigger than RAM. So the data lives on disk, laid out one column after another. Now the column total from earlier is the whole game, told in bytes moved.
+
+Recompute every total and you read the **entire file** off disk. At a 36 GB sheet on a 30 GB machine that is about **sixteen seconds** of real disk reading.<sup>5</sup> But after a real edit, only a few columns are dirty - so read only *those* columns back (each is a contiguous stretch of the file) and re-sum them: about **a tenth of a second**, a couple of hundred megabytes instead of thirty-six gigabytes.<sup>5</sup> The patch from §28's "recompute beats maintain," now measured in disk traffic.
+
+Few programs are built for the next part. Re-summing a column does not need the whole column in memory at once; read it in fixed-size **tiles** and add as you go. Set the tile once - say sixteen megabytes - and the program's memory is *pegged*: it never holds more than a tile, no matter how tall the column or how large the sheet.<sup>6</sup> Running out of memory stops being something you hope to avoid and becomes something that **cannot happen** - the process has no way to ask for more than a tile. That is the move in its purest form, and you will meet it again as a named idea in the finale: an entire class of failure made structurally impossible, not merely unlikely.
+
+To size such a thing for your own machine, the rule is just the arithmetic: each gigabyte of RAM is 250 million `f32` cells, so choose a sheet a little bigger than your RAM and smaller than your free disk. RAM < problem < disk. The reference crate is [`code/spreadsheet`](https://github.com/root-11/intro-book/tree/main/code/spreadsheet); its `scale` binary is the billion-cell version.
+
+The cone, the cutoff, the templates, the pegged tiles - all of it rests on a quiet assumption: that adding the numbers up gives the right answer. The next chapter is where that assumption breaks.
+
+## Measurements
+
+Dev box: Ryzen 9 270 + NVMe, rustc 1.94.0, `--release`. Cross-machine capture is pending; treat the shape as the claim.
+
+| # | what | measured |
+|---|---|---|
+| 1 | recompute the cone vs recompute all, by fill-down size | wins small, loses once the fill-down covers most of the sheet |
+| 2 | one-cell edit under a column SUM | tiny cone, but re-reads the whole column - not incremental |
+| 3 | edit absorbed by a MAX, with vs without early cutoff | 16 cells vs 200,000; ~54x faster |
+| 4 | the "program" for 1e9 cells: templates vs one object per cell | ~2 KB vs ~160 GB (cannot allocate) |
+| 5 | disk pivot, 36 GB > RAM: full vs dirty-columns patch | ~16 s (whole file) vs ~0.1 s (a few columns) |
+| 6 | working set, tiled | a fixed 16 MB tile, independent of column height or sheet size |
+
+## Exercises
+
+1. **The cone by hand.** Take the five-cell sheet from the chapter. Edit `A1` and list exactly which cells go stale and in what order they must be recomputed. Then edit `A2` instead and do the same. Explain why the two cones differ.
+2. **Recompute in order.** Store cells so every cell comes after the ones it reads, and recompute a whole sheet as one forward pass. Then, given an edited cell, compute its cone (the cells it reaches) and recompute only those, in order. Check the result matches a full recompute.
+3. **The fill-down crossover.** Sweep a fill-down from one cell to the whole column and compare cone-recompute against full-recompute. Find where full takes over. Note that you cannot make a *random* dirty set with real edits - the cone's shape comes from the formulas.
+4. **The sum that is not incremental.** Put a `SUM` over a million-row column. Edit one cell and measure the cone recompute. Show that the cost is the whole column, not the one cell, and explain why a sum cannot be patched by touching only what changed - without keeping a running total.
+5. **Early cutoff.** Build a `MAX` over a column feeding many downstream cells. Edit a below-maximum cell. Recompute the cone with and without the "stop if the value did not change" check. Reproduce the large gap and state the principle in one line.
+6. **The program goes flat.** Estimate the memory of one formula-object per cell at a billion cells. Then represent the same sheet as one template per column and report its size. Say what collapsed, and into what.
+7. *(stretch)* **Peg the memory.** Take a column sum and rewrite it to read the column in fixed-size tiles, summing as it goes, so peak memory is a constant you set. Prove it: feed it ten times the data and watch the footprint not move. Then size a sheet for your machine with RAM < problem < disk and confirm the patch reads only the dirty columns.
+
+## What's next
+
+Every total in this chapter trusted that adding the numbers gives the right total. [§55](#55---the-same-numbers-a-different-total) is where that trust fails: floating-point addition is not associative, so the order you add in changes the answer, a naive sum of a real column can lose everything, and no layout in the world fixes it.
+
+
+<!-- DRAFT, §55, fourth chapter of the "where SoA does not pay" arc (§52-§56), built on the
+reference crate code/fpfragility. Concept-node line, glossary node, DAG node are placeholders. The error figures are properties of IEEE-754 and portable;
+the timings are dev-box (Ryzen 9 270) and cross-machine capture is pending. -->
+
+# 55 - The same numbers, a different total
+
+<p align="center"><img src="book/illustrations/fp_err.png" alt="A mouse and a floating-point error - the same numbers adding up to a different total." style="max-height: 300px; max-width: 100%;"></p>
+
+[§54](#54---a-spreadsheet-is-a-dependency-graph) made the spreadsheet incremental, took it past RAM, and pegged its memory. Every total along the way trusted one thing: that adding the numbers gives the right answer. This chapter is where that trust breaks, and the unsettling part is that no layout fixes it. A perfectly columnar sum can still be wrong.
+
+Add three numbers by hand, in two different orders.
+
+```
+  1e16  +  (-1e16)  +  1
+= ( 1e16 + -1e16 ) + 1   =  0 + 1   =  1      (the giants cancel, then the 1 lands)
+
+  1e16  +  1  +  (-1e16)
+= ( 1e16 + 1 ) + -1e16   =  1e16 + -1e16  =  0   (the 1 is lost, then the giants cancel)
+```
+
+Same three numbers. Two answers. The middle step is the culprit: `1e16 + 1` cannot be stored, because a `double` near ten quadrillion has no room left for a difference of one - the gap between representable numbers there is larger than 1. So the `1` is rounded away, and by the time the `-1e16` arrives there is nothing left of it. **Floating-point addition is not associative: the order you add in changes the sum.** This is not a bug in your machine; it is how every conforming machine works, and it is the same hazard every total in the last chapter was quietly exposed to.
+
+## A real column, added naively, loses everything
+
+Picture a ledger column, the kind any business has: a few million small entries, cents either way, and one big matching pair, a large credit and the debit that cancels it. The true total is the sum of the small entries; the giants cancel out.
+
+Add it left to right and the running total climbs to the big number, sits there while every small entry is added and *lost* under it - each one below the gap, just like the `1` above - and then the big debit cancels the big credit back to near zero. The naive sum reports roughly **nothing**, where the true answer was the accumulated cents.<sup>1</sup> Reverse the column and you get a *different* wrong answer, because a different set of small entries gets swallowed. The order decided the result, and neither order was right.
+
+Two fixes recover the true total. **Add in pairs** - sum halves and halves of halves, so small entries meet each other before they ever meet the giant - and the error shrinks dramatically. Or carry the lost low-order bits in a second running term and fold them back at the end (a *compensated* sum). Both land on the right answer; the compensated sum costs a little more arithmetic per element.<sup>1</sup>
+
+The timings give away a bonus: adding in pairs is also **faster** than the naive left-to-right sum,<sup>1</sup> because the naive version is one dependent chain (each add waits for the last) while the paired version splits into independent pieces the machine runs at once. The accurate method is the fast one, and it is the same tree-shaped reduction the next chapter leans on.
+
+## Maintaining a total quietly drifts
+
+Recall [§54](#54---a-spreadsheet-is-a-dependency-graph)'s temptation: rather than re-read a whole column to recompute a sum, keep a running total and patch it on each edit - add the new value, subtract the old. It is cheap. It also drifts.
+
+Start a running total from the exact sum and then maintain it only by those add-the-new, subtract-the-old steps. After millions of edits it no longer matches a fresh recomputation. The absolute gap stays small, but as a *fraction* of the answer it blows up exactly when the true total is itself near zero from cancellation.<sup>2</sup> The maintained total is never quite the recomputed one, and you cannot tell by looking. This is why a real system periodically re-anchors its aggregates with a fresh recompute instead of trusting the running patch forever: the incremental total buys speed by spending correctness, a little at a time.
+
+## Layout cannot make it correct
+
+Columns are a default, not a law - and this is the version of that with nothing to do with speed at all.
+
+Ask a simple geometric question: given three points, does the third lie to the left or the right of the line through the first two? It is one subtraction-and-multiply formula (the sign of a cross product), and it is the atom under every triangulation, every convex hull, every "is this point inside" test in CAD and mapping and path planning.
+
+Lay the points out in perfect columns and compute that formula in `f64`. For three points that are *nearly* in a straight line, the two big products that should almost cancel are each rounded first, and the rounded difference is dominated by noise - so the sign comes out **wrong**, on the order of **99% of near-collinear cases** in a sweep of large-coordinate triples.<sup>3</sup> The exact answer, computed in wide integers, is right every time, and costs about the same.<sup>3</sup> A flawless SoA layout changed nothing: the bug was in the arithmetic, not the storage. **Correctness is orthogonal to layout** - you can lay the data out perfectly and still compute the wrong thing.
+
+The fixes are real arithmetic, not real layout: add in a defined order, compensate, accumulate in a wider type, or compute the predicate exactly. None of them is what this book has been selling, and that is the point of putting them here. The reference crate is [`code/fpfragility`](https://github.com/root-11/intro-book/tree/main/code/fpfragility).
+
+So the totals are correctable, and once corrected and incremental the spreadsheet is honest. It is still, though, adding its numbers on a single core, and the accurate sum made the work a little heavier. The last chapter asks the question that finishes the arc: when do you actually need more hardware?
+
+## Measurements
+
+Error figures are IEEE-754 and portable; timings are dev-box (Ryzen 9 270, `--release`). Cross-machine capture is pending.
+
+| # | what | measured |
+|---|---|---|
+| 1 | a real ill-conditioned column: naive sum vs the true total | loses essentially the whole answer; reversing gives a different wrong answer |
+| 1 | paired / compensated sum vs naive | recovers the true total; paired is also ~2x *faster* than naive |
+| 2 | a running total maintained by deltas vs a fresh recompute | never matches; relative error explodes when the true total nearly cancels |
+| 3 | left-or-right-of-line for near-collinear points: naive `f64` vs exact integer | naive wrong ~99% of the time; exact correct, at ~the same cost |
+
+## Exercises
+
+1. **Two orders, two answers.** Add `1e16`, `-1e16`, and `1` in both orders by hand, as in the chapter. Then find a triple of your own where the order changes the result, and explain which addition loses information and why.
+2. **Lose a column.** Build a column of many small values with one large offsetting pair. Sum it left to right, then reversed. Show the two sums disagree and that both miss the true total (the sum of the small values, which the giants do not touch).
+3. **Get it back.** Sum the same column two better ways: in pairs, and with a compensated running term. Show both recover the true total. Time all three and note that the paired sum is not slower than the naive one - explain why, in terms of dependent versus independent additions.
+4. **Watch it drift.** Start a running total from the exact sum, then maintain it through many random edits by adding the new value and subtracting the old. Compare against a fresh recompute periodically. Show the gap never closes, and that as a fraction it is worst when the true total is near zero.
+5. **The wrong side of the line.** Implement "is the third point left or right of the line through the first two" in `f64`, and again in exact integer arithmetic. Feed both many nearly-collinear triples with large coordinates and count how often they disagree. Confirm the exact one costs about the same.
+6. *(stretch)* **A layout cannot save you.** Take any one of the above and store the inputs in perfect SoA columns. Confirm the wrong answer is exactly as wrong as before. Write one sentence on why the arc's usual move - fix the layout - does nothing here, and what does.
+
+## What's next
+
+The numbers are correct now, and the sum is still one core reading memory in order - and the accurate version made it a little heavier. [§56](#56---the-ceiling-is-bandwidth-not-cores) finishes the arc with the question the whole second act has been circling: when the work outgrows one core, what actually helps - and what only looks like it does.
+
+
+<!-- DRAFT, §56, last chapter of the "where SoA does not pay" arc (§52-§56), built on the
+reference crate code/heterogeneous. Concept-node line, glossary node, DAG node are placeholders. CPU numbers are dev-box (Ryzen 9 270, 16 threads);
+cross-machine capture is pending. The GPU figures are a LABELLED cost model with assumed
+constants - there is no GPU on the dev box; a real GPU run is pending a GPU host. The CAP
+sidebar is Bjorn's to write (flagged against framing-overclaim); left as a placeholder. -->
+
+# 56 - The ceiling is bandwidth, not cores
+
+<p align="center"><img src="book/illustrations/bandwidth.png" alt="A mouse at the memory channel - the ceiling that more cores cannot raise." style="max-height: 300px; max-width: 100%;"></p>
+
+[§55](#55---the-same-numbers-a-different-total) left the work correct and incremental, and still being done by one core reading memory in order. The reviewer's instinct at this point is loud and common: a simulation this size *needs* a GPU. This chapter is the honest answer, and it is mostly "no, and here is exactly why."
+
+Start with the simplest pass there is - advance some particles: each new position is the old position plus the velocity, times a timestep. Two multiply-adds per particle. Almost no arithmetic; the cost is entirely in moving the numbers - read a position and a velocity, write a position back. So the speed of this pass is the speed of *memory*, not the speed of the *core*.
+
+Run it on one core across sizes and you can watch the memory hierarchy in the numbers: while the data fits in cache it runs at nearly 190 GB/s; once it spills to main memory it settles to about 23 GB/s.<sup>1</sup> That floor - main-memory bandwidth - is the thing that matters, because real working sets do not fit in cache.
+
+## More cores stop helping
+
+The obvious move is more cores. Split the particles across threads and measure:
+
+```
+ 1 thread    23 GB/s    1.0x
+ 2 threads   28 GB/s    1.2x
+ 4 threads   46 GB/s    2.0x
+ 8 threads   51 GB/s    2.2x
+16 threads   51 GB/s    2.2x
+```
+
+Sixteen cores do no better than eight, and the whole machine tops out around **2.2x**.<sup>2</sup> The reason is the one above: this pass is limited by the memory channel, and a single channel feeds all the cores. Past about four threads they are not computing in parallel; they are queueing for memory. **The ceiling is bandwidth, not core count.** You cannot out-core a memory-bound pass, and you cannot out-accelerator it either. The way to go faster is to *touch less data*, not to add compute - which is exactly what [§53](#53---staleness-flows-downhill) and [§54](#54---a-spreadsheet-is-a-dependency-graph) spent their chapters doing. The whole arc has been pulling this way, and now you can see why it had to.
+
+## How much can one box keep current?
+
+Turn the bandwidth into the number that actually decides things. In a 33-millisecond frame (30 per second), one core can bring about **32 million** particles up to date; all cores together, about **70 million**.<sup>3</sup> That is the budget: how big an *active set* one box keeps current per frame.
+
+Now the GPU argument falls apart on its own terms. The claim is that a billion-node world needs the GPU, but you never recompute a billion nodes: [§53](#53---staleness-flows-downhill) and [§54](#54---a-spreadsheet-is-a-dependency-graph) taught you to recompute only the part that changed, the active cone, and a cone of a few million cells fits one core's frame budget with room to spare. The GPU answers "how do I recompute *everything*, fast?", a question the incremental discipline already stopped asking. The GPU is not slow; it is solving a problem you arranged not to have.
+
+## When the bus is the bottleneck
+
+And when the active set genuinely is too big for the box - when you really do have more work than one machine's memory can feed in time - is the GPU the answer even then? For a pass like this one, often not, and the cost model says why.
+
+To run the pass on the GPU you must first ship the data across the bus to it and read the result back. For this pass that round trip moves about the same number of bytes the computation itself needs - and at a typical bus speed it costs *more* per element than just doing the pass on the CPU.<sup>4</sup> Shipping the data to the accelerator and back is slower than not shipping it. Offloading pays only when the data already lives on the GPU, or when there is enough arithmetic per byte that the compute, not the transfer, dominates. For a memory-bound elementwise pass, neither holds, and the bus is the bottleneck.
+
+(These GPU figures are a cost model with assumed bus and launch numbers, not a measurement - there is no GPU on the reference machine. Plug your own hardware's numbers into the same model; the *structure* is the point. The reference crate is [`code/heterogeneous`](https://github.com/root-11/intro-book/tree/main/code/heterogeneous).)
+
+<!-- Sidebar (Bjorn to write; flagged against framing-overclaim): fixate on the conditions
+under which a problem occurs, not the problem itself. The "you must choose" tradeoffs often
+dissolve once you arrange the conditions so the hard case cannot arise - the same move the
+active-set budget just made against the GPU. -->
+
+So the answer to "do you need the accelerator" is a measurement, not a reflex: you reach for more hardware only when the *active set itself* outgrows one box, not to brute-force away staleness an incremental design already avoids. Columns were the precondition for SIMD and cores and GPUs - but they are a default, not a law, and so is the accelerator.
+
+That closes the arc. Five chapters of where the column default does not simply transfer: a recursive structure that makes you choose access pattern over storage; a hierarchy whose stale set has a ceiling and a shape; a graph whose aggregates are not incremental and whose memory you peg; arithmetic a layout cannot make correct; and a memory channel no core or bus can outrun. The honest counterweight to forty chapters of "lay it out flat and stream it" is that you now know, with numbers, where that stops being the answer.
+
+## Measurements
+
+CPU figures: dev box (Ryzen 9 270, 16 threads), `--release`, median of 5. Cross-machine pending. GPU figures are a labelled cost model, not a measurement.
+
+| # | what | measured |
+|---|---|---|
+| 1 | one core's pass, in cache vs in main memory | ~190 GB/s vs ~23 GB/s |
+| 2 | the same pass across cores (RAM-resident) | 1 / 2 / 4 / 8 / 16 threads -> 1.0x / 1.2x / 2.0x / 2.2x / 2.2x; plateaus at the memory channel |
+| 3 | active set kept current per 33 ms frame | ~32 M (one core), ~70 M (all cores) |
+| 4 | GPU offload of a memory-bound pass (cost model) | round-trip transfer costs more than the CPU pass; offload loses unless data is resident or arithmetic-heavy |
+
+## Exercises
+
+1. **Watch the hierarchy.** Run the advance-the-particles pass on one core across sizes from a few thousand to tens of millions. Plot the bandwidth. Find the step down from cache speed to main-memory speed, and say roughly where your machine's last cache level ends.
+2. **More cores, less help.** Split the same pass across 1, 2, 4, 8, and all your cores. Plot the speedup and find where it plateaus. Explain, in one sentence, why a memory-bound pass stops scaling well before you run out of cores.
+3. **The frame budget.** From your single-core and all-core bandwidth, work out how many particles each can bring up to date in a 33 ms frame. This is your box's active-set budget. Compare it to the size of the *active* part of a large simulation (the part that changed this frame), not the whole thing.
+4. **The argument against the GPU.** Using the budget from exercise 3, argue whether a million-cell active cone needs an accelerator. Then state precisely the case in which it would: when the active set itself, not the whole world, exceeds what the box can feed in a frame.
+5. **The bus is the bottleneck.** Write the cost model for offloading the pass: bytes shipped to the device, plus bytes read back, at an assumed bus speed, versus the measured CPU time per element. Find the break-even arithmetic intensity. Confirm that for two multiply-adds per element, offloading a memory-bound pass loses.
+6. *(stretch)* **Touch less, not more.** Take any pass from an earlier chapter and make it faster two ways: throw cores at it, and shrink the working set it touches (compute only the active part). Compare. Argue which lever the rest of this arc has been pulling, and why it beats the hardware lever for the workloads here.
+
+## What's next
+
+That is the last technique. What remains is to say what all of it was *for* - and it is not speed. [§57](#57---what-cannot-happen) collects the whole book into a single claim: that the structure you have been building does not merely run fast, it makes whole categories of failure impossible to write. The arc's pegged memory was the freshest instance; the finale names the rest.
+
+
+<!-- DRAFT FINALE (§57), the book's true last chapter: it generalises §50 (the operations
+closer) and the §52-§56 limits arc to the whole book. OPEN RECONCILIATION with §50: §50's
+ending is now a handoff into §52 (minimal edit made), but its "Where to go next" reading
+list and this finale's ending should be reconciled so the list lives in one place - left for
+Bjorn to place. -->
+
+# 57 - What cannot happen
+
+<p align="center"><img src="book/illustrations/err_category.png" alt="A mouse and a whole category of errors crossed out - failures the structure makes impossible to write." style="max-height: 300px; max-width: 100%;"></p>
+
+[§50](#50---it-runs-without-you) closed the operations leg with a single observation: its four chapters were not four tricks but one move made four times - take a failure that used to need a person's vigilance, and turn it into a property the system holds. The limits arc that followed ([§52](#52---flattening-a-tree-is-compiling-it) to [§56](#56---the-ceiling-is-bandwidth-not-cores)) made a sharper version of the same move and left it fresh in your hands: a working set *pegged* to a tile, so running out of memory cannot happen - not "is unlikely," cannot. Step back from the whole book and that move is everywhere, and at its limit it is always the same. The weak version is "turn the failure into a property you assert." The strong version, the one worth ending on, is "choose a structure in which the failure cannot be written."
+
+That is the quiet thesis of everything you have built, and the book has never stopped to say it plainly: not fewer bugs through care, but whole categories of bug *absent from the design space*, because the shape you chose has no room for them. You have met each one in passing, stated locally and left there. Here is the sum.
+
+## The roll-call
+
+Each line below is the same trade. On the left is what most systems do: meet the error at runtime and defend against it, on every request, for the life of the system. A lock around the shared write. A retry when the run will not reproduce. A null check before the dereference. A review comment asking where that `print` came from. A restart loop for the process that ran out of memory. The defenses are real work, they run forever, and they fail - a lock you forgot to take, a retry that hides the bug instead of fixing it, the one code path the null check missed.
+
+On the right is what you did instead: pay once, in the structure, and the error class is gone.
+
+| What can go wrong | The usual defense, paid every run | Why it cannot happen here |
+|---|---|---|
+| Two writers race the same data | locks, mutexes, careful review | a table has exactly one writer ([§25](#25---one-writer-many-readers)) - there is no second writer to race |
+| The run will not reproduce | retries, "works on my machine" | order is defined, not incidental ([§16](#16---determinism-by-order), [§48](#48---reductions-dont-parallelize-freely)) - same seed, same bits |
+| A function writes where you cannot see it | code review, grepping for `print` | systems declare their read and write sets, and I/O lives only at the boundary ([§13](#13---a-system-is-a-function-over-tables), [§35](#35---the-boundary-is-the-queue)) - there is nowhere to hide one |
+| A stale id reads the wrong entity | "is this handle still valid?" | the id carries a generation ([§23](#23---index-maps)) - a recycled slot fails the check instead of answering wrongly |
+| "Done" that was never saved; a torn write | hope, and a later incident review | acknowledge only once the write is durable; atomic rename and idempotent replay ([§46](#46---the-log-survives-power-loss)) |
+| Out of memory | a `try`/`catch` that cannot catch it; restart | the working set is pegged to a tile you choose ([§54](#54---a-spreadsheet-is-a-dependency-graph)) - the process cannot ask for more |
+
+Six classes of failure that, in the structure this book builds, are absent rather than merely handled well.
+
+## Capex, not opex - for correctness this time
+
+This is the book's frame, leverage not virtue, in its last and sharpest form. [§45](#45---living-with-it) argued that operating cost is capital paid once set against rent paid forever, and that the single-node in-memory discipline is, read off the balance sheet, a way to buy low rent. The roll-call is that argument made about *correctness*.
+
+Defending against an error class at runtime is rent. It costs work on every request and a person's attention for as long as the system runs, and you never stop paying. Removing the error class in the structure is capital: bought once, and then free. You did not out-discipline the people fighting these bugs. You stopped paying the tax they pay, by choosing a shape where the bill never arrives. That is the same move [§45](#45---living-with-it) made for the cost of *running* the system, now made for the cost of *trusting* it - the second act's economics, finishing their own sentence.
+
+## The price, named exactly
+
+None of this is magic, and an impossibility you cannot bound is advice you cannot trust, so be exact about what it costs. Each guarantee holds only while you hold its discipline.
+
+Determinism is structural while the order is defined; let one `HashMap` iteration or one undefined reduction order slip in and "same seed, same bits" reverts to a coin you flip. Out-of-memory is impossible only in the part of the pipeline you actually pegged - [§54](#54---a-spreadsheet-is-a-dependency-graph) pegs the read and leaves the rest as an exercise on purpose, so you feel exactly where the guarantee starts and stops. The list of disciplines is short: one writer per table, a defined order, I/O at the boundary, a generation on every id, durable-before-acknowledged, a pegged working set. The leverage is that the same SoA and event-batch structure hands you all of them at once, for one decision. But they are disciplines, not defaults the language enforces for you. Drop one and its impossibility quietly becomes an ordinary bug again.
+
+That is the honest shape of the claim: *these bugs cannot be written here, as long as you keep these six disciplines, and the structure makes keeping them the path of least resistance.*
+
+## What you own
+
+The book opened by promising you would build things you own. This is what that turned out to mean.
+
+Not only that you wrote the code instead of renting it, though you did. The thing you own is the set of impossibilities: the bugs that cannot occur in the structure you chose, the failures you will never debug because there is no path to them. A framework gives you features and keeps the impossibilities for itself - you cannot see what it has ruled out, or where it has not, until the night it has not. You can see exactly what yours holds, because you can name each exclusion and the single discipline that buys it. That list - short, exact, and yours - is the asset. The code is only where it lives.
+
+The simulator in the next room is still running. Nobody is watching it; it cannot run out of memory; it will give tomorrow the answer it gave today; and there is no version of it that quietly corrupts itself at 3 AM - not because you are vigilant, but because you built it where those things have no room to happen. That is the leverage this book was always about. Keep the discipline, and it keeps the promise.
+
+## A last audit
+
+1. **Take the roll-call to your own system** - or to the simulator, if it is the largest thing you own. For each of the six classes, write one sentence: is it *excluded by structure*, *defended at runtime*, or *still open*? Be ruthless about the difference between "we hold a lock" and "there is no second writer to race."
+2. **Pick one row where you are defending at runtime.** Name the discipline that would turn the defense into an exclusion, and the cost of adopting it. Decide, on paper, whether that capital is worth the rent it retires. Sometimes it is not - and now you can say so in those words.
+3. **Find one place where order is incidental** - a `HashMap` iterated, a reduction left unordered, a sum that changes with the thread count. Either define the order, or write down why nondeterminism is acceptable there. There is no third option that is honest.
+4. *(stretch)* **Peg something.** Take one unbounded buffer in code you own - a read, a batch, an accumulation - and convert it to a fixed-size tile, so its peak memory is a constant you set rather than a function of the input. Then prove it: feed it ten times the data and watch the footprint not move.
 
 ## Where to go next
 
@@ -3076,8 +3717,6 @@ The operations leg, though, is walked. The machine in the next room is running, 
 - **Read Casey Muratori's *Handmade Hero*** episodes on grid storage and cache locality. Another route to the same conclusions.
 - **Open Bevy's `bevy_ecs` crate.** You will recognise every pattern. The names will differ; the shapes are identical.
 - **Extend the simulator.** The genetics and predator-prey extensions flagged in the [simulator spec](code/sim/SPEC.md) break new ground without leaving the framework you have already built.
-
-<p align="center"><img src="book/illustrations/model_real_world.jpg" alt="Model the real world." style="max-height: 300px; max-width: 100%;"></p>
 
 The book ends here. The simulator does not - it runs as long as you keep the discipline.
 

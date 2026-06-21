@@ -7,6 +7,11 @@ Working implementations and measurement binaries that back the §1-§10 chapters
 - `deck/` - the through-line program for §5-§10. SoA card deck with shuffle, sort, deal, query, single-writer reorder, and stable-id lookup. Tests cover the contracts.
 - `measurement/` - eleven binaries, one per measurement-bearing exercise group.
 - `logger/` - the dependency-free Rust logger specimen for §37. Triple-store COO + evolving string codebook + `f64` type inference + a double-buffered background-writer revolver; raw little-endian column-byte chunks (no `.npz`, no `serde`). Tests cover the contracts; a `benchmark` bin reproduces the throughput numbers.
+- `exprtree/` - Part II project A ("where SoA does not pay"). One arithmetic expression in three representations - pointer tree, flat arena, linearized stack machine - measured across a traversal-dominated and an edit-dominated workload. Tests assert all three agree bit-for-bit; `cargo run` prints the size sweep, the edit costs, and the derived crossover. Its own `README.md` carries the reference run.
+- `scenegraph/` - Part II project B ("where SoA does not pay"). A transform hierarchy laid out flat in pre-order (subtrees are contiguous ranges). Measures full-repropagate flat-vs-pointer layout, the incremental-vs-full crossover over dirty fraction, and how locality of the dirty set changes the answer. Tests assert flat/pointer/incremental agree bit-for-bit. Reference run in its `README.md`.
+- `spreadsheet/` - Part II project C ("where SoA does not pay"). A recalc engine: per-cell formula trees (project A) over a dependency DAG (generalizing B's dirty propagation), recomputed in topological order. Measures the dirty-cone crossover under realistic fill-down edits, early-cutoff pruning at a high-fan-out hub, and a pivot patch that re-sums only the dirty columns. Tests assert cone and cutoff match a full recompute. A second binary, `scale`, takes it to a billion cells: the per-cell `Box`-`Expr` cannot fit (~160 GB), so the program goes SoA (a template per column, an implicit dependency rule), and a disk-resident pivot bigger than RAM shows the patch reading only the dirty columns. Reference run in its `README.md`.
+- `fpfragility/` - Part II project D ("where SoA does not pay"). Floating-point fragility: summation is order-dependent and a naive sum loses everything an ill-conditioned column holds; a delta-maintained aggregate drifts from a recompute; a naive geometric predicate is wrong on ~99% of near-collinear points while exact integer arithmetic is right at the same cost. The point: layout cannot rescue correctness. Tests cover non-associativity, Kahan accuracy, and exact orientation. Reference run in its `README.md`.
+- `heterogeneous/` - Part II project E ("where SoA does not pay"), the arc finale. How far one box reaches: a SoA motion pass across the cache hierarchy, multi-core scaling (which plateaus at the memory-bandwidth ceiling, not the core count), the active-set-per-frame budget that makes "you need a GPU" false by irrelevance, and a labelled GPU break-even cost model (no GPU on the box; real run pending). Tests assert the parallel pass matches the serial one bit-for-bit. Reference run in its `README.md`.
 - `sim/` - specification only (`SPEC.md`); the simulator chapters (§11+) live here when written.
 
 ## Running
@@ -40,6 +45,23 @@ cargo run --release --bin power_loop -- sequential   # §4.9 (run perf in anothe
 
 # §37 logger
 cd logger && cargo test && cargo run --release --bin benchmark   # log() ns/call at 5 and 11 fields
+
+# Part II project A - where SoA does not pay
+cd exprtree && cargo test --release && cargo run --release   # 3 representations; traversal/edit crossover
+
+# Part II project B - where SoA does not pay
+cd scenegraph && cargo test --release && cargo run --release # flat vs pointer; dirty-fraction crossover
+
+# Part II project C - where SoA does not pay
+cd spreadsheet && cargo test --release && cargo run --release # dependency DAG; cone crossover, cutoff, pivot patch
+cd spreadsheet && cargo run --release --bin scale            # the same, at a billion cells (4 GB)
+cd spreadsheet && cargo run --release --bin scale -- 9000000000 # a 36 GB disk pivot, past 32 GB of RAM
+
+# Part II project D - where SoA does not pay
+cd fpfragility && cargo test --release && cargo run --release # summation order, drift, geometric predicates
+
+# Part II project E - where SoA does not pay
+cd heterogeneous && cargo test --release && cargo run --release # one-box reach, scaling ceiling, GPU model
 ```
 
 ## Cross-machine results
