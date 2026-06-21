@@ -3354,13 +3354,13 @@ Which one wins? It depends on how much went stale, and the answer is a crossover
 
 Now mark a fraction of the tree dirty and recompute only that part, against recomputing all of it. When little has moved, recomputing only the stale part wins enormously: at a tenth of a percent dirty it is about **900x** faster, at ten percent about **5.7x**, at twenty percent about **1.7x**.<sup>2</sup>
 
-It does not win forever. Past roughly **forty to fifty percent dirty**, recompute-everything takes the lead.<sup>2</sup> Recomputing only the dirty part means carrying a list of which nodes are dirty and skipping the rest, and that bookkeeping costs more than it saves once you are touching most of the tree anyway. At a hundred percent dirty the incremental version is *slower* than the straight sweep: all the same work, plus the bookkeeping. **Recompute only what changed is a default with a ceiling** - when most of it changed, stop being clever and sweep.
+It does not win forever, and where it stops depends on the machine's memory bandwidth. On the dev box, recompute-everything takes the lead past roughly **forty to fifty percent dirty**; on the bandwidth-poorer reference machines the full sweep is itself dearer, so recompute-dirty keeps winning to nearly **ninety percent** - the dev box is the conservative end of the range.<sup>2</sup> Recomputing only the dirty part means carrying a list of which nodes are dirty and skipping the rest, and that bookkeeping costs more than it saves once you are touching most of the tree anyway. At a hundred percent dirty the incremental version is *slower* than the straight sweep on every machine: all the same work, plus the bookkeeping. **Recompute only what changed is a default with a ceiling** - when most of it changed, stop being clever and sweep.
 
 ## Whether it pays depends on whether the stale set is packed
 
 A second axis matters more for the next chapter. Take the *same number* of dirty nodes and arrange them two ways: as one contiguous subtree (a joint and everything below it), and scattered all over the tree (a dirty leaf here, a dirty leaf there).
 
-The contiguous subtree recomputes about **13x faster than a full sweep**. The same count of scattered leaves is about **as slow as a full sweep** - the two arrangements are more than **10x apart**, at identical work.<sup>3</sup> The dirty *count* was the same; only the *packing* differed. Recomputing the stale part pays only when the stale part is packed together in memory, so the recompute streams instead of hopping. That sharpens [§28](#28---proximity-is-a-property-of-position)'s "recompute beats maintain": recompute beats maintain *when the thing you recompute is local*.
+The contiguous subtree recomputes far faster than the same count of scattered leaves at identical work - about **13x apart** on the dev box, narrowing to **4-6x** on the older machines, but decisive on all of them.<sup>3</sup> The dirty *count* was the same; only the *packing* differed. Recomputing the stale part pays only when the stale part is packed together in memory, so the recompute streams instead of hopping. That sharpens [§28](#28---proximity-is-a-property-of-position)'s "recompute beats maintain": recompute beats maintain *when the thing you recompute is local*.
 
 A scenegraph is kind to this. It is a tree: every node has exactly one parent, so "everything beneath a node" is one packed slice, and the common edit - move a joint - dirties exactly such a slice. The reference crate is [`code/scenegraph`](https://github.com/root-11/intro-book/tree/main/code/scenegraph).
 
@@ -3368,14 +3368,14 @@ But that kindness is the tree's, not the world's. The moment a thing can feed *m
 
 ## Measurements
 
-Dev box: Ryzen 9 270, rustc 1.94.0, `--release`, median of 5. Cross-machine capture is pending; treat the shape as the claim.
+Dev box: Ryzen 9 270, rustc 1.94.0, `--release`, median of 5; the cross-machine numbers (2012 i7, 2015 i3, Pi 4) are in [`code/README.md`](https://github.com/root-11/intro-book/blob/main/code/README.md).
 
 | # | what | measured |
 |---|---|---|
 | 1 | full recompute, flat straight sweep vs pointer-tree walk (100K-1M nodes) | 2.3x - 2.8x |
-| 2 | recompute-dirty vs recompute-all, by how much is dirty | ~900x at 0.1%, 5.7x at 10%, 1.7x at 20%, **loses past ~40-50%** |
+| 2 | recompute-dirty vs recompute-all, by how much is dirty | ~900x at 0.1%, 5.7x at 10%, 1.7x at 20%; **crossover is bandwidth-dependent: ~40-50% (dev box), ~90% (slower memory)** |
 | 2 | recompute-dirty at 100% dirty | 0.77x (slower than the sweep: pure bookkeeping overhead) |
-| 3 | same dirty count: one contiguous subtree vs scattered leaves | 13x vs ~1x against full; ~10x apart from each other |
+| 3 | same dirty count: one contiguous subtree vs scattered leaves | ~13x apart (dev box), ~4-6x on the older machines; packed always wins |
 
 ## Exercises
 
@@ -3613,7 +3613,7 @@ Now the GPU argument falls apart on its own terms. The claim is that a billion-n
 
 And when the active set genuinely is too big for the box - when you really do have more work than one machine's memory can feed in time - is the GPU the answer even then? For a pass like this one, often not, and the cost model says why.
 
-To run the pass on the GPU you must first ship the data across the bus to it and read the result back. For this pass that round trip moves about the same number of bytes the computation itself needs - and at a typical bus speed it costs *more* per element than just doing the pass on the CPU.<sup>4</sup> Shipping the data to the accelerator and back is slower than not shipping it. Offloading pays only when the data already lives on the GPU, or when there is enough arithmetic per byte that the compute, not the transfer, dominates. For a memory-bound elementwise pass, neither holds, and the bus is the bottleneck.
+To run the pass on the GPU you must first ship the data across the bus to it and read the result back. For this pass that round trip moves about the same number of bytes the computation itself needs, so the comparison is really the bus against the machine's own memory, and the cross-machine numbers make that literal. On a box whose memory feeds the pass faster than the bus moves it - the Ryzen and the 2012 i7 measured here - the round trip costs *more* per element than doing the pass in place, and offloading loses.<sup>4</sup> On a bandwidth-poorer box the simple model tips the other way: the 2015 i3's memory runs near 10 GB/s, below an assumed 16 GB/s bus, so the model reports the transfer as the cheaper option. That tip is the tell, not a win - the model charges only the bus and forgets that feeding the bus still reads the array out of that same slow memory first, so a real offload of resident data is dearer still. Either way the rule that survives every machine is the one to keep: offloading pays only when the data already lives on the GPU, or when there is enough arithmetic per byte that the compute, not the transfer, dominates. For a memory-bound elementwise pass, neither holds.
 
 (These GPU figures are a cost model with assumed bus and launch numbers, not a measurement - there is no GPU on the reference machine. Plug your own hardware's numbers into the same model; the *structure* is the point. The reference crate is [`code/heterogeneous`](https://github.com/root-11/intro-book/tree/main/code/heterogeneous).)
 
@@ -3628,14 +3628,14 @@ That closes the arc. Five chapters of where the column default does not simply t
 
 ## Measurements
 
-CPU figures: dev box (Ryzen 9 270, 16 threads), `--release`, median of 5. Cross-machine pending. GPU figures are a labelled cost model, not a measurement.
+CPU figures: dev box (Ryzen 9 270, 16 threads), `--release`, median of 5; the cross-machine numbers (2012 i7, 2015 i3, Pi 4) are in [`code/README.md`](https://github.com/root-11/intro-book/blob/main/code/README.md). GPU figures are a labelled cost model, not a measurement.
 
 | # | what | measured |
 |---|---|---|
 | 1 | one core's pass, in cache vs in main memory | ~190 GB/s vs ~23 GB/s |
 | 2 | the same pass across cores (RAM-resident) | 1 / 2 / 4 / 8 / 16 threads -> 1.0x / 1.2x / 2.0x / 2.2x / 2.2x; plateaus at the memory channel |
 | 3 | active set kept current per 33 ms frame | ~32 M (one core), ~70 M (all cores) |
-| 4 | GPU offload of a memory-bound pass (cost model) | round-trip transfer costs more than the CPU pass; offload loses unless data is resident or arithmetic-heavy |
+| 4 | GPU offload of a memory-bound pass (cost model) | the round-trip-vs-CPU comparison tracks memory bandwidth, not GPU vs CPU (costs more on Ryzen/i7, tips on the i3's ~10 GB/s RAM); offload pays only when data is resident or arithmetic-heavy |
 
 ## Exercises
 

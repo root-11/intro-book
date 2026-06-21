@@ -44,13 +44,13 @@ Which one wins? It depends on how much went stale, and the answer is a crossover
 
 Now mark a fraction of the tree dirty and recompute only that part, against recomputing all of it. When little has moved, recomputing only the stale part wins enormously: at a tenth of a percent dirty it is about **900x** faster, at ten percent about **5.7x**, at twenty percent about **1.7x**.<sup>2</sup>
 
-It does not win forever. Past roughly **forty to fifty percent dirty**, recompute-everything takes the lead.<sup>2</sup> Recomputing only the dirty part means carrying a list of which nodes are dirty and skipping the rest, and that bookkeeping costs more than it saves once you are touching most of the tree anyway. At a hundred percent dirty the incremental version is *slower* than the straight sweep: all the same work, plus the bookkeeping. **Recompute only what changed is a default with a ceiling** - when most of it changed, stop being clever and sweep.
+It does not win forever, and where it stops depends on the machine's memory bandwidth. On the dev box, recompute-everything takes the lead past roughly **forty to fifty percent dirty**; on the bandwidth-poorer reference machines the full sweep is itself dearer, so recompute-dirty keeps winning to nearly **ninety percent** - the dev box is the conservative end of the range.<sup>2</sup> Recomputing only the dirty part means carrying a list of which nodes are dirty and skipping the rest, and that bookkeeping costs more than it saves once you are touching most of the tree anyway. At a hundred percent dirty the incremental version is *slower* than the straight sweep on every machine: all the same work, plus the bookkeeping. **Recompute only what changed is a default with a ceiling** - when most of it changed, stop being clever and sweep.
 
 ## Whether it pays depends on whether the stale set is packed
 
 A second axis matters more for the next chapter. Take the *same number* of dirty nodes and arrange them two ways: as one contiguous subtree (a joint and everything below it), and scattered all over the tree (a dirty leaf here, a dirty leaf there).
 
-The contiguous subtree recomputes about **13x faster than a full sweep**. The same count of scattered leaves is about **as slow as a full sweep** - the two arrangements are more than **10x apart**, at identical work.<sup>3</sup> The dirty *count* was the same; only the *packing* differed. Recomputing the stale part pays only when the stale part is packed together in memory, so the recompute streams instead of hopping. That sharpens [§28](28_proximity.md)'s "recompute beats maintain": recompute beats maintain *when the thing you recompute is local*.
+The contiguous subtree recomputes far faster than the same count of scattered leaves at identical work - about **13x apart** on the dev box, narrowing to **4-6x** on the older machines, but decisive on all of them.<sup>3</sup> The dirty *count* was the same; only the *packing* differed. Recomputing the stale part pays only when the stale part is packed together in memory, so the recompute streams instead of hopping. That sharpens [§28](28_proximity.md)'s "recompute beats maintain": recompute beats maintain *when the thing you recompute is local*.
 
 A scenegraph is kind to this. It is a tree: every node has exactly one parent, so "everything beneath a node" is one packed slice, and the common edit - move a joint - dirties exactly such a slice. The reference crate is [`code/scenegraph`](https://github.com/root-11/intro-book/tree/main/code/scenegraph).
 
@@ -58,14 +58,14 @@ But that kindness is the tree's, not the world's. The moment a thing can feed *m
 
 ## Measurements
 
-Dev box: Ryzen 9 270, rustc 1.94.0, `--release`, median of 5. Cross-machine capture is pending; treat the shape as the claim.
+Dev box: Ryzen 9 270, rustc 1.94.0, `--release`, median of 5; the cross-machine numbers (2012 i7, 2015 i3, Pi 4) are in [`code/README.md`](https://github.com/root-11/intro-book/blob/main/code/README.md).
 
 | # | what | measured |
 |---|---|---|
 | 1 | full recompute, flat straight sweep vs pointer-tree walk (100K-1M nodes) | 2.3x - 2.8x |
-| 2 | recompute-dirty vs recompute-all, by how much is dirty | ~900x at 0.1%, 5.7x at 10%, 1.7x at 20%, **loses past ~40-50%** |
+| 2 | recompute-dirty vs recompute-all, by how much is dirty | ~900x at 0.1%, 5.7x at 10%, 1.7x at 20%; **crossover is bandwidth-dependent: ~40-50% (dev box), ~90% (slower memory)** |
 | 2 | recompute-dirty at 100% dirty | 0.77x (slower than the sweep: pure bookkeeping overhead) |
-| 3 | same dirty count: one contiguous subtree vs scattered leaves | 13x vs ~1x against full; ~10x apart from each other |
+| 3 | same dirty count: one contiguous subtree vs scattered leaves | ~13x apart (dev box), ~4-6x on the older machines; packed always wins |
 
 ## Exercises
 

@@ -40,7 +40,7 @@ Now the GPU argument falls apart on its own terms. The claim is that a billion-n
 
 And when the active set genuinely is too big for the box - when you really do have more work than one machine's memory can feed in time - is the GPU the answer even then? For a pass like this one, often not, and the cost model says why.
 
-To run the pass on the GPU you must first ship the data across the bus to it and read the result back. For this pass that round trip moves about the same number of bytes the computation itself needs - and at a typical bus speed it costs *more* per element than just doing the pass on the CPU.<sup>4</sup> Shipping the data to the accelerator and back is slower than not shipping it. Offloading pays only when the data already lives on the GPU, or when there is enough arithmetic per byte that the compute, not the transfer, dominates. For a memory-bound elementwise pass, neither holds, and the bus is the bottleneck.
+To run the pass on the GPU you must first ship the data across the bus to it and read the result back. For this pass that round trip moves about the same number of bytes the computation itself needs, so the comparison is really the bus against the machine's own memory, and the cross-machine numbers make that literal. On a box whose memory feeds the pass faster than the bus moves it - the Ryzen and the 2012 i7 measured here - the round trip costs *more* per element than doing the pass in place, and offloading loses.<sup>4</sup> On a bandwidth-poorer box the simple model tips the other way: the 2015 i3's memory runs near 10 GB/s, below an assumed 16 GB/s bus, so the model reports the transfer as the cheaper option. That tip is the tell, not a win - the model charges only the bus and forgets that feeding the bus still reads the array out of that same slow memory first, so a real offload of resident data is dearer still. Either way the rule that survives every machine is the one to keep: offloading pays only when the data already lives on the GPU, or when there is enough arithmetic per byte that the compute, not the transfer, dominates. For a memory-bound elementwise pass, neither holds.
 
 (These GPU figures are a cost model with assumed bus and launch numbers, not a measurement - there is no GPU on the reference machine. Plug your own hardware's numbers into the same model; the *structure* is the point. The reference crate is [`code/heterogeneous`](https://github.com/root-11/intro-book/tree/main/code/heterogeneous).)
 
@@ -55,14 +55,14 @@ That closes the arc. Five chapters of where the column default does not simply t
 
 ## Measurements
 
-CPU figures: dev box (Ryzen 9 270, 16 threads), `--release`, median of 5. Cross-machine pending. GPU figures are a labelled cost model, not a measurement.
+CPU figures: dev box (Ryzen 9 270, 16 threads), `--release`, median of 5; the cross-machine numbers (2012 i7, 2015 i3, Pi 4) are in [`code/README.md`](https://github.com/root-11/intro-book/blob/main/code/README.md). GPU figures are a labelled cost model, not a measurement.
 
 | # | what | measured |
 |---|---|---|
 | 1 | one core's pass, in cache vs in main memory | ~190 GB/s vs ~23 GB/s |
 | 2 | the same pass across cores (RAM-resident) | 1 / 2 / 4 / 8 / 16 threads -> 1.0x / 1.2x / 2.0x / 2.2x / 2.2x; plateaus at the memory channel |
 | 3 | active set kept current per 33 ms frame | ~32 M (one core), ~70 M (all cores) |
-| 4 | GPU offload of a memory-bound pass (cost model) | round-trip transfer costs more than the CPU pass; offload loses unless data is resident or arithmetic-heavy |
+| 4 | GPU offload of a memory-bound pass (cost model) | the round-trip-vs-CPU comparison tracks memory bandwidth, not GPU vs CPU (costs more on Ryzen/i7, tips on the i3's ~10 GB/s RAM); offload pays only when data is resident or arithmetic-heavy |
 
 ## Exercises
 

@@ -597,7 +597,7 @@ Each entry has four parts:
 
 **Definition.** In a hierarchy, changing a node makes its world value and every descendant's stale, and nothing else. Recompute everything as one flat top-down sweep, or recompute only the dirty subtree. Which wins is a crossover in the dirty fraction; a second axis matters more - recomputing the stale part pays only when it is *packed* (a contiguous subtree), so the recompute streams instead of hopping. A tree gives that packing for free, because every node has exactly one parent; a graph (52) takes it away.
 
-**Example.** A jointed arm: swing the elbow and the hand follows, the shoulder does not. The flat sweep beats a pointer-tree walk 2.3x-2.8x; recompute-dirty wins ~900x at 0.1% dirty and loses past roughly 40-50%; a contiguous dirty subtree recomputes ~13x faster than the same node count scattered.
+**Example.** A jointed arm: swing the elbow and the hand follows, the shoulder does not. The flat sweep beats a pointer-tree walk 2.3x-2.8x; recompute-dirty wins ~900x at 0.1% dirty and only loses once most of the tree is dirty (past ~40-50% on the dev box, ~90% on slower-memory machines); a contiguous dirty subtree recomputes several times faster (~4-13x across machines) than the same node count scattered.
 
 **Anti-pattern.** Recomputing a scattered dirty set (as slow as a full sweep, plus the bookkeeping), or carrying the incremental path when most of the tree changed - sweep instead.
 
@@ -633,7 +633,7 @@ Each entry has four parts:
 
 **Definition.** A memory-bound pass - advance positions, two multiply-adds and ~24 bytes moved per element - runs at memory speed, not core speed. Adding cores stops helping once they saturate the single memory channel, so the way to go faster is to *touch less data*, not add compute. One box keeps a bounded *active set* current per frame; you reach for an accelerator only when that active set itself outgrows the box, never to brute-force away staleness an incremental design (53, 54) already avoids. For such a pass, shipping the data across the bus to a device and back costs more than doing it in place.
 
-**Example.** The pass runs near 190 GB/s in cache and about 23 GB/s in main memory; across cores it plateaus near 2.2x at the channel limit. One core keeps ~32M elements current per 33 ms frame, all cores ~70M. For two flops per 24 bytes, a GPU offload's round-trip transfer costs more than the CPU pass (a cost model, since the reference machine has no GPU).
+**Example.** The pass runs near 190 GB/s in cache and about 23 GB/s in main memory; across cores it plateaus near 2.2x at the channel limit. One core keeps ~32M elements current per 33 ms frame, all cores ~70M. For two flops per 24 bytes, a GPU offload's round-trip is a bus-versus-memory trade: it costs more than the CPU pass where memory outruns the bus, less where it does not, and the durable rule is that offload pays only when the data is resident or arithmetic-heavy (a cost model, since the reference machine has no GPU).
 
 **Anti-pattern.** Adding cores or an accelerator to a bandwidth-bound elementwise pass; recomputing the whole world when only the active cone changed.
 

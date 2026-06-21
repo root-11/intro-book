@@ -157,6 +157,32 @@ The amortized keying verdict (slot vs id, over the GC interval) favours **slot k
 
 Every direction holds on every machine: all-pairs is hopeless, the dense bin beats the bolt-on hash, the rebuild is ~1% of the query (so recompute beats maintain), and one leader read by all crushes all-pairs cohesion by thousands of times.
 
+### Knowing the limits arc (§52-§56, captured 2026-06-21)
+
+Static `musl` binaries (`x86_64` and `aarch64`, cross-linked with the bundled `rust-lld`), 5-run medians, 3-run on the Pi. These are a fresh same-round capture and differ in places from the chapter figures (e.g. §53's flat-sweep speedup), which is the "treat the shape as the claim, not the digits" note made concrete: every claim's *shape* survives all four machines, the magnitudes drift with build, cache, and run.
+
+The Pi 4 has no heatsink. Under sustained load it reaches its soft thermal limit (~84 C) and frequency-caps, so its §56 cells are a throttled floor: one Cortex-A72 core already saturates the ~3 GB/s LPDDR4 channel, so "more cores do not help" holds regardless - the throttle only lowers the absolute GB/s, not the conclusion.
+
+Two cells depend on memory bandwidth rather than being portable constants, and both are now phrased that way in the prose (§53, §56): the recompute-dirty **crossover** (the dev box is the fast-memory, conservative end; slower memory makes recompute-dirty win further) and the **GPU cost model** (it is bus-versus-memory: the assumed 16 GB/s bus beats the i3 and Pi's slower RAM, so the simple model tips there - the durable rule is that offload pays only when data is device-resident or arithmetic-heavy).
+
+| Test | Pi 4 (Cortex-A72, 4 GB) | i7-3610QM (2012, 8 GB) | i3-5010U (2015, 8 GB) | Ryzen 9 270 |
+|---|---:|---:|---:|---:|
+| §52 flat vs pointer tree, 2M nodes | 1.76x | 2.13x | 1.84x | 2.64x |
+| §52 edit/eval break-even | ~1:2 | ~1:3 | ~1:2 | ~1:4 |
+| §53 flat sweep vs pointer walk, 1M | 2.41x | 2.61x | 2.14x | 6.20x |
+| §53 recompute-dirty crossover (dirty fraction) | ~90% | ~90% | ~90% | ~50% |
+| §53 packed vs scattered dirty set | 5.0x | 5.9x | 4.6x | 10.3x |
+| §54 early cutoff: cells recomputed | 16 | 16 | 16 | 16 |
+| §54 early cutoff: wall-clock speedup | 18x | 31x | 24x | 39x |
+| §54 pivot patch, 1 dirty column | 106x | 93x | 102x | 97x |
+| §55 orientation wrong in `f64` | 99.3% | 99.3% | 99.3% | 99.3% |
+| §55 exact `i128` predicate cost vs `f64` | ~equal | ~equal | ~equal | ~equal |
+| §56 one core, RAM-resident | ~3.1 GB/s\* | 17.5 GB/s | 10.1 GB/s | 27.7 GB/s |
+| §56 multi-core plateau (max speedup) | ~1.0x\* | 1.15x | 1.07x | 1.83x |
+| §56 GPU cost model (offload vs CPU pass) | tips (bus > RAM) | loses | tips (bus > RAM) | loses |
+
+\* Pi 4 §56 is thermally bounded (no cooling; throttled at ~84 C under the sustained motion pass). The shape ("more cores do not help") holds; the GB/s is a throttled floor.
+
 ## A note on benchmark anti-patterns
 
 Several binaries had to use `std::hint::black_box` to defeat the optimizer. The compiler will happily hoist a pure `sum_seq(&v)` out of an inner loop if the result feeds a deterministic accumulator - making the loop O(1) regardless of `iters` and the timing meaningless. The pattern is:
