@@ -449,10 +449,21 @@ def stage_readme_in_dist() -> None:
     print(f"Wrote dist/README.md and LICENSE files")
 
 
+def render_pdf() -> None:
+    """Print the rendered dist/print.html to dist/intro-book.pdf.
+
+    Delegates to tools/render_pdf.py (its own PEP-723 script with the Playwright
+    dependency), so the PDF toolchain stays out of this script's environment.
+    """
+    script = ROOT / "tools" / "render_pdf.py"
+    subprocess.run(["uv", "run", str(script)], cwd=ROOT, check=True)
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--stage-only", action="store_true", help="skip the mdbook render step")
     p.add_argument("--no-readme",  action="store_true", help="skip README.md regeneration")
+    p.add_argument("--pdf",        action="store_true", help="also render dist/intro-book.pdf")
     args = p.parse_args()
     stage()
     if not args.no_readme:
@@ -460,6 +471,8 @@ def main() -> None:
     if not args.stage_only:
         render()
         stage_readme_in_dist()
+        if args.pdf:
+            render_pdf()
 
 
 if __name__ == "__main__":
