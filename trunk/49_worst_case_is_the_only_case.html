@@ -1,0 +1,281 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>The worst case is the only case - An Introduction to Programming, using ECS &amp; EBP in Rust</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-c31403f1.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-d47fb4d7.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">An Introduction to Programming, using ECS &amp; EBP in Rust</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="49---the-worst-case-is-the-only-case"><a class="header" href="#49---the-worst-case-is-the-only-case">49 - The worst case is the only case</a></h1>
+<p align="center"><img src="../illustrations/budget.png" alt="A mouse with a budget sheet and a contingency line - planning for the worst case." style="max-height: 300px; max-width: 100%;"></p>
+
+<blockquote>
+<p><em>Concept node: see the <a href="../concepts/dag.html">DAG</a> and <a href="../concepts/glossary.html#49---the-worst-case-is-the-only-case">glossary entry 49</a>.</em></p>
+</blockquote>
+<p><a href="04_cost_and_budget.html">§4</a> gave the tick a budget: 33 ms at 30 Hz, and you spend it wisely. <a href="39_system_of_systems.html">§39</a> gave the long computation an anytime contract: return the best answer you have when the deadline arrives. Both are <strong>soft</strong> real-time. A missed deadline costs <em>quality</em> - a dropped frame, a coarser answer - and the system keeps running. You have been doing soft real-time for the whole book, and for almost everything you will build, soft is the right and sufficient discipline.</p>
+<p>Soft does not mean unmanaged. When the work outgrows the budget - more entities than you planned, a load spike, a heavier tick - you choose, in advance, <em>how</em> to miss. The rule is to <strong>shed fidelity, never integrity</strong>: the systems that keep the world <em>valid</em> run every tick, exact; the systems that keep it <em>fresh and fine</em> are the ones you cut. The buffered commit (<a href="22_mutations_buffer.html">§22</a>) is what makes that safe - a tick that runs long still applies a whole world at the boundary, never a half-updated one, so the cost of an overrun is latency, not corruption. Within that, you degrade in a fixed priority order: drop the pure observers first, stretch the GC’s cadence, defer the slow-moving systems, and - the best lever - apply back-pressure to whatever <em>creates</em> the load, because deferring growth attacks the cause, not the symptom. Two disciplines keep it honest. The degradation is a <em>logged decision</em>, not a wall-clock branch, so a degraded run still replays (<a href="37_log_is_world.html">§37</a>, <a href="48_reductions_dont_parallelize_freely.html">§48</a>); a shed that depends on how fast the machine happened to be running stops being a function of its inputs. And the staleness is bounded and self-healing: each shed defers work by a known number of ticks and catches up when the load drops. This is the budget read as a curve (<a href="04_cost_and_budget.html">§4</a>): past the comfortable scale the rate slides, and graceful degradation is how you choose what slides.</p>
+<p>This chapter marks the line where that stops. In <strong>hard</strong> real-time a missed deadline is not a dropped frame; it is a <em>fault</em>. The motor controller that computes the next current 200 microseconds late has already let the motor run away. The flight-control loop that skips a cycle has lost the aircraft for that cycle. The emergency stop that fires 10 ms late did not fire. When the deadline is a fault, the average case is irrelevant. A loop that meets its deadline 99.999 percent of the time has <em>failed</em> if the missing 0.001 percent is the brake.</p>
+<p>That single sentence inverts the book. Every technique so far chased the <em>mean</em>: cache-friendly layout, SoA, parallelism, branch-predictable code - all of them make the common case fast and let the rare case be slow. Hard real-time chases the <em>tail</em>. It does not care that the average tick is 2 ms if one tick in a million is 40 ms, because the one is the only one that matters. The worst case is the only case.</p>
+<p>What hard real-time demands is a different ledger.</p>
+<p><strong>Worst-case execution time (WCET), not average.</strong> You must know the longest the code can <em>ever</em> take, and prove it. That means every loop has a statically known maximum iteration count, every branch’s slower side is the one you count, there is no unbounded recursion, and there is no data-dependent loop without a bound. The <a href="04_cost_and_budget.html">§4</a> budget stops being an average you usually hit and becomes a ceiling you prove you never cross.</p>
+<p><strong>No allocation in the inner loop.</strong> <code>malloc</code> and <code>free</code> have unbounded worst-case time: the allocator may walk free lists, coalesce, or fall through to the OS for more pages. One hot-path allocation puts an unknowable spike in your WCET. Pre-allocate everything; the loop allocates nothing.</p>
+<p><strong>No blocking call in the inner loop.</strong> A syscall, a lock, an <code>fsync</code>, a page fault - each can stall for an unbounded time while the kernel does something else. The hot loop touches only memory that is already resident and locks that are already held or never contended.</p>
+<p><strong>Bounded jitter.</strong> Soft real-time asks “fast enough on average”. Hard real-time asks “does the tick fire every period, on time, with bounded variance”. The enemies of jitter are the very machinery that makes the average fast: the OS scheduler preempting you, interrupts, CPU frequency scaling, and the cache itself. You fight them with a real-time scheduler (<code>SCHED_FIFO</code>, <code>SCHED_DEADLINE</code>), CPU isolation and pinning (<code>isolcpus</code>), locking your pages in RAM so they never fault (<code>mlockall</code>), and pinning the clock so it does not slew.</p>
+<p><strong>Priority inheritance.</strong> A high-priority task waits on a lock held by a low-priority task that has been preempted by a medium-priority one. The high-priority task now misses its deadline because of a task it outranks - priority inversion, and it has crashed real spacecraft. The fix is a mechanism: a task holding a lock temporarily inherits the priority of the highest task waiting for it.</p>
+<p>Here is the part that should reassure you: <strong>most of this discipline you already have.</strong> The book has avoided per-tick allocation since <a href="07_structure_of_arrays.html">§7</a> - SoA columns are pre-sized, the <a href="22_mutations_buffer.html">§22</a> buffer is reused, <a href="24_append_only_and_recycling.html">§24</a> recycles slots instead of freeing. I/O lives off the hot path behind the <a href="35_boundary_is_the_queue.html">§35</a> queue and the <a href="37_log_is_world.html">§37</a> revolver, exactly where a syscall must not be. A system is a bounded pass over a known-size table (<a href="13_system_as_function.html">§13</a>); the order is fixed and deterministic (<a href="16_determinism_by_order.html">§16</a>). You built these for <em>performance</em>, and they are hard-real-time preconditions for free. The data-oriented core is already most of the way to predictable.</p>
+<p>And here is the part that should sober you: <strong>the rest is a genuine inversion, not just more of the same.</strong> The book measured averages; hard real-time needs proven worst cases, and the measured ns/element ladder of <a href="27_working_set_vs_cache.html">§27</a> is an <em>average</em> over a warm cache. The <a href="01_the_machine_model.html">§1</a> cache staircase the book celebrates as a performance story is, here, a source of WCET <em>uncertainty</em>: a cache miss is the worst case, and code whose timing depends on cache state has a worst case far above its mean. The same is true of branch prediction, speculation, and frequency scaling - each speeds the common path and widens the gap between common and worst. Hard real-time often <em>disables</em> them, or budgets for their worst case, and runs slower on average to be predictable. That is the opposite of every instinct the book has trained. Hard real-time is not the book’s techniques turned up; it is a different objective function that sometimes overrules them.</p>
+<p>The exclusion, stated as plainly as it can be, because here it is a safety matter: <strong>this book does not build hard-real-time systems, and a soft-real-time system must never be deployed where a hard one is required.</strong> A certified controller is a different craft - a real-time operating system, WCET analysis tools, and certification regimes (DO-178C for avionics, IEC 61508 for industrial safety) that this book does not touch. The simulator you built is a wonderful thing and it is not a brake. The value of this chapter is the line itself: knowing which side of it you are on, so you neither over-build a game loop into a control system nor, far worse, mistake your fast average for a guarantee you never made.</p>
+<h2 id="measurements"><a class="header" href="#measurements">Measurements</a></h2>
+<p>This is the one chapter where the book’s measure-it-on-four-machines moat partly cannot reach: true WCET needs a real-time OS and formal timing analysis, not four Linux boxes, and the chapter says so rather than faking a number. <em>Jitter</em>, though, measures cleanly and is the right demonstration - record the actual period of every tick over a few million ticks on a stock scheduler and the histogram has a long, ugly tail driven by the OS, not your code. Pinning the core, raising the scheduling class, and locking pages tighten that tail visibly. The exercises build the histogram; the lesson is in the shape of the tail, and in which knobs flatten it.</p>
+<h2 id="exercises"><a class="header" href="#exercises">Exercises</a></h2>
+<ol>
+<li><strong>Measure your jitter.</strong> Run an empty tick loop at a fixed period for a few million iterations and record the actual period each time (a monotonic clock). Plot the distribution. The mean is tight; find the tail - the p99.9 and the max - and note it is tens to hundreds of times the mean on a stock desktop.</li>
+<li><strong>Find the scheduler.</strong> Re-run pinned to an isolated core (<code>taskset</code>/<code>isolcpus</code>) under <code>SCHED_FIFO</code>, with <code>mlockall</code>. Show the tail shrink. You did not make the code faster; you made the worst case smaller, which is the only thing hard real-time counts.</li>
+<li><strong>Hunt an unbounded operation.</strong> Audit one system for anything without a static bound: a <code>HashMap</code> that can rehash, a <code>Vec</code> that can reallocate, a data-dependent loop, a <code>format!</code>. Each is a spike in your WCET. Replace one with a pre-sized, bounded equivalent and re-measure the tail.</li>
+<li><strong>Allocation is a spike.</strong> Add one <code>Box::new</code> per tick to the hot loop and watch the tail grow; remove it and watch it shrink. Confirm the book’s no-per-tick-allocation discipline (<a href="07_structure_of_arrays.html">§7</a>, <a href="24_append_only_and_recycling.html">§24</a>) was buying you tail latency all along.</li>
+<li><strong>The cache is a worst case.</strong> Run a system over data small enough to stay in L1, then over data large enough to miss to RAM (<a href="27_working_set_vs_cache.html">§27</a>). Compare not the means but the <em>maxima</em>. Argue why average-case layout tuning does not give a WCET, and what would.</li>
+<li><strong>Soft, not hard - on purpose.</strong> Take your anytime system (<a href="39_system_of_systems.html">§39</a>) and write down, honestly, its worst-case time. Show it has none you can prove. Conclude what kind of deadline it may and may not be trusted with.</li>
+<li><em>(stretch)</em> <strong>Priority inversion.</strong> Build three tasks - high, medium, low - sharing one lock, and reproduce the high task missing its deadline because the low task holds the lock while the medium task runs. Then enable priority inheritance and show the deadline met. Name the mechanism that fixed it.</li>
+<li><strong>Degrade gracefully (the soft side).</strong> Overload the tick - more entities than the budget allows. Implement a priority-ordered shed: drop the inspection system first, stretch the GC cadence, then defer reproduction (back-pressure on the thing creating the load). Show two things hold: the world stays consistent every tick (the <a href="22_mutations_buffer.html">§22</a> buffered commit), and a degraded run still replays bit-for-bit because each shed was logged, not branched on the wall clock. Confirm the staleness is bounded - nothing is deferred more than a fixed number of ticks.</li>
+</ol>
+<p>Reference notes in <a href="49_worst_case_is_the_only_case_solutions.html">49_worst_case_is_the_only_case_solutions.md</a>.</p>
+<h2 id="whats-next"><a class="header" href="#whats-next">What’s next</a></h2>
+<p>That answers the last of the four unattended questions: the system survives the stop (<a href="46_log_survives_power_loss.html">§46</a>), reports what it is doing (<a href="47_observation_is_a_system.html">§47</a>), gives the same answer on every machine (<a href="48_reductions_dont_parallelize_freely.html">§48</a>), and you now know the line past which its soft deadlines cannot be trusted. <a href="50_it_runs_without_you.html">§50</a> draws the operations group together - four chapters that were one move - and marks the turn from <em>running</em> the system to <em>changing</em> it, where the rest of the second act goes.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../trunk/48_reductions_dont_parallelize_freely_solutions.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../trunk/49_worst_case_is_the_only_case_solutions.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../trunk/48_reductions_dont_parallelize_freely_solutions.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../trunk/49_worst_case_is_the_only_case_solutions.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../ace-2a3cd908.js"></script>
+        <script src="../mode-rust-2c9d5c9a.js"></script>
+        <script src="../editor-16ca416c.js"></script>
+        <script src="../theme-dawn-4493f9c8.js"></script>
+        <script src="../theme-tomorrow_night-9dbe62a9.js"></script>
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../mermaid-eefea253.min.js"></script>
+        <script src="../mermaid-init-ccf746f1.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Proximity is a property of position - An Introduction to Programming, using ECS &amp; EBP in Rust</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-c31403f1.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-d47fb4d7.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">An Introduction to Programming, using ECS &amp; EBP in Rust</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="28---proximity-is-a-property-of-position"><a class="header" href="#28---proximity-is-a-property-of-position">28 - Proximity is a property of position</a></h1>
+<blockquote>
+<p><em>Concept node: see the <a href="../concepts/dag.html">DAG</a> and <a href="../concepts/glossary.html#28---proximity-is-a-property-of-position">glossary entry 28</a>.</em></p>
+</blockquote>
+<p align="center"><img src="../illustrations/optimization.jpg" alt="Optimization: minimize f(x) - proximity is a function of position, computed where position lives" style="max-height: 300px; max-width: 100%;"></p>
+
+<p>Creatures eat the food they encounter. So <code>next_event</code> has to answer, for every creature, <em>which food is within reach?</em> At §1’s ten thousand that is a cheap scan. At §2’s million it is a wall: comparing every creature to every food is O(C×F). Measured, even twenty thousand all-pairs neighbour tests cost ~270 ms on a modern desktop<sup>1</sup> (and close to a second on the older reference machines) - many frames’ budget spent on a fraction of the world.</p>
+<p>The reflex is to reach for a <em>spatial index</em>: a quadtree, a grid hash, a structure that lives beside the world, that you insert into and delete from as things move, that you query. It works. But stop and look at what it is: a second copy of information the world already holds - position - with its own maintenance budget, its own allocations, and pointer-chased buckets that miss cache on every hop.</p>
+<p>Step back and ask what proximity <em>is</em>. It is a function of position. And position is already owned and streamed, every tick, by the motion system. The cell a creature falls in is one line - <code>cell = f(px, py)</code> - computed in the pass motion is already making, branchless, SIMD-friendly. The index was never necessary. The cell is a property you read off position.</p>
+<p><strong>Bin, don’t index.</strong> Compute each creature’s cell, then place the creatures into per-cell buckets with a counting sort: histogram the cells, prefix-sum into offsets, scatter the indices into one dense array. No <code>HashMap</code>, no per-cell allocation, no pointer-chasing - three linear passes over contiguous memory. A neighbour query reads the 3x3 block of cells around a point as contiguous ranges.</p>
+<pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// cell id per creature - the SIMD-friendly byproduct of the position stream
+let cell: Vec&lt;u32&gt; = (0..n).map(|i| cell_of(px[i], py[i])).collect();
+
+// counting sort into a dense CSR bucket array: offsets[c]..offsets[c+1]
+let mut offsets = vec![0u32; ncells + 1];
+for &amp;c in &amp;cell { offsets[c as usize + 1] += 1; }
+for c in 0..ncells { offsets[c + 1] += offsets[c]; }
+let mut items = vec![0u32; n];
+let mut cursor = offsets.clone();
+for i in 0..n { let c = cell[i] as usize; items[cursor[c] as usize] = i as u32; cursor[c] += 1; }
+<span class="boring">}</span></code></pre>
+<p><strong>Measured</strong> (<code>proximity</code>, 1M creatures): the dense bin answers the neighbour query about 2.8x faster than the bolt-on <code>HashMap</code> on a modern desktop<sup>2</sup>, and is ahead on every machine measured (nearer 1.6x on the small-cache Broadwell NUCs). The hash spends its time allocating buckets and chasing them; the dense bin streams.</p>
+<p>The sharpest number is the build itself. Rebuilding the <em>entire</em> spatial structure from scratch costs <strong>around one percent of the query it serves</strong><sup>3</sup>. So the whole reason a bolt-on index exists, “don’t pay to rebuild,” is optimising about one percent of the work. You do not maintain proximity across ticks. You recompute it from the position stream each tick, for free, in the pass motion already makes. <em>Recompute from the stream</em> beats <em>maintain a structure</em>, and the old question of how often to re-sort the world simply evaporates: there is no kept structure to schedule.</p>
+<table class="callout callout-warning" style="width: 100%; border-left: 3px solid var(--quote-border, #aaa); background: var(--quote-bg, #f9f9f9); color: var(--fg, inherit); margin: 1em 0;">
+<tr>
+<td style="width: 110px; vertical-align: top; padding: 0.6em;">
+<img src="../icons/warning_units.webp" alt="Warning" style="max-width: 96px; max-height: 96px; display: block; margin: 0 auto;">
+</td>
+<td style="vertical-align: top; padding: 0.6em 0.8em;">
+<p><strong>Warning</strong> - “Binning is O(N)” hides an assumption: <em>constant density</em>. The query reads a 3x3 block of cells, which is cheap only while a cell holds a roughly fixed number of creatures. In a fixed world more creatures means fuller cells, so the block you scan grows with N and the whole pass is O(N²) again, with the grid still in place. The words missing from “O(N)” are “at constant density,” and density is a design choice. Measured on the reference forage (<code>forage_scaling</code>, modern desktop): in a fixed world, cost grew ~8x then ~11x for each 3x increase in population - quadratic; with the world grown to hold density constant, the same query grew ~3-4x - linear. Binning moves the wall, it does not remove it.</p>
+</td>
+</tr>
+
+</table>
+
+<p><strong>When you only need one answer, ask the cell once.</strong> The chapter opened with a creature eating the nearest food in reach - one answer per creature, not a list. So you never need every occupant of the 3x3 block; you need one. Collapse each cell to a single <em>representative</em> - the first occupant will do - and a query reads at most nine representatives whatever the density, which restores O(N) even in a fixed world. The price is an approximation: a creature takes its cell’s representative, not provably the nearest of a crowded cell. But the error is bounded by one cell, and the cell is already the resolution the grid quantises position to, so the approximation sits below what the model can see. Measured, the representative held linear (~3x per 3x population) exactly where the exhaustive 3x3 scan went quadratic. The cell stops being a bucket you search and becomes a lookup you read: ask the cell who is in it, do not measure every pair.</p>
+<p><strong>The gather still scatters, and that is <a href="26_subscription_tables.html">§26</a>’s job.</strong> Binning finds the <em>candidates</em> cheaply, but reading their positions jumps around the columns. Making that gather dense is the compaction from <a href="24_append_only_and_recycling.html">§24</a>/<a href="26_subscription_tables.html">§26</a>: the same batch pass that reclaims dead slots can reorder the survivors <em>by cell</em> (a Z-order curve keeps neighbouring cells adjacent in memory), so a cell’s creatures land on adjacent cache lines. That reorder is the GC’s slow-cadence pass, not a separate spatial sort with its own knob. §28 says <em>which cell</em>; §26 makes <em>reading the cell</em> stream.</p>
+<pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn cell_of(px: f32, py: f32, cell_size: f32) -&gt; u32 {
+    let x = (px / cell_size).floor() as i32;
+    let y = (py / cell_size).floor() as i32;
+    // simple stripe pack; a Z-order (Morton) hash keeps 2D neighbours close in 1D
+    ((x as u32 &amp; 0xFFFF) &lt;&lt; 16) | (y as u32 &amp; 0xFFFF)
+}
+<span class="boring">}</span></code></pre>
+<table class="callout callout-note" style="width: 100%; border-left: 3px solid var(--quote-border, #aaa); background: var(--quote-bg, #f9f9f9); color: var(--fg, inherit); margin: 1em 0;">
+<tr>
+<td style="width: 110px; vertical-align: top; padding: 0.6em;">
+<img src="../icons/note_assumptions.webp" alt="Note" style="max-width: 96px; max-height: 96px; display: block; margin: 0 auto;">
+</td>
+<td style="vertical-align: top; padding: 0.6em 0.8em;">
+<p><strong>Note</strong> - Binning answers <em>who is near now</em>, at the sampled positions of this tick. Reusing it for collision smuggles in an assumption: that motion between samples is linear and the step is small. When the step is large, or event-driven with variable length (<a href="12_event_time_vs_tick_time.html">§12</a>), two fast movers can swap sides inside one step - a long travel vector crossing a short one - and share no cell at any sampled instant. The bin never sees them meet; they tunnel through each other. A finer grid does not fix it; swept (continuous) detection does: solve for the time within the step at which the two linear paths first come within radius. That solve is a quadratic in <code>t</code>, and its root is an event time, not a sample. Binning still earns its keep by handing you the candidate pairs cheaply; the closest-approach solve turns a candidate into a dated collision event.</p>
+</td>
+</tr>
+
+</table>
+
+<p><strong>The same lesson at the global scale: the pack-leader.</strong> Swarming beasts look coordinated, but if every beast accounts for every other - cohesion, alignment, separation against all N - the cost is O(N²) (~240 ms at twenty thousand). The way the old games did it: put an abstract, invisible leader at the centre of the pack. The leader does the one expensive thing, deciding where the pack goes; each beast subscribes to the leader and steers relative to it. One centroid pass, every member reads one value: O(N), some 9000x cheaper at the same twenty thousand on a modern desktop<sup>4</sup> (thousands of times on every machine), and the gap grows with N. Lifelike swarm behaviour, no all-pairs accounting. The “who is near the group” question, like “who is near me,” is answered by a single pass over position, not by a structure every agent maintains.</p>
+<p>The meta-lesson is the one worth keeping. Twice now the cheap path was to refuse the obvious data structure - the <code>id_to_slot</code> hop in <a href="26_subscription_tables.html">§26</a>, the spatial index here - and instead let the system that already owns the data produce the answer in the pass it already makes. Ask what the problem <em>is</em> before reaching for a structure to make it fit. Proximity is position; position is already in hand.</p>
+<h2 id="measurements"><a class="header" href="#measurements">Measurements</a></h2>
+<p>The prose quotes the modern-desktop figure; the spread across the reference machines is below. Full per-machine output: <code>proximity</code> in <code>code/README.md</code>. The density-wall and representative figures come from <code>forage_scaling</code> on the modern desktop; cross-machine measurement is pending, but the shape they show - quadratic at fixed world, linear once density is held or the cell is collapsed to a representative - does not depend on the machine.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>#</th><th>measurement</th><th>Ryzen 9 (modern)</th><th>i7-3610QM (2012)</th><th>i3-5010U (2015)</th><th>Pi 4</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>all-pairs neighbour test, N = 20 000</td><td>270 ms</td><td>864 ms</td><td>960 ms</td><td>1720 ms</td></tr>
+<tr><td>2</td><td>dense bin vs bolt-on hash, 1M (end to end)</td><td>2.8x</td><td>1.7x</td><td>1.6x</td><td>1.5x</td></tr>
+<tr><td>3</td><td>dense bin rebuild ÷ its query, 1M</td><td>0.7 %</td><td>1.0 %</td><td>1.4 %</td><td>0.8 %</td></tr>
+<tr><td>4</td><td>pack-leader vs all-pairs cohesion, N = 20 000</td><td>9087x</td><td>7296x</td><td>6712x</td><td>9439x</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="exercises"><a class="header" href="#exercises">Exercises</a></h2>
+<ol>
+<li><strong>The all-pairs wall.</strong> For N agents in a box, count neighbours within radius <code>r</code> by testing every pair. Time it at N = 1K, 10K, 20K. Confirm the O(N²) curve, and that 20K alone already exceeds a 30 Hz frame budget.</li>
+<li><strong>Cell as a derived column.</strong> Write <code>fn cell_of(px, py, cell_size) -&gt; u32</code>. Compute the <code>cell</code> column for a 1M-creature world in the same loop that would update position. Note that it adds one cheap arithmetic op per creature to a pass you are already making.</li>
+<li><strong>Dense binning.</strong> Build the CSR bucket array (count, prefix-sum, scatter). Answer “neighbours within <code>r</code>” by reading the 3x3 cell block. Verify it gives the same counts as exercise 1.</li>
+<li><strong>Bolt-on hash vs dense bin.</strong> Build the same query with a <code>HashMap&lt;cell, Vec&lt;u32&gt;&gt;</code>. At 1M, time build and query for both. Reproduce the ~2.8x end-to-end gap; note where the hash spends its time (allocation, pointer-chasing) against the dense bin’s contiguous streams.</li>
+<li><strong>Recompute beats maintain.</strong> Measure the dense bin’s build as a fraction of its query. Confirm it is roughly 1%. Argue why maintaining a spatial index incrementally (to “save” the rebuild) optimises the wrong thing.</li>
+<li><strong>The pack-leader.</strong> Steer N agents toward the group two ways: each averaging the other N-1 positions (all-pairs), and each reading one centroid computed in a single pass. Time both; reproduce the O(N²) vs O(N) gap. Argue why the leader gives swarm-like behaviour without any agent knowing about any other.</li>
+<li><em>(stretch)</em> <strong>Z-order and the compaction.</strong> Replace the stripe pack with a Z-order (Morton) hash. Then order the <a href="24_append_only_and_recycling.html">§24</a> compaction by cell and re-time the neighbour query’s gather (§26). How much of the remaining query cost was the scattered gather?</li>
+<li><strong>The density wall and the representative.</strong> Take your dense-bin query from exercise 3. Grow the population in a <em>fixed</em> world (100K, 300K, 1M) and confirm the per-query cost grows faster than linearly - the 3x3 block is filling, the grid is quadratic again. Now answer the one-nearest query by keeping a single representative per cell (the first occupant) and reading the nine neighbour representatives; re-time the sweep and confirm it holds linear. Then measure how often the representative differs from the true nearest, and confirm every difference lies within one cell - the approximation is bounded by the grid’s own resolution.</li>
+</ol>
+<p>Reference notes in <a href="28_proximity_solutions.html">28_proximity_solutions.md</a>.</p>
+<h2 id="whats-next"><a class="header" href="#whats-next">What’s next</a></h2>
+<p><a href="29_wall_10k_to_1m.html">§29 - The wall at 10K → 1M</a> is where these techniques start to bind. Code that ran fine at 10K stops running fine at 1M; the chapter is about finding out where and why.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../trunk/27_working_set_vs_cache_solutions.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../trunk/28_proximity_solutions.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../trunk/27_working_set_vs_cache_solutions.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../trunk/28_proximity_solutions.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../ace-2a3cd908.js"></script>
+        <script src="../mode-rust-2c9d5c9a.js"></script>
+        <script src="../editor-16ca416c.js"></script>
+        <script src="../theme-dawn-4493f9c8.js"></script>
+        <script src="../theme-tomorrow_night-9dbe62a9.js"></script>
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../mermaid-eefea253.min.js"></script>
+        <script src="../mermaid-init-ccf746f1.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

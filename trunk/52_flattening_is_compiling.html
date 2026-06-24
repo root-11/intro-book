@@ -1,0 +1,343 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Flattening a tree is compiling it - An Introduction to Programming, using ECS &amp; EBP in Rust</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-c31403f1.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-d47fb4d7.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">An Introduction to Programming, using ECS &amp; EBP in Rust</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <!-- DRAFT, §52, first chapter of the "where SoA does not pay" arc (§52-§56), built on the
+reference crate code/exprtree. Concept-node line, glossary entry, DAG node are placeholders to be filled. Numbers are the dev-box (Ryzen 9 270) figures;
+cross-machine capture (Pi/i7/i3) is pending, so the Measurements table has one column. When
+the arc and the finale land, §50's "The book ends here" line moves to the finale. -->
+<h1 id="52---flattening-a-tree-is-compiling-it"><a class="header" href="#52---flattening-a-tree-is-compiling-it">52 - Flattening a tree is compiling it</a></h1>
+<blockquote>
+<p><em>Concept node: see the <a href="../concepts/dag.html">DAG</a> and <a href="../concepts/glossary.html#52---flattening-a-tree-is-compiling-it">glossary entry 52</a>.</em></p>
+</blockquote>
+<p align="center"><img src="../illustrations/ast.png" alt="A mouse with an expression tree - the same tree as boxes-and-arrows, as one array, and written out in order to run straight through." style="max-height: 300px; max-width: 100%;"></p>
+
+<p><a href="03_the_vec_is_a_table.html">§3</a> said the Vec is a table, and the trunk took it as a default: lay the data out flat and stream it. That earned its place across forty chapters of rows-of-scalars. But the simulator’s world is unusually kind to columns, and the honest question this arc asks is where the default stops paying. Start with the structure that looks least like a table: a tree.</p>
+<p>Take a small arithmetic expression, <code>(x + 2) * 3</code>. It is a tree:</p>
+<pre><code>        ( * )
+       /     \
+    ( + )    [ 3 ]
+   /     \
+ [ x ]   [ 2 ]
+</code></pre>
+<p>To evaluate it you work from the bottom up, because every node needs its children’s values before it can do its own bit of arithmetic. At <code>x = 4</code>: the <code>x</code> is 4, the <code>2</code> is 2, the <code>+</code> makes 6, the <code>3</code> is 3, the <code>*</code> makes 18.</p>
+<p>There are three honest ways to store that tree and walk it, and the differences between them are the chapter. Take them one at a time.</p>
+<p><strong>Boxes and arrows.</strong> Each node is a little record sitting wherever the allocator happened to put it, holding <em>arrows</em> (pointers) to its children.</p>
+<pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>enum Expr {
+    Const(f64),
+    Var,
+    Add(Box&lt;Expr&gt;, Box&lt;Expr&gt;),
+    Mul(Box&lt;Expr&gt;, Box&lt;Expr&gt;),
+    // ...
+}
+<span class="boring">}</span></code></pre>
+<p>To evaluate the <code>*</code>, you follow its arrow to the <code>+</code> node - somewhere else in memory - evaluate that (which follows two more arrows, to <code>x</code> and <code>2</code>), then follow the arrow to <code>3</code>. You hop around memory chasing arrows. This is the representation most people reach for, and the one the trunk taught you to be wary of.</p>
+<p><strong>The same shape, in one array.</strong> Put all the nodes in a single <code>Vec</code>, and let each node name its children by their <em>position</em> in that Vec instead of by an arrow.</p>
+<pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct Node { tag: Tag, lhs: u32, rhs: u32, val: f64 } // children are indices
+<span class="boring">}</span></code></pre>
+<p>The nodes now sit together in memory, which is the layout the trunk prefers. But evaluating still hops from a node to its children in tree order, jumping around the array by index. The arrows became indices; the hopping stayed.</p>
+<p><strong>The steps, written in the order you do them.</strong> Here is the different idea. Instead of storing the tree and walking it, write the nodes down in the order you would actually compute them, every child before its parent:</p>
+<pre><code>x   2   +   3   *
+</code></pre>
+<p>Now you do not walk a tree at all. You read that list straight through, left to right, with a scratch pad - a <em>stack</em>, which just means you add to the top and take from the top:</p>
+<pre><code>x  -&gt;  push its value           pad: [4]
+2  -&gt;  push                     pad: [4, 2]
++  -&gt;  pop two, add, push        pad: [6]
+3  -&gt;  push                     pad: [6, 3]
+*  -&gt;  pop two, multiply, push   pad: [18]
+</code></pre>
+<p>The answer is what is left on the pad. No hopping: you touched the list once, front to back. If you have ever used a calculator with an “Enter” key, you have run a list like this; it has a name, but the mechanic is the point.</p>
+<p>All three compute 18. That they agree, bit for bit, on every input is the floor this whole chapter stands on.<sup>1</sup></p>
+<h2 id="the-array-on-its-own-buys-nothing"><a class="header" href="#the-array-on-its-own-buys-nothing">The array on its own buys nothing</a></h2>
+<p>You would expect the two flat layouts to beat the boxes-and-arrows tree; the trunk spent forty chapters showing that contiguous beats scattered. Measured, only one of them does.</p>
+<p>The <strong>one-array version does not beat the pointer tree at any size</strong>.<sup>2</sup> Putting the nodes side by side bought nothing, because the walk still jumps from a node to its children in tree order. It just jumps by index now, and pays a bounds check on top. Index-hopping is pointer-hopping in a different coat.</p>
+<p>The <strong>written-in-order version</strong> is the one that pulls ahead: about 1.25x faster at a hundred thousand nodes, widening to nearly 2x at two million,<sup>2</sup> because it is the one that stops hopping and reads straight through.</p>
+<p>The lesson, then, is <strong>the access pattern, not the array</strong>. A flat layout walked in a scattered order is scattered access with extra steps. The win was never the Vec; it was the straight-through walk.</p>
+<h2 id="the-win-has-a-floor-and-a-cliff"><a class="header" href="#the-win-has-a-floor-and-a-cliff">The win has a floor and a cliff</a></h2>
+<p>The straight-through version does not win everywhere, and where it loses is worth being exact about.</p>
+<p>In a band from roughly a few hundred to a thousand nodes, the straight-through version is a little <em>slower</em> than the pointer tree.<sup>2</sup> The whole tree fits in cache there, so hopping between nodes is nearly free, and the scratch-pad’s push and pop is overhead with nothing to hide behind. Below the band, at a few dozen nodes, everything is small enough that the tight straight loop wins again. Above it, once the tree outgrows cache, every hop pays a cache-miss tax the straight walk avoids, and it pulls away for good.</p>
+<p>The carve-out is usually stated as “small trees”, but it is really a <strong>cache-resident band</strong>: a tree that fits in cache does not care how you lay it out, because the expensive thing, going to memory, is free while everything is close. The flat layout starts paying only once the data is big enough that the trip to memory costs something.</p>
+<h2 id="that-third-form-is-compiled-code"><a class="header" href="#that-third-form-is-compiled-code">That third form is compiled code</a></h2>
+<p>Look again at the written-in-order version. Nodes in compute order, run straight through with a scratch stack: that is a <em>stack machine</em>, and the list is its program. Writing a tree out as a run-it-straight list is <strong>compiling</strong> it, turning something you walk into something you run.</p>
+<p>Compiled code has a famous weakness: you cannot edit it in place. Change the tree and the boxes-and-arrows version swings a single arrow, in time set by how deep the changed node sits - about 150 nanoseconds.<sup>3</sup> The one-array version is cheaper still, an index repointed in about 18 nanoseconds. The written-in-order version has no cheap edit: any change to the shape breaks the order, so you write the whole list out again, about half a millisecond at a hundred thousand nodes<sup>3</sup> - thousands of times the cost of swinging one arrow.</p>
+<p>So the choice turns on what you <em>do</em> with the tree: <strong>how often do you change its shape, versus how often do you just compute it?</strong></p>
+<h2 id="the-crossover"><a class="header" href="#the-crossover">The crossover</a></h2>
+<p>Put a number on it. Any real workload is some edits and some evaluations. The pointer tree has the cheap edit and the slow walk; the compiled list has the slow edit and the fast walk. They break even at the point where the list’s faster walks stop paying back its expensive rebuilds. On this machine, that is about <strong>one edit for every four evaluations</strong>.<sup>4</sup> Change the shape more often than that, keep the pointers. Compute it more often than that, compile it.</p>
+<p>The break-even barely moves as the tree grows, because both the walk savings and the rebuild cost scale with the number of nodes; their ratio does not. So it is a fact about your <em>workload</em>, not your tree size. A spreadsheet formula typed once and recomputed on every edit elsewhere, a database query planned once and run over millions of rows, a shader built once and run per pixel: all sit far out at the compute-many end, which is exactly where the compiled form wins and exactly why those systems compile.</p>
+<p>That is the first place the column default does not simply carry over, and a tree is what makes you say what you actually do with it. The flat array on its own buys nothing; the straight-through walk buys a lot, but only once the tree outgrows cache, and only if you will recompile when its shape changes. The reference crate is <a href="https://github.com/root-11/intro-book/tree/main/code/exprtree"><code>code/exprtree</code></a>; the prose here is the shape of its output, and the exercises are how you make it yours.</p>
+<p>The catch is the word “recompile.” It assumes the shape changes rarely, and all at once. The next chapter is what happens when it changes a little, and constantly.</p>
+<h2 id="measurements"><a class="header" href="#measurements">Measurements</a></h2>
+<p>Dev box: Ryzen 9 270, rustc 1.94.0, <code>--release</code>, median of 5. Cross-machine capture (the Pi 4 / i7 / i3 columns the rest of <code>code/</code> carries) is pending, so treat the shape as the claim, not the digits.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>#</th><th>what</th><th>measured</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>all three forms agree, bit for bit</td><td>contract test passes</td></tr>
+<tr><td>2</td><td>straight-through vs pointer tree: tiny / cache-resident band / past cache</td><td>~1.5x / <strong>0.85x</strong> / 1.25x at 131K nodes, ~1.9x at 2M</td></tr>
+<tr><td>2</td><td>one-array (arena) vs pointer tree</td><td>does not beat it at any size</td></tr>
+<tr><td>3</td><td>one shape-change: pointer / one-array / straight-through (131K nodes)</td><td>150 ns / 18 ns / ~496,000 ns</td></tr>
+<tr><td>4</td><td>edit-to-evaluation break-even (straight-through vs pointer)</td><td>~1 edit per 4 evaluations, ~size-independent</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="exercises"><a class="header" href="#exercises">Exercises</a></h2>
+<ol>
+<li><strong>Three forms, one number.</strong> Build the boxes-and-arrows tree, the one-array version, and the written-in-order list for the same small expression. Write the evaluator for each and check all three return the same value, bit for bit, at many values of <code>x</code>. Every later exercise leans on this agreement; if it ever breaks, you are timing three different sums.</li>
+<li><strong>Trace the stack by hand.</strong> For <code>(x + 2) * 3</code>, write out the run-in-order list and trace the scratch pad step by step, as in the chapter. Then do it for an expression of your own with at least one subtraction. Convince yourself the list never needs to look back.</li>
+<li><strong>The size sweep.</strong> Evaluate each form in bulk across tree sizes from a few dozen nodes to a few million. Plot nanoseconds per evaluation. Find the three regimes: the straight-through form winning when tiny, losing in a cache-resident band of a few hundred nodes, and winning more and more once the tree is too big for cache.</li>
+<li><strong>The array is the control.</strong> Confirm the one-array version does not beat the pointer tree at any size. In one sentence, say why putting the nodes side by side bought nothing - what does its evaluator still do on every node? Then say, in one sentence, what the actual win was.</li>
+<li><strong>The cost of editing compiled code.</strong> Implement the same shape-change - swap out a subtree - on each form, and time it at a hundred thousand nodes. Reproduce the arrow-swing, the index-repoint, and the full rewrite. Explain why the run-in-order form has no cheap edit.</li>
+<li><strong>The break-even.</strong> From your edit and evaluation timings, work out the edit fraction where the run-in-order form stops being worth it. Reproduce the roughly one-edit-per-four-evaluations figure. Then, from how each cost grows with the number of nodes, argue why that break-even hardly depends on tree size.</li>
+<li><em>(stretch)</em> <strong>Find the regime in the wild.</strong> Name three real things made of expression trees (a spreadsheet cell, a database query, a shader) and place each on the change-it-versus-compute-it line. For one, build it once and evaluate it a million times; confirm you are far out at the compute-many end, where the one-time cost of writing the list out has long since paid for itself.</li>
+</ol>
+<p>Reference notes in <a href="52_flattening_is_compiling_solutions.html">52_flattening_is_compiling_solutions.md</a>.</p>
+<h2 id="whats-next"><a class="header" href="#whats-next">What’s next</a></h2>
+<p>The run-in-order form assumes the shape changes rarely and all at once. <a href="53_dirty_propagation.html">§53</a> is what happens when it changes a little and often: a hierarchy where one node moves and only the nodes beneath it go stale. Recomputing everything is the compiled form’s only move; recomputing <em>just the stale part</em> is the next discipline - and it has a break-even of its own.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../trunk/51_knowing_the_limits.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../trunk/52_flattening_is_compiling_solutions.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../trunk/51_knowing_the_limits.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../trunk/52_flattening_is_compiling_solutions.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../ace-2a3cd908.js"></script>
+        <script src="../mode-rust-2c9d5c9a.js"></script>
+        <script src="../editor-16ca416c.js"></script>
+        <script src="../theme-dawn-4493f9c8.js"></script>
+        <script src="../theme-tomorrow_night-9dbe62a9.js"></script>
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../mermaid-eefea253.min.js"></script>
+        <script src="../mermaid-init-ccf746f1.js"></script>
+
+
+
+    </div>
+    </body>
+</html>
